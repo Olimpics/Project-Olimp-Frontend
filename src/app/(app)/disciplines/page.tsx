@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react';
-import styles from './disciplines.module.css';
 
 interface Discipline {
     id_disp: number;
@@ -39,7 +38,7 @@ const SearchInput: React.FC<{ index: number; selectedItems: string[]; setSelecte
     };
 
     return (
-        <div className={styles.inputWrapper}>
+        <div className="relative w-full max-w-md mb-4 bg">
             <input
                 type="text"
                 placeholder="Дисципліна"
@@ -47,14 +46,15 @@ const SearchInput: React.FC<{ index: number; selectedItems: string[]; setSelecte
                 onChange={handleSearch}
                 onFocus={() => setShowDropdown(filteredItems.length > 0)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                className={styles.searchbar}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
             />
             {showDropdown && (
-                <ul className={styles.dropdown}>
+                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
                     {filteredItems.map((item) => (
-                        <li 
-                            key={item.id_disp} 
+                        <li
+                            key={item.id_disp}
                             onClick={() => handleSelectItem(item.name_disp)}
+                            className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
                         >
                             {item.name_disp}
                         </li>
@@ -74,11 +74,16 @@ const Page: React.FC = () => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className={styles.maindiv}>
+        <form onSubmit={handleSubmit}  className="flex flex-col items-center justify-center w-full max-w-1/3 max-h-1/3 p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg">
             {selectedItems.map((_, index) => (
                 <SearchInput key={index} index={index} selectedItems={selectedItems} setSelectedItems={setSelectedItems} />
             ))}
-            <button type="submit" className={styles.submitButton}>ЗБЕРЕГТИ</button>
+            <button
+                type="submit"
+                className="mt-4 px-6 py-2 bg-white text-blue-600  font-semibold rounded-lg hover:shadow-x1 transition duration-300"
+            >
+                ЗБЕРЕГТИ
+            </button>
         </form>
     );
 };
