@@ -69,17 +69,17 @@ const StudentCabinet: React.FC = () => {
     }
 
     return (
-        <div className={styles.container}>
-            <section className={styles.sidebar}>
+        <div className="flex flex-col md:flex-row flex-wrap gap-4 md:gap-8 p-4 md:p-8">
+            <section className="w-full md:w-72 text-center">
                 <img
                     src={student.photoUrl}
                     alt={`${student.firstName} ${student.lastName}`}
-                    className={styles.avatar}
+                    className="w-24 sm:w-36 h-24 sm:h-36 mx-auto rounded-full object-cover"
                 />
-                <h1 className={styles.name}>
+                <h1 className="mt-4 mb-2 text-lg md:text-xl font-semibold">
                     {student.firstName} {student.lastName}
                 </h1>
-                <div className={styles.details}>
+                <div className="space-y-1 text-left px-4">
                     <p>
                         <strong>Факультет:</strong> {student.faculty}
                     </p>
@@ -92,26 +92,49 @@ const StudentCabinet: React.FC = () => {
                 </div>
             </section>
 
-            <section className={styles.schedule}>
-                <h2>Розклад занять</h2>
-                <table className={styles.scheduleTable}>
-                    <thead>
-                        <tr className={styles.headerRow}>
-                            <th className={styles.cell}>День</th>
-                            <th className={styles.cell}>Час</th>
-                            <th className={styles.cell}>Предмет</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {student.schedule.map((item, idx) => (
-                            <tr key={idx}>
-                                <td className={styles.cell}>{item.day}</td>
-                                <td className={styles.cell}>{item.time}</td>
-                                <td className={styles.cell}>{item.subject}</td>
+            <section className="flex-1 bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <h2 className="text-xl sm:text-2xl text-black-600 mb-4 inline-block border-b-2 border-black-600 pb-1">
+                    Розклад занять
+                </h2>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse">
+                        <thead>
+                            <tr className="bg-gray-100">
+                                <th className="hidden sm:table-cell border px-2 sm:px-4 py-1 sm:py-2 text-left">
+                                    День
+                                </th>
+                                <th className="border px-2 sm:px-4 py-1 sm:py-2 text-left">
+                                    Час
+                                </th>
+                                <th className="border px-2 sm:px-4 py-1 sm:py-2 text-left">
+                                    Предмет
+                                </th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {student.schedule.map((item, idx) => (
+                                <tr
+                                    key={idx}
+                                    className={
+                                        idx % 2 === 0
+                                            ? 'bg-white'
+                                            : 'bg-gray-50'
+                                    }
+                                >
+                                    <td className="hidden sm:table-cell border px-2 sm:px-4 py-1 sm:py-2">
+                                        {item.day}
+                                    </td>
+                                    <td className="border px-2 sm:px-4 py-1 sm:py-2">
+                                        {item.time}
+                                    </td>
+                                    <td className="border px-2 sm:px-4 py-1 sm:py-2">
+                                        {item.subject}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </div>
     )
