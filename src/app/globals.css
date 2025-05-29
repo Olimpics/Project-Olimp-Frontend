@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@theme {
+    --color-main: #2087ca;
+}
