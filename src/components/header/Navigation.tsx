@@ -43,7 +43,7 @@ export const Navigation: FunctionComponent = () => {
                         key={el.name}
                         onClick={handleLogout}
                         className={clsx(
-                            'font-medium',
+                            'font-medium ml-290',
                             isActive
                                 ? 'rounded-3xl bg-white py-1 px-3 text-main'
                                 : 'text-white'

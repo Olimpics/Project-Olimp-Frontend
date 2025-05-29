@@ -58,7 +58,7 @@ const Page = () => {
             )
 
             const data = await res.json()
-            setDisciplines(data.disciplines || []) // if it's wrapped
+            setDisciplines(data.disciplines || []) 
             setTotalPages(data.totalPages || 1)
         }
 
