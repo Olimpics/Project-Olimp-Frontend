@@ -49,8 +49,17 @@ export default function Page() {
 
     // фетч
     useEffect(() => {
-        const url =
-            'http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/20162'
+        const student_storage_raw = localStorage.getItem("studentProfile");
+
+        if (!student_storage_raw) {
+            console.error("No student profile found in localStorage");
+            return;
+        }
+
+        const student_storage = JSON.parse(student_storage_raw); 
+
+        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudents}`;
+
         setLoadingPlan(true)
         fetch(url)
             .then((res) => {

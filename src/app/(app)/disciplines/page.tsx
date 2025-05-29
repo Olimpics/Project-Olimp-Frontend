@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 interface Discipline {
     id_disp: number;
     name_disp: string;
+    semester_disp: boolean;
 }
 
 
@@ -20,31 +21,55 @@ const SearchInput: React.FC<{
     const [filteredItems, setFilteredItems] = useState<Discipline[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
 
+
+
     useEffect(() => {
         const fetchDisciplines = async () => {
             try {
-                const response = await fetch('http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=20162&isEvenSemester=false');
+                const student_storage_raw = localStorage.getItem("studentProfile");
+
+                if (!student_storage_raw) {
+                    console.error("No student profile found in localStorage");
+                    return;
+                }
+
+                const student_storage = JSON.parse(student_storage_raw);
+
+                const isEvenSemester = index >= 2;
+
+                const response = await fetch(
+                    `http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=${student_storage.idStudents}&isEvenSemester=${isEvenSemester}`
+                );
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
                 const data = await response.json();
                 const rawDisciplines = data.disciplines;
 
                 const parsedDisciplines = rawDisciplines.map((d: any) => ({
                     id_disp: d.idAddDisciplines,
-                    name_disp: d.codeAddDisciplines + ' ' + d.nameAddDisciplines
+                    name_disp: d.codeAddDisciplines + ' ' + d.nameAddDisciplines,
+                    semester_disp: isEvenSemester 
                 }));
 
+
                 setAllDisciplines(parsedDisciplines);
-                setFilteredItems(parsedDisciplines); 
-                setDisciplineData(parsedDisciplines); 
+                setFilteredItems(parsedDisciplines);
+                setDisciplineData(prev => {
+                    const newIds = new Set(parsedDisciplines.map(d => d.id_disp));
+                    const filteredPrev = prev.filter(d => !newIds.has(d.id_disp));
+                    return [...filteredPrev, ...parsedDisciplines];
+                });
+
             } catch (error) {
                 console.error('Error fetching disciplines:', error);
             }
         };
 
         fetchDisciplines();
-    }, []);
+    }, [index]);
 
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,23 +157,34 @@ const SearchInput: React.FC<{
 const Page: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<string[]>(["", "", "", ""]);
     const [disciplineData, setDisciplineData] = useState<Discipline[]>([]);
-    const studentId = 20162;
+    const student_storage_raw = localStorage.getItem("studentProfile");
+
+    if (!student_storage_raw) {
+        console.error("No student profile found in localStorage");
+        return;
+    }
+
+    const student_storage = JSON.parse(student_storage_raw);
+    
+    const studentId = student_storage.idStudents;
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        let current_discip = 0;
-
         const selectedDisciplineIds = selectedItems
-            .map(name => disciplineData.find(d => d.name_disp === name))
-            .filter(Boolean);
+            .map(name => {
+                const match = disciplineData.find(d => d.name_disp === name);
+                return match;
+            })
+            .filter((d): d is Discipline => !!d);
+
+
 
         for (const discipline of selectedDisciplineIds) {
-            current_discip += 1;
             const payload = {
                 studentId: studentId,
-                disciplineId: Number(discipline!.id_disp),
-                semester: (current_discip < 2) ? 1 : 0
+                disciplineId: Number(discipline.id_disp),
+                semester: discipline.semester_disp ? 0 : 1 
             };
 
             try {
@@ -161,11 +197,11 @@ const Page: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to bind discipline: ${discipline!.name_disp}`);
+                    throw new Error(`Failed to bind discipline: ${discipline.name_disp}`);
                 }
             } catch (err) {
                 console.error(err);
-                alert(`Error saving discipline: ${discipline!.name_disp}`);
+                alert(`Error saving discipline: ${discipline.name_disp}`);
                 return;
             }
         }
@@ -174,11 +210,12 @@ const Page: React.FC = () => {
     };
 
 
+
     return (
         <div className="h-screen flex items-center justify-center">
             <form
                 onSubmit={handleSubmit}
-                className="flex flex-col items-center justify-center w-full max-w-2xl p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg"
+                className="flex flex-col items-center justify-center w-full max-w-xl p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg"
             >
                 {selectedItems.map((_, index) => (
                     <div

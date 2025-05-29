@@ -7,7 +7,7 @@ interface MainLayoutProps {
 export const MainLayout: FC<MainLayoutProps> = ({
     children,
 }: MainLayoutProps) => {
-    return <div>
+    return <div className='bg-gray-100'>
 
       {children}
 
