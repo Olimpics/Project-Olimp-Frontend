@@ -52,7 +52,7 @@ export default function LoginPage() {
                 className="w-full max-w-md sm:max-w-lg md:max-w-xl bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-md"
             >
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold mb-6 text-center">
-                    Студентський вхід
+                    Вхід
                 </h2>
 
                 {error && (
