@@ -119,7 +119,7 @@ const SearchInput: React.FC<{
                 <button
                     type="button"
                     onClick={toggleDropdown}
-                    className="px-3 py-2 bg-gray-200 border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-300"
+                    className="px-3 py-2 bg-white border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-300"
                 >
                     ▼
                 </button>
