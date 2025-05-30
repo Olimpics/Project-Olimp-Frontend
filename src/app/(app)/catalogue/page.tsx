@@ -181,7 +181,7 @@ const Page = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row justify-between max-w-5/6 gap-4">
+        <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row justify-between gap-4">
             <aside className="sm:w-1/8 w-full">
                 <div className="bg-white p-4 rounded-md shadow-md border border-gray-300">
                     <h2
@@ -236,7 +236,7 @@ const Page = () => {
                 </div>
             </aside>
 
-            <main className="sm:w-3/4 w-full">
+            <main className="sm:w-full">
                 <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
                     <input
                         type="text"
