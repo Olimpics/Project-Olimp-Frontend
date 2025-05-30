@@ -13,9 +13,9 @@ type Discipline = {
 }
 
 interface Column {
-       header: string;
-       accessor: keyof Discipline; 
-   }
+    header: string;
+    accessor: keyof Discipline; 
+}
 
 const Pagination: React.FC<{
     totalPages: number
