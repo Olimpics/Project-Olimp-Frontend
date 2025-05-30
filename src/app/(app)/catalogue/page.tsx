@@ -12,6 +12,11 @@ type Discipline = {
     countOfPeople: number
 }
 
+interface Column {
+       header: string;
+       accessor: keyof Discipline; 
+   }
+
 const Pagination: React.FC<{
     totalPages: number
     currentPage: number
@@ -84,7 +89,7 @@ const Page = () => {
         return matchesFaculty && matchesSearch
     })
 
-    const columns = [
+    const columns: Column[] = [
         { header: 'Факультет', accessor: 'faculty' },
         { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
         { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },

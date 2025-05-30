@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.9.0",
     "clsx": "^2.1.1",
     "next": "15.3.2",

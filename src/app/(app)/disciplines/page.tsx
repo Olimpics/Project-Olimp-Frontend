@@ -8,20 +8,16 @@ interface Discipline {
     semester_disp: boolean;
 }
 
-
 const SearchInput: React.FC<{
     index: number;
     selectedItems: string[];
     setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>;
     setDisciplineData: React.Dispatch<React.SetStateAction<Discipline[]>>;
 }> = ({ index, selectedItems, setSelectedItems, setDisciplineData }) => {
-
     const [searchDisp, setSearchDisp] = useState("");
     const [allDisciplines, setAllDisciplines] = useState<Discipline[]>([]);
     const [filteredItems, setFilteredItems] = useState<Discipline[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
-
-
 
     useEffect(() => {
         const fetchDisciplines = async () => {
@@ -34,7 +30,6 @@ const SearchInput: React.FC<{
                 }
 
                 const student_storage = JSON.parse(student_storage_raw);
-
                 const isEvenSemester = index >= 2;
 
                 const response = await fetch(
@@ -51,14 +46,13 @@ const SearchInput: React.FC<{
                 const parsedDisciplines = rawDisciplines.map((d: any) => ({
                     id_disp: d.idAddDisciplines,
                     name_disp: d.codeAddDisciplines + ' ' + d.nameAddDisciplines,
-                    semester_disp: isEvenSemester 
+                    semester_disp: isEvenSemester,
                 }));
-
 
                 setAllDisciplines(parsedDisciplines);
                 setFilteredItems(parsedDisciplines);
                 setDisciplineData(prev => {
-                    const newIds = new Set(parsedDisciplines.map(d => d.id_disp));
+                    const newIds = new Set(parsedDisciplines.map((d: Discipline) => d.id_disp));
                     const filteredPrev = prev.filter(d => !newIds.has(d.id_disp));
                     return [...filteredPrev, ...parsedDisciplines];
                 });
@@ -69,8 +63,7 @@ const SearchInput: React.FC<{
         };
 
         fetchDisciplines();
-    }, [index]);
-
+    }, [index, setDisciplineData]);
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const query = event.target.value.toLowerCase();
@@ -95,7 +88,6 @@ const SearchInput: React.FC<{
         }
     };
 
-
     const handleSelectItem = (name: string) => {
         setSearchDisp(name);
         setSelectedItems(prev => {
@@ -105,8 +97,6 @@ const SearchInput: React.FC<{
         });
         setShowDropdown(false);
     };
-
-    
 
     return (
         <div className="relative w-full max-w-md mb-4">
@@ -123,7 +113,6 @@ const SearchInput: React.FC<{
                         setFilteredItems(filtered);
                         setShowDropdown(true);
                     }}
-
                     onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                 />
@@ -152,48 +141,49 @@ const SearchInput: React.FC<{
     );
 };
 
-
-
 const Page: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<string[]>(["", "", "", ""]);
     const [disciplineData, setDisciplineData] = useState<Discipline[]>([]);
-    const student_storage_raw = localStorage.getItem("studentProfile");
+    const [studentId, setStudentId] = useState<number | null>(null);
 
-    if (!student_storage_raw) {
-        console.error("No student profile found in localStorage");
-        return;
-    }
+    useEffect(() => {
+        const student_storage_raw = localStorage.getItem("studentProfile");
+        if (!student_storage_raw) {
+            console.error("No student profile found in localStorage");
+            return;
+        }
 
-    const student_storage = JSON.parse(student_storage_raw);
-    
-    const studentId = student_storage.idStudents;
+        try {
+            const student_storage = JSON.parse(student_storage_raw);
+            setStudentId(student_storage.idStudents);
+        } catch (err) {
+            console.error("Failed to parse student profile:", err);
+        }
+    }, []);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (!studentId) {
+            alert("Student ID not available.");
+            return;
+        }
 
         const selectedDisciplineIds = selectedItems
-            .map(name => {
-                const match = disciplineData.find(d => d.name_disp === name);
-                return match;
-            })
+            .map(name => disciplineData.find(d => d.name_disp === name))
             .filter((d): d is Discipline => !!d);
-
-
 
         for (const discipline of selectedDisciplineIds) {
             const payload = {
                 studentId: studentId,
                 disciplineId: Number(discipline.id_disp),
-                semester: discipline.semester_disp ? 0 : 1 
+                semester: discipline.semester_disp ? 0 : 1,
             };
 
             try {
                 const response = await fetch('http://185.237.207.78:5000/api/DisciplineTab/AddDisciplineBind', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
@@ -209,7 +199,9 @@ const Page: React.FC = () => {
         alert(`Збережено: ${selectedItems.filter(item => item).join(", ")}`);
     };
 
-
+    if (studentId === null) {
+        return <div className="text-center text-white">Завантаження профілю студента...</div>;
+    }
 
     return (
         <div className="h-screen flex items-center justify-center">
@@ -218,10 +210,7 @@ const Page: React.FC = () => {
                 className="flex flex-col items-center justify-center w-full max-w-xl p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg"
             >
                 {selectedItems.map((_, index) => (
-                    <div
-                        key={index}
-                        className="w-full flex flex-col items-center"
-                    >
+                    <div key={index} className="w-full flex flex-col items-center">
                         {index === 0 && (
                             <h1 className="text-white font-bold text-lg mb-2 text-center">
                                 Осінні дисципліни
@@ -249,9 +238,6 @@ const Page: React.FC = () => {
             </form>
         </div>
     );
-
-
-
 };
 
 export default Page;

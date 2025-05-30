@@ -1,5 +1,6 @@
 'use client'
-import { FunctionComponent } from 'react'
+
+import { FunctionComponent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import clsx from 'clsx'
@@ -21,16 +22,37 @@ const headerLinksUnlogin = [
 export const Navigation: FunctionComponent = () => {
     const pathname = usePathname()
     const router = useRouter()
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
 
-    const user_check = typeof window !== 'undefined' ? localStorage.getItem("studentProfile") : null
+    useEffect(() => {
+        const checkLogin = () => {
+            const studentProfile = localStorage.getItem("studentProfile")
+            setIsLoggedIn(!!studentProfile)
+        }
+
+        checkLogin()
+
+        const handleStorageUpdate = () => checkLogin()
+        const handleCustomEvent = () => checkLogin()
+
+        window.addEventListener('storage', handleStorageUpdate)
+        window.addEventListener('student-auth-changed', handleCustomEvent)
+
+        return () => {
+            window.removeEventListener('storage', handleStorageUpdate)
+            window.removeEventListener('student-auth-changed', handleCustomEvent)
+        }
+    }, [])
+
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault()
         localStorage.removeItem("studentProfile")
+        window.dispatchEvent(new Event("student-auth-changed"))
         router.push(ROUTES.mainpage)
     }
 
-    const links = user_check ? headerLinks : headerLinksUnlogin
+    const links = isLoggedIn ? headerLinks : headerLinksUnlogin
 
     return (
         <nav className="gap-10 flex ml-10">
@@ -43,7 +65,7 @@ export const Navigation: FunctionComponent = () => {
                         key={el.name}
                         onClick={handleLogout}
                         className={clsx(
-                            'font-medium ml-290',
+                            'font-medium ml-280 bg-red-500 py-1 px-3 rounded-3xl cursor-pointer',
                             isActive
                                 ? 'rounded-3xl bg-white py-1 px-3 text-main'
                                 : 'text-white'

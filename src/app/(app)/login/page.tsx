@@ -34,8 +34,8 @@ export default function LoginPage() {
 
             const profile = (await res.json()) as StudentProfile
 
-            // ✅ Save profile to localStorage
-            localStorage.setItem('studentProfile', JSON.stringify(profile))
+            localStorage.setItem("studentProfile", JSON.stringify(profile))
+            window.dispatchEvent(new Event("student-auth-changed"))
 
             router.push('/cabinet')
         } catch (err: any) {
