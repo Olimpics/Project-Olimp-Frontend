@@ -1,16 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { useRouter } from 'next/navigation'
-
-interface StudentProfile {
-    idStudents: number
-    roleId: number
-    nameStudent: string
-    nameFaculty: string
-    speciality: string
-    course: number
-}
+import { studentContext } from '@/app/context'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -20,21 +12,22 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
+    const studentCtx = useContext(studentContext)
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError(null)
         setLoading(true)
 
         try {
-            const url = `http://185.237.207.78:5000/api/LoginPage?Email=${encodeURIComponent(
-                email
-            )}&Password=${encodeURIComponent(password)}`
+            const url = `http://185.237.207.78:5000/api/LoginPage?Email=${encodeURIComponent(email)}&Password=${encodeURIComponent(password)}`
             const res = await fetch(url, { method: 'GET' })
             if (!res.ok) throw new Error('Невірний Email або пароль')
 
-            const profile = (await res.json()) as StudentProfile
+            const data = await res.json()
 
-            localStorage.setItem("studentProfile", JSON.stringify(profile))
+            studentCtx?.setProfile(data)
+
             window.dispatchEvent(new Event("student-auth-changed"))
 
             router.push('/cabinet')
@@ -45,20 +38,11 @@ export default function LoginPage() {
         }
     }
 
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <form
-                onSubmit={handleSubmit}
-                className="w-full max-w-md bg-white p-6 rounded-lg shadow-md"
-            >
-                <h2 className="text-2xl font-semibold mb-6 text-center">
-                    Студентський вхід
-                </h2>
-
-                {error && (
-                    <div className="text-red-600 text-center mb-4">{error}</div>
-                )}
+            <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-semibold mb-6 text-center">Студентський вхід</h2>
+                {error && <div className="text-red-600 text-center mb-4">{error}</div>}
 
                 <label className="block mb-4">
                     <span className="text-sm font-medium">Email</span>
@@ -89,9 +73,7 @@ export default function LoginPage() {
                         onChange={() => setShowPassword((v) => !v)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-600">
-                        Показати пароль
-                    </span>
+                    <span className="ml-2 text-sm text-gray-600">Показати пароль</span>
                 </label>
 
                 <button

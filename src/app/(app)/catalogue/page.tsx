@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
+import { studentContext } from '@/app/context'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 
@@ -90,16 +91,16 @@ const Page = () => {
     const [showOnlyAvaliable, setShowOnlyAvaliable] = useState(true)
     const [isFacultyOpen, setIsFacultyOpen] = useState(true);
     const [isOtherFiltersOpen, setIsOtherFiltersOpen] = useState(true);
+    const studCtx = useContext(studentContext)
 
     useEffect(() => {
         async function fetchData() {
-            const student_storage_raw = localStorage.getItem("studentProfile")
-            if (!student_storage_raw) {
+            if (!studCtx) {
                 console.error("No student profile found in localStorage")
                 return
             }
 
-            const student_storage = JSON.parse(student_storage_raw)
+            const student_storage = studCtx.profile
 
             const res = await fetch(
                 `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=${student_storage.idStudents}&page=${currentPage}&pageSize=12&onlyAvailable=${showOnlyAvaliable}`

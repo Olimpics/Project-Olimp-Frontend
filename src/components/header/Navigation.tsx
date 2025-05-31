@@ -1,10 +1,10 @@
 'use client'
 
-import { FunctionComponent, useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useContext } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import clsx from 'clsx'
-
+import Link from 'next/link'
+import { studentContext } from '@/app/context'
 import { ROUTES } from '@/constants'
 
 const headerLinks = [
@@ -19,36 +19,15 @@ const headerLinksUnlogin = [
     { name: 'Project Olimp', link: ROUTES.mainpage }
 ]
 
-export const Navigation: FunctionComponent = () => {
+export const Navigation = () => {
     const pathname = usePathname()
     const router = useRouter()
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
-
-    useEffect(() => {
-        const checkLogin = () => {
-            const studentProfile = localStorage.getItem("studentProfile")
-            setIsLoggedIn(!!studentProfile)
-        }
-
-        checkLogin()
-
-        const handleStorageUpdate = () => checkLogin()
-        const handleCustomEvent = () => checkLogin()
-
-        window.addEventListener('storage', handleStorageUpdate)
-        window.addEventListener('student-auth-changed', handleCustomEvent)
-
-        return () => {
-            window.removeEventListener('storage', handleStorageUpdate)
-            window.removeEventListener('student-auth-changed', handleCustomEvent)
-        }
-    }, [])
-
+    const { profile, setProfile } = useContext(studentContext)!
+    const isLoggedIn = !!profile
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault()
-        localStorage.removeItem("studentProfile")
-        window.dispatchEvent(new Event("student-auth-changed"))
+        setProfile(undefined)
         router.push(ROUTES.mainpage)
     }
 

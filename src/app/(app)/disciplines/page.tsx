@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { studentContext } from '@/app/context';
 
 interface Discipline {
     id_disp: number;
@@ -18,18 +19,17 @@ const SearchInput: React.FC<{
     const [allDisciplines, setAllDisciplines] = useState<Discipline[]>([]);
     const [filteredItems, setFilteredItems] = useState<Discipline[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
+    const studCtx = useContext(studentContext)
 
     useEffect(() => {
         const fetchDisciplines = async () => {
             try {
-                const student_storage_raw = localStorage.getItem("studentProfile");
-
-                if (!student_storage_raw) {
+                if (!studCtx) {
                     console.error("No student profile found in localStorage");
                     return;
                 }
 
-                const student_storage = JSON.parse(student_storage_raw);
+                const student_storage = studCtx.profile;
                 const isEvenSemester = index >= 2;
 
                 const response = await fetch(
@@ -145,16 +145,16 @@ const Page: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<string[]>(["", "", "", ""]);
     const [disciplineData, setDisciplineData] = useState<Discipline[]>([]);
     const [studentId, setStudentId] = useState<number | null>(null);
+    const studCtx = useContext(studentContext)
 
     useEffect(() => {
-        const student_storage_raw = localStorage.getItem("studentProfile");
-        if (!student_storage_raw) {
+        if (!studCtx) {
             console.error("No student profile found in localStorage");
             return;
         }
 
         try {
-            const student_storage = JSON.parse(student_storage_raw);
+            const student_storage = studCtx.profile
             setStudentId(student_storage.idStudents);
         } catch (err) {
             console.error("Failed to parse student profile:", err);

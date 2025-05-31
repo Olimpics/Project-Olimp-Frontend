@@ -1,5 +1,6 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
+import { studentContext } from '@/app/context'
 
 interface DisciplineDto {
     idBindMainDisciplines: number
@@ -8,7 +9,6 @@ interface DisciplineDto {
     loans: number
     formControll?: string
     semestr: number
-    // educationalProgramName
     educationalProgramName: string
 }
 
@@ -35,32 +35,26 @@ const defaultSchedule: ScheduleItem[] = [
 ]
 
 export default function Page() {
-    // вкладки
     const [activeTab, setActiveTab] = useState<'schedule' | 'plan'>('schedule')
-
-    // стани
-    const [planBySemester, setPlanBySemester] = useState<
-        Record<number, DisciplineDto[]>
-    >({})
+    const [planBySemester, setPlanBySemester] = useState<Record<number, DisciplineDto[]>>({})
     const [studentName, setStudentName] = useState<string>('')
     const [degreeName, setDegreeName] = useState<string>('')
     const [loadingPlan, setLoadingPlan] = useState<boolean>(false)
     const [errorPlan, setErrorPlan] = useState<string | null>(null)
 
-    // фетч
-    useEffect(() => {
-        const student_storage_raw = localStorage.getItem("studentProfile");
+    const context = useContext(studentContext)
 
-        if (!student_storage_raw) {
-            console.error("No student profile found in localStorage");
-            return;
+    useEffect(() => {
+        if (!context?.profile) {
+            console.warn("Student profile is not available in context.")
+            return
         }
 
-        const student_storage = JSON.parse(student_storage_raw); 
-
-        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudents}`;
+        const studentId = context.profile.idStudents
+        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${studentId}`
 
         setLoadingPlan(true)
+
         fetch(url)
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -69,12 +63,12 @@ export default function Page() {
             .then((data) => {
                 setStudentName(data.studentName)
                 setDegreeName(data.degreeName)
+
                 const grouped: Record<number, DisciplineDto[]> = {}
-                Object.entries(data.mainDisciplinesBySemester).forEach(
-                    ([sem, arr]) => {
-                        grouped[Number(sem)] = arr
-                    }
-                )
+                Object.entries(data.mainDisciplinesBySemester).forEach(([sem, arr]) => {
+                    grouped[Number(sem)] = arr
+                })
+
                 setPlanBySemester(grouped)
             })
             .catch((err) => {
@@ -82,27 +76,21 @@ export default function Page() {
                 setErrorPlan('Не вдалося завантажити навчальний план')
             })
             .finally(() => setLoadingPlan(false))
-    }, [])
+    }, [context?.profile])
 
     return (
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8">
-            {/* Sidebar */}
             <section className="w-full lg:w-72 text-center mb-6 lg:mb-0">
                 {studentName ? (
                     <>
-                        <h2 className="text-xl sm:text-2xl font-semibold">
-                            {studentName}
-                        </h2>
-                        <p className="text-sm sm:text-base text-gray-600">
-                            {degreeName}
-                        </p>
+                        <h2 className="text-xl sm:text-2xl font-semibold">{studentName}</h2>
+                        <p className="text-sm sm:text-base text-gray-600">{degreeName}</p>
                     </>
                 ) : (
                     <p className="text-gray-500">Завантаження профілю...</p>
                 )}
             </section>
 
-            {/* Content */}
             <section className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
                 <div className="flex space-x-8 border-b pb-2 mb-4 overflow-x-auto">
                     {['schedule', 'plan'].map((tab) => (
@@ -116,9 +104,7 @@ export default function Page() {
                             }
                             onClick={() => setActiveTab(tab as any)}
                         >
-                            {tab === 'schedule'
-                                ? 'Розклад занять'
-                                : 'Навчальний план'}
+                            {tab === 'schedule' ? 'Розклад занять' : 'Навчальний план'}
                         </button>
                     ))}
                 </div>
@@ -128,34 +114,17 @@ export default function Page() {
                         <table className="table-fixed w-full min-w-[600px] border border-gray-200">
                             <thead className="bg-gray-100">
                                 <tr>
-                                    <th className="hidden sm:table-cell w-1/3 border px-3 py-2 text-left text-sm sm:text-base">
-                                        День
-                                    </th>
-                                    <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">
-                                        Час
-                                    </th>
-                                    <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">
-                                        Предмет
-                                    </th>
+                                    <th className="hidden sm:table-cell w-1/3 border px-3 py-2 text-left text-sm sm:text-base">День</th>
+                                    <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">Час</th>
+                                    <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">Предмет</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {defaultSchedule.map((item, idx) => (
-                                    <tr
-                                        key={idx}
-                                        className={
-                                            idx % 2 ? 'bg-gray-50' : 'bg-white'
-                                        }
-                                    >
-                                        <td className="hidden sm:table-cell border px-3 py-2 text-sm">
-                                            {item.day}
-                                        </td>
-                                        <td className="border px-3 py-2 text-sm">
-                                            {item.time}
-                                        </td>
-                                        <td className="border px-3 py-2 text-sm">
-                                            {item.subject}
-                                        </td>
+                                    <tr key={idx} className={idx % 2 ? 'bg-gray-50' : 'bg-white'}>
+                                        <td className="hidden sm:table-cell border px-3 py-2 text-sm">{item.day}</td>
+                                        <td className="border px-3 py-2 text-sm">{item.time}</td>
+                                        <td className="border px-3 py-2 text-sm">{item.subject}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -163,12 +132,8 @@ export default function Page() {
                     </div>
                 ) : (
                     <div>
-                        {loadingPlan && (
-                            <p>Завантаження навчального плану...</p>
-                        )}
-                        {errorPlan && (
-                            <p className="text-red-600">{errorPlan}</p>
-                        )}
+                        {loadingPlan && <p>Завантаження навчального плану...</p>}
+                        {errorPlan && <p className="text-red-600">{errorPlan}</p>}
                         {!loadingPlan && !errorPlan && (
                             <div className="space-y-8">
                                 {Object.keys(planBySemester)
@@ -176,59 +141,27 @@ export default function Page() {
                                     .sort((a, b) => a - b)
                                     .map((sem) => (
                                         <div key={sem}>
-                                            <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                                                {sem} семестр
-                                            </h3>
+                                            <h3 className="text-lg sm:text-xl font-semibold mb-2">{sem} семестр</h3>
                                             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                                                 <table className="table-fixed w-full min-w-[400px] border border-gray-200">
                                                     <thead className="bg-gray-100">
                                                         <tr>
-                                                            <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">
-                                                                Дисципліна
-                                                            </th>
-                                                            <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">
-                                                                Форма контролю
-                                                            </th>
+                                                            <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">Дисципліна</th>
+                                                            <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">Форма контролю</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {planBySemester[sem]
-                                                            ?.length ? (
-                                                            planBySemester[
-                                                                sem
-                                                            ].map(
-                                                                (disc, idx) => (
-                                                                    <tr
-                                                                        key={
-                                                                            disc.idBindMainDisciplines
-                                                                        }
-                                                                        className={
-                                                                            idx %
-                                                                            2
-                                                                                ? 'bg-gray-50'
-                                                                                : 'bg-white'
-                                                                        }
-                                                                    >
-                                                                        <td className="border px-3 py-2 text-sm sm:text-base">
-                                                                            {
-                                                                                disc.nameBindMainDisciplines
-                                                                            }
-                                                                        </td>
-                                                                        <td className="border px-3 py-2 text-sm sm:text-base">
-                                                                            {disc.formControll ||
-                                                                                '-'}
-                                                                        </td>
-                                                                    </tr>
-                                                                )
-                                                            )
+                                                        {planBySemester[sem]?.length ? (
+                                                            planBySemester[sem].map((disc, idx) => (
+                                                                <tr key={disc.idBindMainDisciplines} className={idx % 2 ? 'bg-gray-50' : 'bg-white'}>
+                                                                    <td className="border px-3 py-2 text-sm sm:text-base">{disc.nameBindMainDisciplines}</td>
+                                                                    <td className="border px-3 py-2 text-sm sm:text-base">{disc.formControll || '-'}</td>
+                                                                </tr>
+                                                            ))
                                                         ) : (
                                                             <tr>
-                                                                <td
-                                                                    colSpan={2}
-                                                                    className="border px-3 py-4 text-center italic text-gray-500 text-sm"
-                                                                >
-                                                                    Немає
-                                                                    дисциплін
+                                                                <td colSpan={2} className="border px-3 py-4 text-center italic text-gray-500 text-sm">
+                                                                    Немає дисциплін
                                                                 </td>
                                                             </tr>
                                                         )}
