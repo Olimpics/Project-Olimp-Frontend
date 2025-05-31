@@ -3,6 +3,7 @@ import { useEffect, useState, useContext } from 'react'
 import { studentContext } from '@/app/context'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
+import { useDebounce } from '@/app/hooks'
 
 type Discipline = {
     idAddDisciplines: number
@@ -10,7 +11,7 @@ type Discipline = {
     codeAddDisciplines: string
     faculty: string
     teacher: string
-    degreeLevel: string
+    degreeLevelName: string
     countOfPeople: number
     maxCountPeople: number
     fullCount: string
@@ -92,6 +93,7 @@ const Page = () => {
     const [isFacultyOpen, setIsFacultyOpen] = useState(true);
     const [isOtherFiltersOpen, setIsOtherFiltersOpen] = useState(true);
     const studCtx = useContext(studentContext)
+    const debouncedSearch = useDebounce(searchTerm)
 
     useEffect(() => {
         async function fetchData() {
@@ -113,6 +115,7 @@ const Page = () => {
             const fullDisciplinesNotAv = await fetch(
                 `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=${student_storage.idStudents}&onlyAvailable=false`
             )
+            console.log(disciplines)
             const fullDisciplinesJson = (await fullDisciplinesNotAv.json()) as Discipline[]
             localStorage.setItem("allDisciplines", JSON.stringify(fullDisciplinesJson))
         }
@@ -120,28 +123,33 @@ const Page = () => {
         fetchData()
     }, [currentPage, showOnlyAvaliable]) 
 
-    const handleSearch = async () => {
-        const student_storage_raw = localStorage.getItem("studentProfile")
-        if (!student_storage_raw) {
-            console.error("No student profile found in localStorage")
-            return
+    useEffect(() => {
+        async function fetchSearchResults() {
+            if (!debouncedSearch.trim()) return;
+
+            if (!studCtx) {
+                console.error("No student profile found in localStorage");
+                return;
+            }
+
+            const student_storage = studCtx.profile
+
+            try {
+                setCurrentPage(1);
+                const res = await fetch(
+                    `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=${student_storage.idStudents}&pageSize=12&onlyAvailable=false&search=${encodeURIComponent(debouncedSearch)}`
+                );
+
+                const data = await res.json();
+                setDisciplines(data.disciplines || []);
+                setTotalPages(data.totalPages || 1);
+            } catch (error) {
+                console.error("Error fetching filtered disciplines:", error);
+            }
         }
 
-        const student_storage = JSON.parse(student_storage_raw)
-
-        try {
-            setCurrentPage(1) 
-            const res = await fetch(
-                `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=${student_storage.idStudents}&pageSize=12&onlyAvailable=false&search=${encodeURIComponent(searchTerm)}`
-            )
-
-            const data = await res.json()
-            setDisciplines(data.disciplines || [])
-            setTotalPages(data.totalPages || 1)
-        } catch (error) {
-            console.error("Error fetching filtered disciplines:", error)
-        }
-    }
+        fetchSearchResults();
+    }, [debouncedSearch]);
 
     const faculties = Array.from(new Set(disciplines?.map((d) => d.faculty))).filter(f => f)
 
@@ -164,22 +172,29 @@ const Page = () => {
             studentCount: `${d.countOfPeople} / ${d.maxCountPeople}` 
         }));
 
+
     const columns: Column[] = [
         { header: 'Факультет', accessor: 'faculty' },
         { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
         { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
         { header: 'Кількість студентів', accessor: 'studentCount' }, 
         { header: 'Викладач', accessor: 'teacher' },
-        { header: 'Рівень освіти', accessor: 'degreeLevel' },
+        { header: 'Рівень освіти', accessor: 'degreeLevelName' },
     ];
-
-    if (disciplines.length === 0) {
-        return <h1 className="text-center mt-10 text-lg">Завантажується...</h1>
-    }
 
     const handleAvailabilityToggle = () => {
         setShowOnlyAvaliable(prev => !prev);
     }
+
+    const handleFilterClear = () => {
+        setSearchTerm('')
+        setSelectedFaculties([])
+        setIsFacultyOpen(false)
+        setIsOtherFiltersOpen(false)
+        setCurrentPage(1)
+        setShowOnlyAvaliable(false)
+    }
+
 
     return (
         <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row justify-between gap-4">
@@ -234,6 +249,12 @@ const Page = () => {
                             </div>
                         </div>
                     )}
+                    <button
+                        onClick={handleFilterClear}
+                        className="rounded-3xl bg-blue-500 text-white py-1 px-3 text-main font-medium cursor-pointer"
+                    >
+                        Очистити фільтри
+                    </button>
                 </div>
             </aside>
 
@@ -244,14 +265,13 @@ const Page = () => {
                         placeholder="Пошук дисципліни..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-1/3 p-2 border border-gray-300 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full sm:w-1/3 p-2 border border-gray-300 rounded-md sm:rounded-l-md sm:rounded-1-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button
-                        onClick={handleSearch}
+                    { /*<button
                         className="p-2 bg-blue-500 text-white rounded-md sm:rounded-l-none sm:rounded-r-md hover:bg-blue-600"
                     >
                         Пошук
-                    </button>
+                    </button> */}
                 </div>
 
                 <div className="overflow-x-auto">
