@@ -111,44 +111,16 @@ const Page = () => {
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    async function fetchData() {
-      const studentRaw = localStorage.getItem("studentProfile")
-      if (!studentRaw) return
-      const student = JSON.parse(studentRaw)
-
-      const res = await fetch(
-        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=${student.idStudents}&page=${currentPage}&pageSize=17&onlyAvailable=false`
-      )
-      const data = await res.json()
-      const formatted = (data.disciplines || []).map((d: Discipline) => ({
-        ...d,
-        studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`
-      }))
-      setDisciplines(formatted)
-      setTotalPages(data.totalPages || 1)
-
-      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
-      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
-
-      setFaculties(facData)
-      setEduDegrees(eduData)
-    }
-
-    fetchData()
-  }, [currentPage])
-
-  const handleSearch = async () => {
+  const fetchFilteredData = async (page: number = 1) => {
     const studentRaw = localStorage.getItem("studentProfile")
     if (!studentRaw) return
     const student = JSON.parse(studentRaw)
 
     try {
-      setCurrentPage(1)
-
       const query = new URLSearchParams({
         studentId: student.idStudents,
         pageSize: "17",
+        page: page.toString(),
         search: searchTerm || "",
         sortOrder: selectedSorting.toString()
       })
@@ -178,7 +150,7 @@ const Page = () => {
       }
 
       const res = await fetch(
-        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?page=1&${query.toString()}`
+        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
       )
       const data = await res.json()
 
@@ -192,6 +164,24 @@ const Page = () => {
       console.error("Search error:", error)
     }
   }
+
+  const handleSearch = () => {
+    setCurrentPage(1)
+    fetchFilteredData(1)
+  }
+
+  useEffect(() => {
+    fetchFilteredData(1)
+
+    const loadFilterData = async () => {
+      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
+      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
+      setFaculties(facData)
+      setEduDegrees(eduData)
+    }
+
+    loadFilterData()
+  }, [])
 
   const columns: Column[] = [
     { header: 'Факультет', accessor: 'faculty' },
@@ -261,18 +251,18 @@ const Page = () => {
         <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
           <div className="w-300">
             <input
-            type="text"
-            placeholder="Пошук дисципліни..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleSearch}
-            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Пошук
-          </button>
+              type="text"
+              placeholder="Пошук дисципліни..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSearch}
+              className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            >
+              Пошук
+            </button>
           </div>
           <select
             value={selectedSorting}
@@ -292,7 +282,10 @@ const Page = () => {
           <Pagination
             totalPages={totalPages}
             currentPage={currentPage}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              setCurrentPage(page)
+              fetchFilteredData(page)
+            }}
           />
         </div>
       </main>
