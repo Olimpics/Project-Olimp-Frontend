@@ -30,7 +30,7 @@ export const FilterBox = <T extends Record<string, any>>({
     };
 
     return (
-        <div>
+        <div className="pb-3">
             <h2
                 className="text-lg font-semibold mb-2 cursor-pointer flex justify-between items-center"
                 onClick={() => collapsible && setIsOpen(!isOpen)}
