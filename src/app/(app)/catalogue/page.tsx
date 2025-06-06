@@ -87,7 +87,6 @@ const Pagination: React.FC<{
 }
 
 const Page = () => {
-<<<<<<< Updated upstream
   const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -132,37 +131,6 @@ const Page = () => {
 
       setFaculties(facData)
       setEduDegrees(eduData)
-=======
-    const [disciplines, setDisciplines] = useState<Discipline[]>([])
-    const [searchTerm, setSearchTerm] = useState('')
-    const [selectedFaculties, setSelectedFaculties] = useState<string[]>([])
-    const [faculties, setFaculties] = useState([])
-
-    useEffect(() => {
-        async function fetchData() {
-                const res = await fetch(
-                  'http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?studentId=20162'
-                )
-                const data = await res.json()
-                setDisciplines(data)
-
-                const fac_res = await fetch(
-                    'http://185.237.207.78:5000/api/Faculty'
-                )
-
-                const fac_data = await fac_res.json()
-                setFaculties(fac_data)
-        }
-        fetchData()
-    }, [])
-
-    const handleFacultyChange = (faculty: string) => {
-        setSelectedFaculties((prev) =>
-          prev.includes(faculty)
-            ? prev.filter((f) => f !== faculty)
-            : [...prev, faculty]
-        )
->>>>>>> Stashed changes
     }
 
     fetchData()
