@@ -7,7 +7,7 @@ interface Discipline {
     name_disp: string;
     semester_disp: boolean;
 }
-
+//
 const SearchInput: React.FC<{
     index: number;
     selectedItems: string[];
