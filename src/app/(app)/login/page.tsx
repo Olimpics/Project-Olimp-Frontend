@@ -9,7 +9,7 @@ interface StudentProfile {
     nameStudent: string
     nameFaculty: string
     speciality: string
-    course: numbe
+    course: number
 }
 
 export default function LoginPage() {
