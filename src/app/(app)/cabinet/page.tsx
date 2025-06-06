@@ -1,7 +1,6 @@
 'use client'
 import React, { useState } from 'react'
 
-//interface for Disciplines
 interface Disciplines {
     idBindMainDisciplines: number
     codeMainDisciplines: string
@@ -11,7 +10,6 @@ interface Disciplines {
     semestr: number
 }
 
-//interface for Student + Schedule
 interface ScheduleItem {
     day: string
     time: string
