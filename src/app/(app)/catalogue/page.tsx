@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
@@ -111,77 +111,88 @@ const Page = () => {
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const fetchFilteredData = async (page: number = 1) => {
+  const fetchFilteredData = useCallback(async (page: number = currentPage) => {
     const studentRaw = localStorage.getItem("studentProfile")
     if (!studentRaw) return
     const student = JSON.parse(studentRaw)
 
-    try {
-      const query = new URLSearchParams({
-        studentId: student.idStudents,
-        pageSize: "17",
-        page: page.toString(),
-        search: searchTerm || "",
-        sortOrder: selectedSorting.toString()
-      })
+    const query = new URLSearchParams({
+      studentId: student.idStudents,
+      pageSize: "17",
+      page: page.toString(),
+      search: searchTerm,
+      sortOrder: selectedSorting.toString()
+    })
 
-      if (pendingFaculties.length > 0) {
-        query.append("faculties", pendingFaculties.join(","))
-      }
-
-      const degreeIds = eduDegrees
-        .filter((d) => pendingDegrees.includes(d.nameEducationalDegreec))
-        .map((d) => d.idEducationalDegree)
-
-      if (degreeIds.length > 0) {
-        query.append("degrees", degreeIds.join(","))
-      }
-
-      if (pendingCourses.length > 0) {
-        query.append("courses", pendingCourses.join(","))
-      }
-
-      if (showOnlyAvailable.includes("Тільки доступні")) {
-        query.append("onlyAvailable", "true")
-      }
-
-      if (isEvenSemester !== null) {
-        query.append("isEvenSemester", isEvenSemester.toString())
-      }
-
-      const res = await fetch(
-        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
-      )
-      const data = await res.json()
-
-      const formatted = (data.disciplines || []).map((d: Discipline) => ({
-        ...d,
-        studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`
-      }))
-      setDisciplines(formatted)
-      setTotalPages(data.totalPages || 1)
-    } catch (error) {
-      console.error("Search error:", error)
+    if (pendingFaculties.length > 0) {
+      query.append("faculties", pendingFaculties.join(","))
     }
-  }
+
+    const degreeIds = eduDegrees
+      .filter((d) => pendingDegrees.includes(d.nameEducationalDegreec))
+      .map((d) => d.idEducationalDegree)
+
+    if (degreeIds.length > 0) {
+      query.append("degrees", degreeIds.join(","))
+    }
+
+    if (pendingCourses.length > 0) {
+      query.append("courses", pendingCourses.join(","))
+    }
+
+    if (showOnlyAvailable.includes("Тільки доступні")) {
+      query.append("onlyAvailable", "true")
+    }
+
+    if (isEvenSemester !== null) {
+      query.append("isEvenSemester", isEvenSemester.toString())
+    }
+
+    const res = await fetch(
+      `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
+    )
+    const data = await res.json()
+
+    const formatted = (data.disciplines || []).map((d: Discipline) => ({
+      ...d,
+      studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`
+    }))
+    setDisciplines(formatted)
+    setTotalPages(data.totalPages || 1)
+  }, [
+    currentPage,
+    searchTerm,
+    pendingFaculties,
+    pendingDegrees,
+    pendingCourses,
+    isEvenSemester,
+    showOnlyAvailable,
+    selectedSorting,
+    eduDegrees
+  ])
+
+  useEffect(() => {
+    fetchFilteredData(1)
+  }, [selectedSorting])
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
+      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
+
+      setFaculties(facData)
+      setEduDegrees(eduData)
+
+      fetchFilteredData(1)
+    }
+
+    fetchInitialData()
+  }, [])
 
   const handleSearch = () => {
     setCurrentPage(1)
     fetchFilteredData(1)
   }
-
-  useEffect(() => {
-    fetchFilteredData(1)
-
-    const loadFilterData = async () => {
-      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
-      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
-      setFaculties(facData)
-      setEduDegrees(eduData)
-    }
-
-    loadFilterData()
-  }, [])
 
   const columns: Column[] = [
     { header: 'Факультет', accessor: 'faculty' },
@@ -249,13 +260,13 @@ const Page = () => {
 
       <main className="sm:w-4/5 w-full">
         <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
-          <div className="w-300">
+          <div className="w-300 flex gap-2">
             <input
               type="text"
               placeholder="Пошук дисципліни..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={handleSearch}
@@ -266,7 +277,11 @@ const Page = () => {
           </div>
           <select
             value={selectedSorting}
-            onChange={(e) => setSelectedSorting(Number(e.target.value))}
+            onChange={(e) => {
+              const newSort = Number(e.target.value)
+              setSelectedSorting(newSort)
+              setCurrentPage(1)
+            }}
             className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {sortingOptions.map((option) => (
