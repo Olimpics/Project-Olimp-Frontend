@@ -150,7 +150,7 @@ const Page = () => {
         studentId: student.idStudents,
         pageSize: "17",
         search: searchTerm || "",
-        sorting: selectedSorting.toString()
+        sortOrder: selectedSorting.toString()
       })
 
       if (pendingFaculties.length > 0) {
