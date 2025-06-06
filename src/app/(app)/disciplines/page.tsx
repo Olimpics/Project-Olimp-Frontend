@@ -5,8 +5,8 @@ import React, { useState, useEffect } from 'react';
 interface Discipline {
     id_disp: number;
     name_disp: string;
+    semester_disp: boolean;
 }
-
 
 const SearchInput: React.FC<{
     index: number;
@@ -14,7 +14,6 @@ const SearchInput: React.FC<{
     setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>;
     setDisciplineData: React.Dispatch<React.SetStateAction<Discipline[]>>;
 }> = ({ index, selectedItems, setSelectedItems, setDisciplineData }) => {
-
     const [searchDisp, setSearchDisp] = useState("");
     const [allDisciplines, setAllDisciplines] = useState<Discipline[]>([]);
     const [filteredItems, setFilteredItems] = useState<Discipline[]>([]);
@@ -23,29 +22,48 @@ const SearchInput: React.FC<{
     useEffect(() => {
         const fetchDisciplines = async () => {
             try {
-                const response = await fetch('http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=20162&isEvenSemester=false');
+                const student_storage_raw = localStorage.getItem("studentProfile");
+
+                if (!student_storage_raw) {
+                    console.error("No student profile found in localStorage");
+                    return;
+                }
+
+                const student_storage = JSON.parse(student_storage_raw);
+                const isEvenSemester = index >= 2;
+
+                const response = await fetch(
+                    `http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=${student_storage.idStudents}&isEvenSemester=${isEvenSemester}`
+                );
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
                 const data = await response.json();
                 const rawDisciplines = data.disciplines;
 
                 const parsedDisciplines = rawDisciplines.map((d: any) => ({
                     id_disp: d.idAddDisciplines,
-                    name_disp: d.codeAddDisciplines + ' ' + d.nameAddDisciplines
+                    name_disp: d.codeAddDisciplines + ' ' + d.nameAddDisciplines,
+                    semester_disp: isEvenSemester,
                 }));
 
                 setAllDisciplines(parsedDisciplines);
-                setFilteredItems(parsedDisciplines); 
-                setDisciplineData(parsedDisciplines); 
+                setFilteredItems(parsedDisciplines);
+                setDisciplineData(prev => {
+                    const newIds = new Set(parsedDisciplines.map((d: Discipline) => d.id_disp));
+                    const filteredPrev = prev.filter(d => !newIds.has(d.id_disp));
+                    return [...filteredPrev, ...parsedDisciplines];
+                });
+
             } catch (error) {
                 console.error('Error fetching disciplines:', error);
             }
         };
 
         fetchDisciplines();
-    }, []);
-
+    }, [index, setDisciplineData]);
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const query = event.target.value.toLowerCase();
@@ -70,7 +88,6 @@ const SearchInput: React.FC<{
         }
     };
 
-
     const handleSelectItem = (name: string) => {
         setSearchDisp(name);
         setSelectedItems(prev => {
@@ -80,8 +97,6 @@ const SearchInput: React.FC<{
         });
         setShowDropdown(false);
     };
-
-    
 
     return (
         <div className="relative w-full max-w-md mb-4">
@@ -98,14 +113,13 @@ const SearchInput: React.FC<{
                         setFilteredItems(filtered);
                         setShowDropdown(true);
                     }}
-
                     onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                 />
                 <button
                     type="button"
                     onClick={toggleDropdown}
-                    className="px-3 py-2 bg-gray-200 border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-300"
+                    className="px-3 py-2 bg-white border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-300"
                 >
                     ▼
                 </button>
@@ -127,45 +141,57 @@ const SearchInput: React.FC<{
     );
 };
 
-
-
 const Page: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<string[]>(["", "", "", ""]);
     const [disciplineData, setDisciplineData] = useState<Discipline[]>([]);
-    const studentId = 20162;
+    const [studentId, setStudentId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const student_storage_raw = localStorage.getItem("studentProfile");
+        if (!student_storage_raw) {
+            console.error("No student profile found in localStorage");
+            return;
+        }
+
+        try {
+            const student_storage = JSON.parse(student_storage_raw);
+            setStudentId(student_storage.idStudents);
+        } catch (err) {
+            console.error("Failed to parse student profile:", err);
+        }
+    }, []);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        let current_discip = 0;
+        if (!studentId) {
+            alert("Student ID not available.");
+            return;
+        }
 
         const selectedDisciplineIds = selectedItems
             .map(name => disciplineData.find(d => d.name_disp === name))
-            .filter(Boolean);
+            .filter((d): d is Discipline => !!d);
 
         for (const discipline of selectedDisciplineIds) {
-            current_discip += 1;
             const payload = {
                 studentId: studentId,
-                disciplineId: Number(discipline!.id_disp),
-                semester: (current_discip < 2) ? 1 : 0
+                disciplineId: Number(discipline.id_disp),
+                semester: discipline.semester_disp ? 0 : 1,
             };
 
             try {
                 const response = await fetch('http://185.237.207.78:5000/api/DisciplineTab/AddDisciplineBind', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to bind discipline: ${discipline!.name_disp}`);
+                    throw new Error(`Failed to bind discipline: ${discipline.name_disp}`);
                 }
             } catch (err) {
                 console.error(err);
-                alert(`Error saving discipline: ${discipline!.name_disp}`);
+                alert(`Error saving discipline: ${discipline.name_disp}`);
                 return;
             }
         }
@@ -173,18 +199,18 @@ const Page: React.FC = () => {
         alert(`Збережено: ${selectedItems.filter(item => item).join(", ")}`);
     };
 
+    if (studentId === null) {
+        return <div className="text-center text-white">Завантаження профілю студента...</div>;
+    }
 
     return (
         <div className="h-screen flex items-center justify-center">
             <form
                 onSubmit={handleSubmit}
-                className="flex flex-col items-center justify-center w-full max-w-2xl p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg"
+                className="flex flex-col items-center justify-center w-full max-w-xl p-6 bg-blue-600 rounded-3xl space-y-4 shadow-lg"
             >
                 {selectedItems.map((_, index) => (
-                    <div
-                        key={index}
-                        className="w-full flex flex-col items-center"
-                    >
+                    <div key={index} className="w-full flex flex-col items-center">
                         {index === 0 && (
                             <h1 className="text-white font-bold text-lg mb-2 text-center">
                                 Осінні дисципліни
@@ -212,9 +238,6 @@ const Page: React.FC = () => {
             </form>
         </div>
     );
-
-
-
 };
 
 export default Page;
