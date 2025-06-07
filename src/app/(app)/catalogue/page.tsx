@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
+import { getCookie } from '@/services/cookie-servies';
+import { STUDENT_PROFLE } from '@/constants/cookies';
 
 type Discipline = {
     idAddDisciplines: number
@@ -93,7 +95,7 @@ const Page = () => {
 
     useEffect(() => {
         async function fetchData() {
-            const student_storage_raw = localStorage.getItem("studentProfile")
+            const student_storage_raw = getCookie(STUDENT_PROFLE)
             if (!student_storage_raw) {
                 console.error("No student profile found in localStorage")
                 return
@@ -120,7 +122,7 @@ const Page = () => {
     }, [currentPage, showOnlyAvaliable]) 
 
     const handleSearch = async () => {
-        const student_storage_raw = localStorage.getItem("studentProfile")
+        const student_storage_raw =getCookie(STUDENT_PROFLE)
         if (!student_storage_raw) {
             console.error("No student profile found in localStorage")
             return

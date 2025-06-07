@@ -1,5 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+import { getCookie } from '@/services/cookie-servies';
+import { STUDENT_PROFLE } from '@/constants/cookies';
 
 interface DisciplineDto {
     idBindMainDisciplines: number
@@ -49,8 +51,8 @@ export default function Page() {
 
     // фетч
     useEffect(() => {
-        const student_storage_raw = localStorage.getItem("studentProfile");
-
+        const student_storage_raw = getCookie(STUDENT_PROFLE)
+        console.log(`student_storage_raw`,student_storage_raw)
         if (!student_storage_raw) {
             console.error("No student profile found in localStorage");
             return;
@@ -86,8 +88,7 @@ export default function Page() {
 
     return (
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8">
-            {/* Sidebar */}
-            <section className="w-full lg:w-72 text-center mb-6 lg:mb-0">
+           <section className="w-full lg:w-72 text-center mb-6 lg:mb-0">
                 {studentName ? (
                     <>
                         <h2 className="text-xl sm:text-2xl font-semibold">
@@ -102,7 +103,6 @@ export default function Page() {
                 )}
             </section>
 
-            {/* Content */}
             <section className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
                 <div className="flex space-x-8 border-b pb-2 mb-4 overflow-x-auto">
                     {['schedule', 'plan'].map((tab) => (

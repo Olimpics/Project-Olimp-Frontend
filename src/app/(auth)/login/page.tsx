@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 
 interface StudentProfile {
     idStudents: number
@@ -14,8 +15,8 @@ interface StudentProfile {
 
 export default function LoginPage() {
     const router = useRouter()
-    const [email, setEmail] = useState('student018@example.com')
-    const [password, setPassword] = useState('password123')
+    const [email, setEmail] = useState('user03517@example.com')
+    const [password, setPassword] = useState('default_password')
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
@@ -34,7 +35,7 @@ export default function LoginPage() {
 
             const profile = (await res.json()) as StudentProfile
 
-            localStorage.setItem("studentProfile", JSON.stringify(profile))
+            Cookies.set("studentProfile", JSON.stringify(profile))
             window.dispatchEvent(new Event("student-auth-changed"))
 
             router.push('/cabinet')
