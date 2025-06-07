@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
@@ -7,17 +8,16 @@ import { getCookie } from '@/services/cookie-servies'
 import { STUDENT_PROFLE } from '@/constants/cookies'
 
 type Discipline = {
-    idAddDisciplines: number
-    nameAddDisciplines: string
-    codeAddDisciplines: string
-    faculty: string
-    teacher: string
-    degreeLevelName: string
-    countOfPeople: number
-    maxCountPeople: number
-    fullCount: string
-    courseNumber: number
-    evenSemester: boolean
+  idAddDisciplines: number
+  nameAddDisciplines: string
+  codeAddDisciplines: string
+  faculty: string
+  degreeLevelName: string
+  countOfPeople: number
+  maxCountPeople: number
+  fullCount: string
+  courseNumber: number
+  evenSemester: boolean
 }
 
 type Faculty = {
@@ -70,29 +70,43 @@ const Pagination: React.FC<{
         return pages
     }
 
-    return (
-        <nav className="flex justify-center mt-4 space-x-2">
-            {getPages().map((page, idx) =>
-                page === '...' ? (
-                    <span key={`ellipsis-${idx}`} className="px-2 py-2">
-                        ...
-                    </span>
-                ) : (
-                    <button
-                        key={page}
-                        onClick={() => onPageChange(Number(page))}
-                        className={`px-4 py-2 rounded ${
-                            currentPage === page
-                                ? 'bg-blue-600 text-white font-bold'
-                                : 'bg-white text-blue-600 border border-gray-300 hover:bg-blue-100'
-                        }`}
-                    >
-                        {page}
-                    </button>
-                )
-            )}
-        </nav>
-    )
+  return (
+    <nav className="flex justify-center mt-4 space-x-2">
+      {getPages().map((page, idx) =>
+        page === '...' ? (
+          <span key={`ellipsis-${idx}`} className="px-2 py-2">...</span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(Number(page))}
+            className={`px-4 py-2 rounded ${currentPage === page
+              ? 'bg-blue-600 text-white font-bold'
+              : 'bg-white text-blue-600 border border-gray-300 hover:bg-blue-100'
+              }`}
+          >
+            {page}
+          </button>
+        )
+      )}
+    </nav>
+  )
+}
+
+const GoToPageButton = () => {
+  const router = useRouter()
+
+  const handleClick = () => {
+    router.push('/disciplines')
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    >
+      Перейти до вибору дисциплін
+    </button>
+  )
 }
 
 const Page = () => {
@@ -141,9 +155,9 @@ const Page = () => {
                 )
                 .map((d) => d.idEducationalDegree)
 
-            if (degreeIds.length > 0) {
-                query.append('degrees', degreeIds.join(','))
-            }
+    if (degreeIds.length > 0) {
+      query.append("degreeLevelIds", degreeIds.join(","))
+    }
 
             if (pendingCourses.length > 0) {
                 query.append('courses', pendingCourses.join(','))
@@ -209,14 +223,13 @@ const Page = () => {
         fetchFilteredData(1)
     }
 
-    const columns: Column[] = [
-        { header: 'Факультет', accessor: 'faculty' },
-        { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
-        { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
-        { header: 'Кількість студентів', accessor: 'studentCount' },
-        { header: 'Викладач', accessor: 'teacher' },
-        { header: 'Рівень освіти', accessor: 'degreeLevelName' },
-    ]
+  const columns: Column[] = [
+    { header: 'Факультет', accessor: 'faculty' },
+    { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
+    { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
+    { header: 'Кількість студентів', accessor: 'studentCount' },
+    { header: 'Рівень освіти', accessor: 'degreeLevelName' },
+  ]
 
     return (
         <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
@@ -279,39 +292,40 @@ const Page = () => {
                 </button>
             </aside>
 
-            <main className="sm:w-4/5 w-full">
-                <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
-                    <div className="w-300 flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Пошук дисципліни..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                            onClick={handleSearch}
-                            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                        >
-                            Пошук
-                        </button>
-                    </div>
-                    <select
-                        value={selectedSorting}
-                        onChange={(e) => {
-                            const newSort = Number(e.target.value)
-                            setSelectedSorting(newSort)
-                            setCurrentPage(1)
-                        }}
-                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {sortingOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+      <main className="sm:w-4/5 w-full">
+        <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
+          <div className="w-300 flex gap-2">
+            <input
+              type="text"
+              placeholder="Пошук дисципліни..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSearch}
+              className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            >
+              Пошук
+            </button>
+          </div>
+          <GoToPageButton/>
+          <select
+            value={selectedSorting}
+            onChange={(e) => {
+              const newSort = Number(e.target.value)
+              setSelectedSorting(newSort)
+              setCurrentPage(1)
+            }}
+            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {sortingOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
                 <div className="overflow-x-auto">
                     <DataTable columns={columns} data={disciplines} />
