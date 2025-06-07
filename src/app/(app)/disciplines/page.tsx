@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { getCookie } from '@/services/cookie-servies';
+import { STUDENT_PROFLE } from '@/constants/cookies';
 
 interface Discipline {
     id_disp: number;
@@ -22,7 +24,7 @@ const SearchInput: React.FC<{
     useEffect(() => {
         const fetchDisciplines = async () => {
             try {
-                const student_storage_raw = localStorage.getItem("studentProfile");
+                const student_storage_raw = getCookie(STUDENT_PROFLE)
 
                 if (!student_storage_raw) {
                     console.error("No student profile found in localStorage");
@@ -147,7 +149,7 @@ const Page: React.FC = () => {
     const [studentId, setStudentId] = useState<number | null>(null);
 
     useEffect(() => {
-        const student_storage_raw = localStorage.getItem("studentProfile");
+        const student_storage_raw = getCookie(STUDENT_PROFLE)
         if (!student_storage_raw) {
             console.error("No student profile found in localStorage");
             return;

@@ -1,5 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+import { getCookie } from '@/services/cookie-servies'
+import { STUDENT_PROFLE } from '@/constants/cookies';
 
 interface DisciplineDto {
     idBindMainDisciplines: number
@@ -49,16 +51,16 @@ export default function Page() {
 
     // фетч
     useEffect(() => {
-        const student_storage_raw = localStorage.getItem("studentProfile");
+        const student_storage_raw = getCookie(STUDENT_PROFLE)
 
         if (!student_storage_raw) {
-            console.error("No student profile found in localStorage");
-            return;
+            console.error('No student profile found in localStorage')
+            return
         }
 
-        const student_storage = JSON.parse(student_storage_raw); 
+        const student_storage = JSON.parse(student_storage_raw)
 
-        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudents}`;
+        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudents}`
 
         setLoadingPlan(true)
         fetch(url)
