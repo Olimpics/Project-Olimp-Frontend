@@ -1,7 +1,6 @@
 import * as React from "react";
 
 const HamburgerSvg = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
-  <button>
     <svg
       xmlns="http://www.w3.org/2000/svg"
       id="emoji"
@@ -23,7 +22,6 @@ const HamburgerSvg = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGS
         </g>
       </g>
     </svg>
-  </button>
 );
 
 export default HamburgerSvg;
