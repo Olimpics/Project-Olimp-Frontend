@@ -3,13 +3,31 @@
 import React, { useState, useEffect } from 'react';
 import { getCookie } from '@/services/cookie-servies';
 import { STUDENT_PROFLE } from '@/constants/cookies';
+import { useRouter } from 'next/navigation'
 
 interface Discipline {
     id_disp: number;
     name_disp: string;
     semester_disp: boolean;
 }
-//
+
+const GoToPageButton = () => {
+  const router = useRouter()
+
+  const handleRoute= () => {
+    router.push('/catalogue')
+  }
+
+  return (
+    <button
+      onClick={handleRoute}
+      className="mt-4 px-6 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:shadow-xl transition duration-300"
+    >
+      Перейти до каталогу дисциплін
+    </button>
+  )
+}
+
 const SearchInput: React.FC<{
     index: number;
     selectedItems: string[];
@@ -197,8 +215,6 @@ const Page: React.FC = () => {
                 return;
             }
         }
-
-        alert(`Збережено: ${selectedItems.filter(item => item).join(", ")}`);
     };
 
     if (studentId === null) {
@@ -237,6 +253,7 @@ const Page: React.FC = () => {
                 >
                     ЗБЕРЕГТИ
                 </button>
+                <GoToPageButton/>
             </form>
         </div>
     );

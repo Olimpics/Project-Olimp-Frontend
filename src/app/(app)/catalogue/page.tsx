@@ -294,7 +294,7 @@ const Page = () => {
 
       <main className="sm:w-4/5 w-full">
         <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
-          <div className="w-300 flex gap-2">
+          <div className="w-150 flex gap-2">
             <input
               type="text"
               placeholder="Пошук дисципліни..."

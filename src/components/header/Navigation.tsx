@@ -11,10 +11,10 @@ import { STUDENT_PROFLE } from '@/constants/cookies';
 import { getCookie } from '@/services/cookie-servies';
 
 const headerLinks = [
-    { name: 'Project Olimp', link: ROUTES.mainpage },
+    /*{ name: 'Project Olimp', link: ROUTES.mainpage },*/
     { name: 'Особистий кабінет', link: ROUTES.cabinet },
-    { name: 'Каталог ВБ', link: ROUTES.catalogue },
-    { name: 'Вибір дисциплін', link: ROUTES.disciplines },
+    { name: 'Вибір дисциплін', link: ROUTES.catalogue },
+    /*{ name: 'Каталог ВБ', link: ROUTES.disciplines },*/
     { name: 'Logout', link: ROUTES.mainpage }
 ]
 
@@ -59,45 +59,36 @@ export const Navigation: FunctionComponent = () => {
     const links = isLoggedIn ? headerLinks : headerLinksUnlogin
 
     return (
-      <>
-          <nav className="gap-10 flex m0 px-5">
-              {links.map((el) => {
-                  const isActive = pathname === el.link
-                  const isLogout = el.name === 'Logout'
+      <div className='flex justify-center'>
+        <div className='flex justify-between w-18/19'>
+          <Link
+            key={ROUTES.mainpage}
+            href={ROUTES.mainpage}
+            className={clsx(
+              'items-center font-medium rounded-3xl bg-white py-1 px-3 text-main',
+            )}
+          >
+            Project Olimp
+          </Link>
+          
+          <div className="flex">
+            <button type="button" className="relative p-2 rounded-full bg-white shadow-md hover:bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
 
-                  return isLogout ? (
-                    <button
-                      key={el.name}
-                      onClick={handleLogout}
-                      className={clsx(
-                        'font-medium ml-auto mr-4 bg-red-500 py-1 px-3 rounded-3xl cursor-pointer',
-                        isActive
-                          ? 'rounded-3xl bg-white py-1 px-3 text-main'
-                          : 'text-white'
-                      )}
-                    >
-                        {el.name}
-                    </button>
-                  ) : (
-                    <Link
-                      key={el.link}
-                      href={el.link}
-                      className={clsx(
-                        'flex items-center font-medium',
-                        isActive
-                          ? 'rounded-3xl bg-white py-1 px-3 text-main'
-                          : 'text-white'
-                      )}
-                    >
-                        {el.name}
-                    </Link>
-                  )
-              })}
-              <button onClick={() => setIsMenuOpen(prev => !prev)}>
-                  <HamburgerSvg  className="w-8 h-8 text-white" />
-              </button>
-          </nav>
-
+              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                3
+              </span>
+            </button>
+            <nav className="gap-10 flex m0 px-5">
+                <button onClick={() => setIsMenuOpen(prev => !prev)}>
+                    <HamburgerSvg  className="w-8 h-8 text-white" />
+                </button>
+            </nav>
+          </div>
+          
           {isMenuOpen && (
             <>
                 <div
@@ -132,6 +123,7 @@ export const Navigation: FunctionComponent = () => {
                 </aside>
             </>
           )}
-      </>
+        </div>
+      </div>
     )
 }
