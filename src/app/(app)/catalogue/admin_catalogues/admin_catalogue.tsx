@@ -95,7 +95,7 @@ const Pagination: React.FC<{
   )
 }
 
-const Page = () => {
+export const AdminCatalogue = () => {
   const [students, setStudents] = useState<Student[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -312,4 +312,3 @@ const Page = () => {
   )
 }
 
-export default Page

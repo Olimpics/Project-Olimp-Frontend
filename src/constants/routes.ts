@@ -3,5 +3,5 @@ export const ROUTES = {
     catalogue: '/catalogue',
     disciplines: '/disciplines',
     mainpage: '/',
-    stud_catalogue: '/stud_catalogue'
+    stud_catalogue: '/stud_catalogue.tsx'
 }
