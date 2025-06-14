@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getCookie } from '@/services/cookie-servies';
-import { STUDENT_PROFLE } from '@/constants/cookies';
+import { USER_PROFLE } from '@/constants/cookies';
 import { useRouter } from 'next/navigation'
 
 interface Discipline {
@@ -42,7 +42,7 @@ const SearchInput: React.FC<{
     useEffect(() => {
         const fetchDisciplines = async () => {
             try {
-                const student_storage_raw = getCookie(STUDENT_PROFLE)
+                const student_storage_raw = getCookie(USER_PROFLE)
 
                 if (!student_storage_raw) {
                     console.error("No student profile found in localStorage");
@@ -167,7 +167,7 @@ const Page: React.FC = () => {
     const [studentId, setStudentId] = useState<number | null>(null);
 
     useEffect(() => {
-        const student_storage_raw = getCookie(STUDENT_PROFLE)
+        const student_storage_raw = getCookie(USER_PROFLE)
         if (!student_storage_raw) {
             console.error("No student profile found in localStorage");
             return;

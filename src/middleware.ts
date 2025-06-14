@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { USER_PROFLE } from '@/constants/cookies';
 
 export default function middleware(request: NextRequest) {
-    const studentProfile = request.cookies.get('studentProfile')
+    const studentProfile = request.cookies.get(USER_PROFLE)
     const { pathname } = request.nextUrl
 
     const url = request.nextUrl.clone()

@@ -5,7 +5,7 @@ import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { getCookie } from '@/services/cookie-servies'
-import { STUDENT_PROFLE } from '@/constants/cookies'
+import { USER_PROFLE } from '@/constants/cookies'
 
 type Discipline = {
   idAddDisciplines: number
@@ -133,7 +133,7 @@ export const StudentCatalogue = () => {
 
   const fetchFilteredData = useCallback(
     async (page: number = currentPage) => {
-      const studentRaw = getCookie(STUDENT_PROFLE)
+      const studentRaw = getCookie(USER_PROFLE)
 
       const student = JSON.parse(studentRaw)
 

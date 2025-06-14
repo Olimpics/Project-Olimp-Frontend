@@ -1,1 +1,1 @@
-export const STUDENT_PROFLE = 'studentProfile'
+export const USER_PROFLE = 'userProfile'

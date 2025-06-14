@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { getCookie } from '@/services/cookie-servies'
-import { STUDENT_PROFLE } from '@/constants/cookies';
+import { USER_PROFLE } from '@/constants/cookies';
 
 interface DisciplineDto {
     idBindMainDisciplines: number
@@ -51,7 +51,7 @@ export default function Page() {
 
     // фетч
     useEffect(() => {
-        const student_storage_raw = getCookie(STUDENT_PROFLE)
+        const student_storage_raw = getCookie(USER_PROFLE)
 
         if (!student_storage_raw) {
             console.error('No student profile found in localStorage')

@@ -8,7 +8,7 @@ import Cookies from 'js-cookie'
 import { ROUTES } from '@/constants'
 import HamburgerSvg from '@/asssets/svgs/hamburger-svg'
 import NotificationSvg from '@/asssets/svgs/notification-svg'
-import { STUDENT_PROFLE } from '@/constants/cookies';
+import { USER_PROFLE } from '@/constants/cookies';
 import { getCookie } from '@/services/cookie-servies';
 
 const headerLinks = [
@@ -46,7 +46,7 @@ export const Navigation: FunctionComponent = () => {
 
     useEffect(() => {
         const checkLogin = () => {
-            const studentProfile =getCookie(STUDENT_PROFLE)
+            const studentProfile =getCookie(USER_PROFLE)
             setIsLoggedIn(!!studentProfile)
         }
 
@@ -66,7 +66,7 @@ export const Navigation: FunctionComponent = () => {
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault()
-        Cookies.remove(STUDENT_PROFLE)
+        Cookies.remove(USER_PROFLE)
         window.dispatchEvent(new Event("student-auth-changed"))
         router.push(ROUTES.mainpage)
         setIsMenuOpen(false)

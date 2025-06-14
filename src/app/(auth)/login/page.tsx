@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { STUDENT_PROFLE } from '@/constants/cookies';
+import { USER_PROFLE } from '@/constants/cookies';
 import { setCookie } from '@/services/cookie-servies';
 
 interface StudentProfile {
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
             const profile = (await res.json()) as StudentProfile
 
-            setCookie(STUDENT_PROFLE, profile)
+            setCookie(USER_PROFLE, profile)
             window.dispatchEvent(new Event("student-auth-changed"))
 
             router.push('/cabinet')
