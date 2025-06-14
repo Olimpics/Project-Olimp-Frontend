@@ -109,7 +109,7 @@ const GoToPageButton = () => {
   )
 }
 
-export const StudentCatalogue = () => {
+export const StudentCatalogue = React.memo(() => {
   const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -341,6 +341,6 @@ export const StudentCatalogue = () => {
       </main>
     </div>
   )
-}
+})
 
 
