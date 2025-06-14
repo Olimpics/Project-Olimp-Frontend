@@ -53,7 +53,7 @@ const SearchInput: React.FC<{
                 const isEvenSemester = index >= 2;
 
                 const response = await fetch(
-                    `http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=${student_storage.idStudents}&isEvenSemester=${isEvenSemester}`
+                    `http://185.237.207.78:5000/api/DisciplineTab/GetDisciplinesBySemester?studentId=${student_storage.id}&isEvenSemester=${isEvenSemester}`
                 );
 
                 if (!response.ok) {
