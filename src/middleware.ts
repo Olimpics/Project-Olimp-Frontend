@@ -6,18 +6,21 @@ export default function middleware(request: NextRequest) {
 
     const url = request.nextUrl.clone()
 
+    if (pathname === '/login' && studentProfile) {
+        url.pathname = '/cabinet'
+        return NextResponse.redirect(url)
+    }
+
+    const protectedRoutes = ['/cabinet', '/catalogue',"/disciplines","/stud_catalogue"]
+    if (protectedRoutes.some((route) => pathname.startsWith(route)) && !studentProfile) {
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+    }
+
     if (pathname === '/') {
-        if (studentProfile) {
-            url.pathname = '/cabinet'
-        } else {
-            url.pathname = '/login'
-        }
+        url.pathname = studentProfile ? '/cabinet' : '/login'
         return NextResponse.redirect(url)
     }
 
     return NextResponse.next()
-}
-
-export const config = {
-    matcher: ['/', '/login'],
 }
