@@ -42,8 +42,6 @@ export const Navigation: FunctionComponent = () => {
 
       const studentProfileParsed = JSON.parse(studentProfile)
 
-      console.log(studentProfileParsed)
-
       if (studentProfile) {
         setIsLoggedIn(true)
 
