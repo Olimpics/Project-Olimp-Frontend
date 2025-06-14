@@ -95,7 +95,7 @@ export const Navigation: FunctionComponent = () => {
                   className="fixed inset-0 bg-black/50 z-40"
                   onClick={() => setIsMenuOpen(false)}
                 />
-                <aside className="fixed top-0 right-0 h-full sm:w-64 w-full bg-white z-50 shadow-lg p-6 flex flex-col  gap-4">
+                <aside className="fixed top-0 right-0 h-full sm:w-80 w-full bg-white z-50 shadow-lg p-6 flex flex-col  gap-4">
                     {links.map((el) => {
                         const isLogout = el.name === 'Logout'
                         return isLogout ? (
