@@ -60,7 +60,7 @@ export default function Page() {
 
         const student_storage = JSON.parse(student_storage_raw)
 
-        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudent}`
+        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.id}`
 
         setLoadingPlan(true)
         fetch(url)

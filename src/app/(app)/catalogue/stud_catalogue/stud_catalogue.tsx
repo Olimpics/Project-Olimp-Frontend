@@ -138,7 +138,7 @@ export const StudentCatalogue = React.memo(() => {
       const student = JSON.parse(studentRaw)
 
       const query = new URLSearchParams({
-        studentId: student.idStudents,
+        studentId: student.id,
         pageSize: '17',
         page: page.toString(),
         search: searchTerm,
