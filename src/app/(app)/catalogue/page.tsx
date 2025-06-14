@@ -233,7 +233,7 @@ const Page = () => {
 
     return (
         <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
-            <aside className="sm:w-1/5 w-full">
+            <aside className="sm:w-1/6 w-full">
                 <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4">
                     <FilterBox
                         name="Тільки доступні дисципліни"
