@@ -60,13 +60,14 @@ export default function Page() {
 
         const student_storage = JSON.parse(student_storage_raw)
 
-        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudents}`
+        const url = `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${student_storage.idStudent}`
 
         setLoadingPlan(true)
         fetch(url)
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
                 return res.json() as Promise<PlanResponse>
+                console.log(student_storage)
             })
             .then((data) => {
                 setStudentName(data.studentName)
