@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
+import { Modal } from '@/components/ui/Modal'
 
 type Student = {
   idStudents: number
@@ -95,22 +96,6 @@ const Pagination: React.FC<{
   )
 }
 
-const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
-  if (!isOpen) return null
-
-  return (
-    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 ">
-      <div onClick={(e)=>{
-        e.stopPropagation()
-      }} className="bg-white rounded-lg p-6 w-full max-w-md">
-        {children}
-        <div className="mt-4 flex justify-end space-x-2">
-
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export const AdminStudentCatalogue = () => {
   const [students, setStudents] = useState<Student[]>([])
@@ -287,7 +272,7 @@ export const AdminStudentCatalogue = () => {
     { header: 'Cпеціальність', accessor: 'speciality' },
     { header: 'Рівень освіти', accessor: 'degreeName' },
     { header: 'Курс', accessor: 'course' },
-    { header: 'Дії', accessor: 'course' },
+
   ]
 
   return (
@@ -392,7 +377,6 @@ export const AdminStudentCatalogue = () => {
         </div>
       </main>
 
-      {/* Модальное окно */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {modalType === 'edit' && selectedStudent && (
           <div>
