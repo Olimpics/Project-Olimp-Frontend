@@ -73,8 +73,10 @@ const DataTable = <T extends Record<string, any>>({
                                     <td className="py-2 px-4 border-b relative">
                                         <div
                                             className="w-4 h-4 bg-black cursor-pointer"
-                                            onClick={() =>
-                                                toggleDropdown(rowIndex)
+                                            onClick={(e) =>
+                                              { e.stopPropagation()
+                                                  toggleDropdown(rowIndex)
+                                              }
                                             }
                                         ></div>
 
