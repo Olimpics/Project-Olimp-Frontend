@@ -109,7 +109,8 @@ const GoToPageButton = () => {
   )
 }
 
-export const StudentCatalogue = React.memo(() => {
+export const AdminDisciplinesCatalogue = React.memo(() => {
+
   const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -245,7 +246,8 @@ export const StudentCatalogue = React.memo(() => {
           <FilterBox
             name="Факультет"
             options={faculties}
-            accessor="abbreviation"
+            accessor="idFaculty"
+            valueName="abbreviation"
             selectedValues={pendingFaculties}
             onChange={setPendingFaculties}
           />
@@ -309,13 +311,23 @@ export const StudentCatalogue = React.memo(() => {
               Пошук
             </button>
           </div>
-          <GoToPageButton/>
+          <GoToPageButton />
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+           Експорт
+          </button>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+           Імпорт
+          </button>
           <select
             value={selectedSorting}
             onChange={(e) => {
-              const newSort = Number(e.target.value)
-              setSelectedSorting(newSort)
-              setCurrentPage(1)
+              const newSort = Number(e.target.value);
+              setSelectedSorting(newSort);
+              setCurrentPage(1);
             }}
             className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >

@@ -9,6 +9,7 @@ type FilterBoxProps<T> = {
   selectedValues: string[]
   onChange: (selected: string[]) => void
   collapsible?: boolean
+  valueName?: string
 }
 
 export const FilterBox = <T extends Record<string, any>>({
@@ -17,12 +18,14 @@ export const FilterBox = <T extends Record<string, any>>({
   accessor,
   selectedValues,
   onChange,
+  valueName,
   collapsible = true,
 }: FilterBoxProps<T>) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState('')
 
   const toggleOption = (value: string) => {
+    console.log(value)
     if (selectedValues.includes(value)) {
       onChange(selectedValues.filter((v) => v !== value))
     } else {
@@ -60,7 +63,9 @@ export const FilterBox = <T extends Record<string, any>>({
             className={`space-y-2 ${options.length > 10 ? 'max-h-[250px] overflow-y-auto pr-1' : ''}`}
           >
             {filteredOptions.map((option, idx) => {
-              const value = String(option[accessor])
+              const name = valueName ?String(option[valueName]) :  String(option[accessor])
+              const value =  String(option[accessor])
+
               return (
                 <div key={idx} className="flex items-center">
                   <input
@@ -71,7 +76,7 @@ export const FilterBox = <T extends Record<string, any>>({
                     className="mr-2"
                   />
                   <label htmlFor={`${name}-${value}`} className="text-gray-700">
-                    {value}
+                    {name}
                   </label>
                 </div>
               )

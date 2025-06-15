@@ -191,6 +191,9 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
 
           <div className="border-t border-gray-200 text-center">
             <button
+              onClick={()=>{
+                router.push('/notifications');
+              }}
               type="button"
               className="w-full px-4 py-3 text-blue-600 hover:bg-gray-50 font-medium"
             >

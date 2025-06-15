@@ -1,17 +1,23 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
+import { getCookie } from '@/services/cookie-servies'
+import { USER_PROFLE } from '@/constants/cookies'
 
-type Student = {
-  idStudents: number
-  nameStudent: string
-  facultyAbbreviation: string
-  speciality: string
-  degreeName: string
-  groupName: string
-  course: number
+type Discipline = {
+  idAddDisciplines: number
+  nameAddDisciplines: string
+  codeAddDisciplines: string
+  faculty: string
+  degreeLevelName: string
+  countOfPeople: number
+  maxCountPeople: number
+  fullCount: string
+  courseNumber: number
+  evenSemester: boolean
 }
 
 type Faculty = {
@@ -29,26 +35,16 @@ type Courses = {
   courseNumber: number
 }
 
-type Specialities = {
-    id: number
-    name: string
-}
-
-type Groupes = {
-    id: number
-    code: string
-}
-
 interface Column {
   header: string
-  accessor: keyof Student
+  accessor: keyof Discipline | 'studentCount'
 }
 
 const sortingOptions = [
   { label: 'Алфавіт (А-Я)', value: 0 },
   { label: 'Алфавіт (Я-А)', value: 1 },
-  { label: 'Факультет (↑)', value: 2 },
-  { label: 'Факультет (↓)', value: 3 },
+  { label: 'Учасники (↑)', value: 2 },
+  { label: 'Учасники (↓)', value: 3 },
 ]
 
 const Pagination: React.FC<{
@@ -58,7 +54,8 @@ const Pagination: React.FC<{
 }> = ({ totalPages, currentPage, onPageChange }) => {
   const getPages = () => {
     const pages: (number | string)[] = []
-    if (totalPages <= 16) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (totalPages <= 16)
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
 
     pages.push(1)
     if (currentPage > 4) pages.push('...')
@@ -85,7 +82,7 @@ const Pagination: React.FC<{
             className={`px-4 py-2 rounded ${currentPage === page
               ? 'bg-blue-600 text-white font-bold'
               : 'bg-white text-blue-600 border border-gray-300 hover:bg-blue-100'
-              }`}
+            }`}
           >
             {page}
           </button>
@@ -95,14 +92,28 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminCatalogue = () => {
-  const [students, setStudents] = useState<Student[]>([])
+const GoToPageButton = () => {
+  const router = useRouter()
+
+  const handleClick = () => {
+    router.push('/disciplines')
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    >
+      Перейти до вибору дисциплін
+    </button>
+  )
+}
+
+export const StudentDisciplinesCatalogue = React.memo(() => {
+
+  const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
-  const [specialities, setSpecialities] = useState<Specialities[]>([])
-  const [pendingSpecialities, setPendingSpecialities] = useState<string[]>([])
-  const [groupes, setGroupes] = useState<Groupes[]>([])
-  const [pendingGroupes, setPendingGroupes] = useState<string[]>([])
   const [courses] = useState<Courses[]>([
     { courseNumber: 1 },
     { courseNumber: 2 },
@@ -114,70 +125,77 @@ export const AdminCatalogue = () => {
   const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
   const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
   const [pendingCourses, setPendingCourses] = useState<string[]>([])
+  const [isEvenSemester, setIsEvenSemester] = useState<boolean | null>(null)
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState<string[]>([])
   const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const fetchFilteredData = useCallback(async (page: number = currentPage) => {
-    const query = new URLSearchParams({
+  const fetchFilteredData = useCallback(
+    async (page: number = currentPage) => {
+      const studentRaw = getCookie(USER_PROFLE)
+
+      const student = JSON.parse(studentRaw)
+
+      const query = new URLSearchParams({
+        studentId: student.id,
+        pageSize: '17',
         page: page.toString(),
-        pageSize: "17",
         search: searchTerm,
-        sortOrder: selectedSorting.toString()
-    })
+        sortOrder: selectedSorting.toString(),
+      })
 
-    if (pendingFaculties.length > 0) {
-      query.append("faculties", pendingFaculties.join(","))
-    }
+      if (pendingFaculties.length > 0) {
+        query.append('faculties', pendingFaculties.join(','))
+      }
 
-    const degreeIds = eduDegrees
-      .filter((d) => pendingDegrees.includes(d.nameEducationalDegreec))
-      .map((d) => d.idEducationalDegree)
+      const degreeIds = eduDegrees
+        .filter((d) =>
+          pendingDegrees.includes(d.nameEducationalDegreec)
+        )
+        .map((d) => d.idEducationalDegree)
 
-    if (degreeIds.length > 0) {
-      query.append("degreeLevelIds", degreeIds.join(","))
-    }
+      if (degreeIds.length > 0) {
+        query.append("degreeLevelIds", degreeIds.join(","))
+      }
 
-    if (pendingCourses.length > 0) {
-      query.append("courses", pendingCourses.join(","))
-    }
+      if (pendingCourses.length > 0) {
+        query.append('courses', pendingCourses.join(','))
+      }
 
-    if (pendingSpecialities.length > 0) {
-        query.append("speciality", pendingSpecialities.join(","))
-    }
+      if (showOnlyAvailable.includes('Тільки доступні')) {
+        query.append('onlyAvailable', 'true')
+      }
 
-    if (pendingGroupes.length > 0) {
-        const selectedGroupIds = groupes
-            .filter((g) => pendingGroupes.includes(g.code))
-            .map((g) => g.id)
+      if (isEvenSemester !== null) {
+        query.append('isEvenSemester', isEvenSemester.toString())
+      }
 
-        if (selectedGroupIds.length > 0) {
-            query.append("group", selectedGroupIds.join(","))
-        }
-    }
+      const res = await fetch(
+        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
+      )
+      const data = await res.json()
 
-
-    const res = await fetch(
-      `http://185.237.207.78:5000/api/Student?${query.toString()}`
-    )
-    const data = await res.json()
-
-    const formatted = (data.students || []).map((d: Student) => ({ ...d }))
-
-    setStudents(formatted)
-    setTotalPages(data.totalPages || 1)
-  }, [
-    currentPage,
-    searchTerm,
-    pendingFaculties,
-    pendingDegrees,
-    pendingCourses,
-    pendingSpecialities,
-    selectedSorting,
-    eduDegrees,
-    pendingGroupes
-  ])
+      const formatted = (data.disciplines || []).map((d: Discipline) => ({
+        ...d,
+        studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
+      }))
+      setDisciplines(formatted)
+      setTotalPages(data.totalPages || 1)
+    },
+    [
+      currentPage,
+      searchTerm,
+      pendingFaculties,
+      pendingDegrees,
+      pendingCourses,
+      isEvenSemester,
+      showOnlyAvailable,
+      selectedSorting,
+      eduDegrees,
+    ]
+  )
 
   useEffect(() => {
     fetchFilteredData(1)
@@ -185,15 +203,15 @@ export const AdminCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
-      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
-      const specData = await (await fetch('http://185.237.207.78:5000/api/Filter/specialities')).json()
-      const groupData = await (await fetch('http://185.237.207.78:5000/api/Filter/groups')).json()
+      const facData = await (
+        await fetch('http://185.237.207.78:5000/api/Faculty')
+      ).json()
+      const eduData = await (
+        await fetch('http://185.237.207.78:5000/api/EducationalDegree')
+      ).json()
 
       setFaculties(facData)
       setEduDegrees(eduData)
-      setSpecialities(specData)
-      setGroupes(groupData)
 
       fetchFilteredData(1)
     }
@@ -207,11 +225,11 @@ export const AdminCatalogue = () => {
   }
 
   const columns: Column[] = [
-    { header: 'ПІБ студента', accessor: 'nameStudent' },
-    { header: 'Факультет', accessor: 'facultyAbbreviation' },
-    { header: 'Cпеціальність', accessor: 'speciality' },
-    { header: 'Рівень освіти', accessor: 'degreeName' },
-    { header: 'Курс', accessor: 'course' },
+    { header: 'Факультет', accessor: 'faculty' },
+    { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
+    { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
+    { header: 'Кількість студентів', accessor: 'studentCount' },
+    { header: 'Рівень освіти', accessor: 'degreeLevelName' },
   ]
 
   return (
@@ -219,16 +237,17 @@ export const AdminCatalogue = () => {
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4">
           <FilterBox
-            name="Спеціальність"
-            options={specialities}
+            name="Тільки доступні дисципліни"
+            options={[{ name: 'Тільки доступні' }]}
             accessor="name"
-            selectedValues={pendingSpecialities}
-            onChange={setPendingSpecialities}
+            selectedValues={showOnlyAvailable}
+            onChange={setShowOnlyAvailable}
           />
           <FilterBox
             name="Факультет"
             options={faculties}
-            accessor="abbreviation"
+            accessor="idFaculty"
+            valueName="abbreviation"
             selectedValues={pendingFaculties}
             onChange={setPendingFaculties}
           />
@@ -247,11 +266,24 @@ export const AdminCatalogue = () => {
             onChange={setPendingCourses}
           />
           <FilterBox
-            name="Групи"
-            options={groupes}
-            accessor="code"
-            selectedValues={pendingGroupes}
-            onChange={setPendingGroupes}
+            name="Парний семестр"
+            options={[
+              { label: 'Так', value: true },
+              { label: 'Ні', value: false },
+            ]}
+            accessor="label"
+            selectedValues={
+              isEvenSemester === null
+                ? []
+                : [isEvenSemester ? 'Так' : 'Ні']
+            }
+            onChange={(selected) => {
+              if (selected.includes('Так'))
+                setIsEvenSemester(true)
+              else if (selected.includes('Ні'))
+                setIsEvenSemester(false)
+              else setIsEvenSemester(null)
+            }}
           />
         </div>
         <button
@@ -264,10 +296,10 @@ export const AdminCatalogue = () => {
 
       <main className="sm:w-4/5 w-full">
         <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 justify-between">
-          <div className="w-300 flex gap-2">
+          <div className="w-150 flex gap-2">
             <input
               type="text"
-              placeholder="Пошук студента..."
+              placeholder="Пошук дисципліни..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -279,6 +311,7 @@ export const AdminCatalogue = () => {
               Пошук
             </button>
           </div>
+          <GoToPageButton/>
           <select
             value={selectedSorting}
             onChange={(e) => {
@@ -297,7 +330,7 @@ export const AdminCatalogue = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <DataTable columns={columns} data={students} />
+          <DataTable columns={columns} data={disciplines} />
           <Pagination
             totalPages={totalPages}
             currentPage={currentPage}
@@ -310,5 +343,6 @@ export const AdminCatalogue = () => {
       </main>
     </div>
   )
-}
+})
+
 

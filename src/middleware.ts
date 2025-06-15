@@ -12,7 +12,7 @@ export default function middleware(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    const protectedRoutes = ['/cabinet', '/catalogue',"/disciplines","/stud_catalogue.tsx"]
+    const protectedRoutes = ['/cabinet', '/catalogue',"/disciplines","/stud_disciplines_catalogue.tsx"]
     if (protectedRoutes.some((route) => pathname.startsWith(route)) && !studentProfile) {
         url.pathname = '/login'
         return NextResponse.redirect(url)
