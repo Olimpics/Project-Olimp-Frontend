@@ -11,7 +11,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "@tanstack/react-table": "^8.21.3",
-    "axios": "^1.9.0",
+    "axios": "^1.10.0",
     "clsx": "^2.1.1",
     "js-cookie": "^3.0.5",
     "next": "15.3.2",
@@ -19,6 +19,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.4",
+    "react-router-dom": "^7.6.2",
     "yup": "^1.6.1"
   },
   "devDependencies": {

@@ -11,7 +11,7 @@ type Discipline = {
   idAddDisciplines: number
   nameAddDisciplines: string
   codeAddDisciplines: string
-  faculty: string
+  facultyAbbreviation: string
   degreeLevelName: string
   countOfPeople: number
   maxCountPeople: number
@@ -225,7 +225,7 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
   }
 
   const columns: Column[] = [
-    { header: 'Факультет', accessor: 'faculty' },
+    { header: 'Факультет', accessor: 'facultyAbbreviation' },
     { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
     { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
     { header: 'Кількість студентів', accessor: 'studentCount' },

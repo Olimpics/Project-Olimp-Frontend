@@ -5,7 +5,7 @@ export const getCookie = (key: any) => {
 }
 
 export const setCookie = (key: string, value: string) => {
-    Cookies.set(key, JSON.stringify(value))
+    Cookies.set(key, value)
 }
 
 export const deleteCookie = (key: string) => {

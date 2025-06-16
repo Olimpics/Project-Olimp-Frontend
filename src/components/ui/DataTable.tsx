@@ -21,7 +21,6 @@ const DataTable = <T extends Record<string, any>>({
     columns,
     data,
     isActionEnabled,
-    onClick,
     emptyMessage = 'Нічого не знайдено',
     onDelete,
     onEdit,
@@ -30,6 +29,10 @@ const DataTable = <T extends Record<string, any>>({
 
     const toggleDropdown = (index: number) => {
         setOpenRowIndex((prev) => (prev === index ? null : index))
+    }
+
+    const onClick = (key: any) => {
+        window.open(`/discipline/${key.idAddDisciplines}`)
     }
 
     return (
@@ -58,7 +61,7 @@ const DataTable = <T extends Record<string, any>>({
                                     onClick(row)
                                 }}
                                 key={rowIndex}
-                                className="hover:bg-gray-50 relative"
+                                className="hover:bg-gray-50 relative cursor-pointer"
                             >
                                 {columns.map((col) => (
                                     <td
