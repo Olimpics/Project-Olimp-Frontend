@@ -8,6 +8,9 @@ import { StudentDisciplinesCatalogue } from '@/app/(app)/catalogue/stud_catalogu
 import { AdminDisciplinesCatalogue } from '@/app/(app)/catalogue/admin_catalogues/admin_disciplines_catalogue'
 import { AdminFacultyCatalogue } from '@/app/(app)/catalogue/admin_catalogues/admin_faculty_catalogue'
 import { AdminDepartmentCatalogue } from '@/app/(app)/catalogue/admin_catalogues/admin_cath_catalogue'
+import { AdminEducationalProgramCatalogue } from '@/app/(app)/catalogue/admin_catalogues/admin_group_catalogue';
+import { AdminGroupsCatalogue } from '@/app/(app)/catalogue/admin_catalogues/admin_un_groups';
+import { AdminBindLoansPage } from '@/app/(app)/catalogue/admin_catalogues/admin_bounded_catalogue';
 
 const Page = () => {
     const [activeTab, setActiveTab] = useState(1)
@@ -40,6 +43,18 @@ const Page = () => {
         else if (activeTab === 4) {
           return <AdminDepartmentCatalogue />
         }
+        else if (activeTab === 5) {
+            return <AdminEducationalProgramCatalogue />
+        }
+        else if (activeTab === 6) {
+            return <AdminEducationalProgramCatalogue />
+        }
+        else if (activeTab === 7) {
+            return <AdminGroupsCatalogue />
+        }
+        else if (activeTab === 8) {
+            return <AdminBindLoansPage />
+        }
         return <div>Невірна вкладка</div>
     }
 
@@ -50,48 +65,88 @@ const Page = () => {
     return (
         <div>
             {roleId === '2' && (
-                <div className="flex justify-center mb-6 border-b border-gray-300">
-                    <button
-                        onClick={() => setActiveTab(1)}
-                        className={`px-6 py-3 text-lg font-semibold ${
-                            activeTab === 1
-                                ? 'border-b-4 border-blue-600 text-blue-600'
-                                : 'text-gray-600 hover:text-blue-500'
-                        }`}
-                    >
-                        Дисципліни
-                    </button>
-                    <button
-                        onClick={() => setActiveTab(2)}
-                        className={`px-6 py-3 text-lg font-semibold ${
-                            activeTab === 2
-                                ? 'border-b-4 border-blue-600 text-blue-600'
-                                : 'text-gray-600 hover:text-blue-500'
-                        }`}
-                    >
-                        Студенти
-                    </button>
-                    <button
-                        onClick={() => setActiveTab(3)}
-                        className={`px-6 py-3 text-lg font-semibold ${
-                            activeTab === 3
-                                ? 'border-b-4 border-blue-600 text-blue-600'
-                                : 'text-gray-600 hover:text-blue-500'
-                        }`}
-                    >
-                        Факультети
-                    </button>
-                    <button
-                        onClick={() => setActiveTab(4)}
-                        className={`px-6 py-3 text-lg font-semibold ${
-                            activeTab === 4
-                                ? 'border-b-4 border-blue-600 text-blue-600'
-                                : 'text-gray-600 hover:text-blue-500'
-                        }`}
-                    >
-                        Кафедра
-                    </button>
-                </div>
+              <div className="flex justify-center mb-6 border-b border-gray-300">
+                  <button
+                    onClick={() => setActiveTab(1)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 1
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Дисципліни
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(2)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 2
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Студенти
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(3)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 3
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Факультети
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(4)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 4
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Кафедра
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(5)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 5
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Програма
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(6)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 6
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Спеціальності
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(7)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 7
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                      Групи
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(8)}
+                    className={`px-6 py-3 text-lg font-semibold ${
+                      activeTab === 8
+                        ? 'border-b-4 border-blue-600 text-blue-600'
+                        : 'text-gray-600 hover:text-blue-500'
+                    }`}
+                  >
+                     Зв'язні групи
+                  </button>
+              </div>
             )}
 
             {renderContent()}

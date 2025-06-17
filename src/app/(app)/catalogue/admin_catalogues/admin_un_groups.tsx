@@ -5,14 +5,15 @@ import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 
-type Student = {
-  idStudents: number
-  nameStudent: string
-  facultyAbbreviation: string
-  speciality: string
-  degreeName: string
-  groupName: string
+type Group = {
+  id: number
+  code: string
+  facultyName: string
+  departmentName: string
+  specialityName: string
+  educationalDegree: string
   course: number
+  studentsCount: number
 }
 
 type Faculty = {
@@ -21,35 +22,35 @@ type Faculty = {
   abbreviation: string
 }
 
+type Department = {
+  idDepartment: number
+  nameDepartment: string
+  abbreviation: string
+  facultyName: string
+}
+
 type EduDegree = {
   idEducationalDegree: number
   nameEducationalDegreec: string
 }
 
-type Courses = {
-  courseNumber: number
-}
-
-type Specialities = {
+type Speciality = {
   id: number
   name: string
 }
 
-type Groupes = {
-  id: number
-  code: string
-}
-
 interface Column {
   header: string
-  accessor: keyof Student
+  accessor: keyof Group
 }
 
 const sortingOptions = [
-  { label: 'Алфавіт (А-Я)', value: 0 },
-  { label: 'Алфавіт (Я-А)', value: 1 },
-  { label: 'Факультет (↑)', value: 2 },
-  { label: 'Факультет (↓)', value: 3 },
+  { label: 'Код групи (А-Я)', value: 0 },
+  { label: 'Код групи (Я-А)', value: 1 },
+  { label: 'Факультет (А-Я)', value: 2 },
+  { label: 'Факультет (Я-А)', value: 3 },
+  { label: 'Курс (↑)', value: 4 },
+  { label: 'Курс (↓)', value: 5 },
 ]
 
 const Pagination: React.FC<{
@@ -96,35 +97,28 @@ const Pagination: React.FC<{
   )
 }
 
-
-export const AdminStudentCatalogue = () => {
-  const [students, setStudents] = useState<Student[]>([])
+export const AdminGroupsCatalogue = () => {
+  const [groups, setGroups] = useState<Group[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
-  const [specialities, setSpecialities] = useState<Specialities[]>([])
-  const [pendingSpecialities, setPendingSpecialities] = useState<string[]>([])
-  const [groupes, setGroupes] = useState<Groupes[]>([])
-  const [pendingGroupes, setPendingGroupes] = useState<string[]>([])
-  const [courses] = useState<Courses[]>([
-    { courseNumber: 1 },
-    { courseNumber: 2 },
-    { courseNumber: 3 },
-    { courseNumber: 4 },
-  ])
-  console.log(`studentsstudents`,students)
+  const [courses] = useState<number[]>([1, 2, 3, 4])
+
+  // Filter states
   const [searchTerm, setSearchTerm] = useState('')
-  const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
-  const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
-  const [pendingCourses, setPendingCourses] = useState<string[]>([])
+  const [selectedFaculties, setSelectedFaculties] = useState<number[]>([])
+  const [selectedDepartments, setSelectedDepartments] = useState<number[]>([])
+  const [selectedDegrees, setSelectedDegrees] = useState<number[]>([])
+  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
   const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Состояния для модального окна
+  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalType, setModalType] = useState<'edit' | 'delete' | null>(null)
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
 
   const fetchFilteredData = useCallback(async (page: number = currentPage) => {
     const query = new URLSearchParams({
@@ -134,55 +128,37 @@ export const AdminStudentCatalogue = () => {
       sortOrder: selectedSorting.toString()
     })
 
-    if (pendingFaculties.length > 0) {
-      query.append("faculties", pendingFaculties.join(","))
+    if (selectedFaculties.length > 0) {
+      query.append("facultyIds", selectedFaculties.join(","))
     }
 
-    const degreeIds = eduDegrees
-      .filter((d) => pendingDegrees.includes(d.nameEducationalDegreec))
-      .map((d) => d.idEducationalDegree)
-
-    if (degreeIds.length > 0) {
-      query.append("degreeLevelIds", degreeIds.join(","))
+    if (selectedDepartments.length > 0) {
+      query.append("departmentIds", selectedDepartments.join(","))
     }
 
-    if (pendingCourses.length > 0) {
-      query.append("courses", pendingCourses.join(","))
+    if (selectedDegrees.length > 0) {
+      query.append("degreeLevelIds", selectedDegrees.join(","))
     }
 
-    if (pendingSpecialities.length > 0) {
-      query.append("speciality", pendingSpecialities.join(","))
-    }
-
-    if (pendingGroupes.length > 0) {
-      const selectedGroupIds = groupes
-        .filter((g) => pendingGroupes.includes(g.code))
-        .map((g) => g.id)
-
-      if (selectedGroupIds.length > 0) {
-        query.append("group", selectedGroupIds.join(","))
-      }
+    if (selectedCourses.length > 0) {
+      query.append("courses", selectedCourses.join(","))
     }
 
     const res = await fetch(
-      `http://185.237.207.78:5000/api/Student?${query.toString()}`
+      `http://185.237.207.78:5000/api/University/groups?${query.toString()}`
     )
     const data = await res.json()
 
-    const formatted = (data.students || []).map((d: Student) => ({ ...d }))
-
-    setStudents(formatted)
-    setTotalPages(data.totalPages || 1)
+    setGroups(data || []) // Изменено, так как API возвращает массив групп напрямую
+    setTotalPages(Math.ceil(data.length / 17) || 1) // Простая пагинация
   }, [
     currentPage,
     searchTerm,
-    pendingFaculties,
-    pendingDegrees,
-    pendingCourses,
-    pendingSpecialities,
-    selectedSorting,
-    eduDegrees,
-    pendingGroupes
+    selectedFaculties,
+    selectedDepartments,
+    selectedDegrees,
+    selectedCourses,
+    selectedSorting
   ])
 
   useEffect(() => {
@@ -192,14 +168,12 @@ export const AdminStudentCatalogue = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
+      const deptData = await (await fetch('http://185.237.207.78:5000/api/Department?page=1&pageSize=50')).json()
       const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
-      const specData = await (await fetch('http://185.237.207.78:5000/api/Filter/specialities')).json()
-      const groupData = await (await fetch('http://185.237.207.78:5000/api/Filter/groups')).json()
 
       setFaculties(facData)
+      setDepartments(deptData.items || [])
       setEduDegrees(eduData)
-      setSpecialities(specData)
-      setGroupes(groupData)
 
       fetchFilteredData(1)
     }
@@ -212,23 +186,23 @@ export const AdminStudentCatalogue = () => {
     fetchFilteredData(1)
   }
 
-  const handleEdit = (student: Student) => {
-    setSelectedStudent(student)
+  const handleEdit = (group: Group) => {
+    setSelectedGroup(group)
     setModalType('edit')
     setIsModalOpen(true)
   }
 
-  const handleDelete = (student: Student) => {
-    setSelectedStudent(student)
+  const handleDelete = (group: Group) => {
+    setSelectedGroup(group)
     setModalType('delete')
     setIsModalOpen(true)
   }
 
   const confirmDelete = async () => {
-    if (!selectedStudent) return
+    if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://185.237.207.78:5000/api/Student/${selectedStudent.idStudents}`, {
+      const response = await fetch(`http://185.237.207.78:5000/api/University/groups/${selectedGroup.id}`, {
         method: 'DELETE'
       })
 
@@ -236,43 +210,43 @@ export const AdminStudentCatalogue = () => {
         fetchFilteredData(currentPage)
         setIsModalOpen(false)
       } else {
-        console.error('Помилка при видаленні студента')
+        console.error('Помилка при видаленні групи')
       }
     } catch (error) {
-      console.error('Помилка при видаленні студента:', error)
+      console.error('Помилка при видаленні групи:', error)
     }
   }
 
   const saveChanges = async () => {
-    if (!selectedStudent) return
+    if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://185.237.207.78:5000/api/Student/${selectedStudent.idStudents}`, {
+      const response = await fetch(`http://185.237.207.78:5000/api/University/groups/${selectedGroup.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(selectedStudent)
+        body: JSON.stringify(selectedGroup)
       })
 
       if (response.ok) {
         fetchFilteredData(currentPage)
         setIsModalOpen(false)
       } else {
-        console.error('Помилка при оновленні даних студента')
+        console.error('Помилка при оновленні даних групи')
       }
     } catch (error) {
-      console.error('Помилка при оновленні даних студента:', error)
+      console.error('Помилка при оновленні даних групи:', error)
     }
   }
 
   const columns: Column[] = [
-    { header: 'ПІБ студента', accessor: 'nameStudent' },
-    { header: 'Факультет', accessor: 'facultyAbbreviation' },
-    { header: 'Cпеціальність', accessor: 'speciality' },
+    { header: 'Код групи', accessor: 'code' },
+    { header: 'Факультет', accessor: 'facultyName' },
+    { header: 'Кафедра', accessor: 'departmentName' },
     { header: 'Рівень освіти', accessor: 'degreeName' },
     { header: 'Курс', accessor: 'course' },
-
+    { header: 'Кількість студентів', accessor: 'studentsCount' },
   ]
 
   return (
@@ -280,40 +254,37 @@ export const AdminStudentCatalogue = () => {
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4">
           <FilterBox
-            name="Спеціальність"
-            options={specialities}
-            accessor="name"
-            selectedValues={pendingSpecialities}
-            onChange={setPendingSpecialities}
-          />
-          <FilterBox
             name="Факультет"
             options={faculties}
             accessor="idFaculty"
-            valueName="abbreviation"
-            selectedValues={pendingFaculties}
-            onChange={setPendingFaculties}
+            valueName="nameFaculty"
+            searchName="nameFaculty"
+            selectedValues={selectedFaculties}
+            onChange={setSelectedFaculties}
+          />
+          <FilterBox
+            name="Кафедра"
+            options={departments}
+            accessor="idDepartment"
+            valueName="nameDepartment"
+            selectedValues={selectedDepartments}
+            onChange={setSelectedDepartments}
           />
           <FilterBox
             name="Рівень освіти"
             options={eduDegrees}
-            accessor="nameEducationalDegreec"
-            selectedValues={pendingDegrees}
-            onChange={setPendingDegrees}
+            accessor="idEducationalDegree"
+            valueName="nameEducationalDegreec"
+            selectedValues={selectedDegrees}
+            onChange={setSelectedDegrees}
           />
           <FilterBox
             name="Курс"
-            options={courses}
-            accessor="courseNumber"
-            selectedValues={pendingCourses}
-            onChange={setPendingCourses}
-          />
-          <FilterBox
-            name="Групи"
-            options={groupes}
-            accessor="code"
-            selectedValues={pendingGroupes}
-            onChange={setPendingGroupes}
+            options={courses.map(c => ({ id: c, name: c.toString() }))}
+            accessor="id"
+            valueName="name"
+            selectedValues={selectedCourses}
+            onChange={setSelectedCourses}
           />
         </div>
         <button
@@ -329,7 +300,7 @@ export const AdminStudentCatalogue = () => {
           <div className="w-300 flex gap-2">
             <input
               type="text"
-              placeholder="Пошук студента..."
+              placeholder="Пошук групи..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -364,7 +335,7 @@ export const AdminStudentCatalogue = () => {
             onDelete={handleDelete}
             isActionEnabled={true}
             columns={columns}
-            data={students}
+            data={groups}
           />
           <Pagination
             totalPages={totalPages}
@@ -378,27 +349,32 @@ export const AdminStudentCatalogue = () => {
       </main>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        {modalType === 'edit' && selectedStudent && (
+        {modalType === 'edit' && selectedGroup && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Редагування студента</h2>
+            <h2 className="text-xl font-bold mb-4">Редагування групи</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">ПІБ студента</label>
+                <label className="block text-sm font-medium text-gray-700">Код групи</label>
                 <input
                   type="text"
-                  value={selectedStudent.nameStudent}
-                  onChange={(e) => setSelectedStudent({...selectedStudent, nameStudent: e.target.value})}
+                  value={selectedGroup.code}
+                  onChange={(e) => setSelectedGroup({...selectedGroup, code: e.target.value})}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Факультет</label>
-                <input
-                  type="text"
-                  value={selectedStudent.facultyAbbreviation}
-                  onChange={(e) => setSelectedStudent({...selectedStudent, facultyAbbreviation: e.target.value})}
+                <select
+                  value={selectedGroup.facultyId}
+                  onChange={(e) => setSelectedGroup({...selectedGroup, facultyId: Number(e.target.value)})}
                   className="w-full p-2 border border-gray-300 rounded-md"
-                />
+                >
+                  {faculties.map(faculty => (
+                    <option key={faculty.idFaculty} value={faculty.idFaculty}>
+                      {faculty.nameFaculty}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex justify-end space-x-2">
                 <button
@@ -418,10 +394,10 @@ export const AdminStudentCatalogue = () => {
           </div>
         )}
 
-        {modalType === 'delete' && selectedStudent && (
+        {modalType === 'delete' && selectedGroup && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Видалення студента</h2>
-            <p>Ви впевнені, що хочете видалити студента {selectedStudent.nameStudent}?</p>
+            <h2 className="text-xl font-bold mb-4">Видалення групи</h2>
+            <p>Ви впевнені, що хочете видалити групу {selectedGroup.code}?</p>
             <div className="flex justify-end space-x-2 mt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
