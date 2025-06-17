@@ -97,23 +97,6 @@ const Pagination: React.FC<{
     )
 }
 
-const GoToPageButton = () => {
-    const router = useRouter()
-
-    const handleClick = () => {
-        router.push('/disciplines')
-    }
-
-    return (
-        <button
-            onClick={handleClick}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-            Перейти до вибору дисциплін
-        </button>
-    )
-}
-
 export const AdminDisciplinesCatalogue = React.memo(() => {
     const [disciplines, setDisciplines] = useState<Discipline[]>([])
     const [faculties, setFaculties] = useState<Faculty[]>([])
@@ -126,6 +109,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     ])
 
     const [searchTerm, setSearchTerm] = useState('')
+    const [roleId, setRoleId] = useState('')
     const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
     const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
     const [pendingCourses, setPendingCourses] = useState<string[]>([])
@@ -145,6 +129,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             const studentRaw = getCookie(USER_PROFLE)
 
             const student = JSON.parse(studentRaw)
+
+            setRoleId(student.roleId)
 
             const query = new URLSearchParams({
                 pageSize: '17',
@@ -327,7 +313,6 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                             Пошук
                         </button>
                     </div>
-                    <GoToPageButton />
                     <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                         Експорт
                     </button>
