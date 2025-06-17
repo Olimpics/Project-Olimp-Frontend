@@ -10,6 +10,8 @@ type FilterBoxProps<T> = {
   onChange: (selected: string[]) => void
   collapsible?: boolean
   valueName?: string
+  searchName?: string
+
 }
 
 export const FilterBox = <T extends Record<string, any>>({
@@ -20,6 +22,7 @@ export const FilterBox = <T extends Record<string, any>>({
   onChange,
   valueName,
   collapsible = true,
+  searchName
 }: FilterBoxProps<T>) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState('')
@@ -33,10 +36,18 @@ export const FilterBox = <T extends Record<string, any>>({
     }
   }
 
-  const filteredOptions = options.filter((option) =>
-    String(option[accessor]).toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
+  const filteredOptions = options.filter((option) => {
+    if (searchName) {
+      return String(option[searchName])
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    } else {
+      return String(option[accessor])
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    }
+  })
+  console.log(`filteredOptions`, filteredOptions)
   return (
     <div className="pb-3">
       <h2
