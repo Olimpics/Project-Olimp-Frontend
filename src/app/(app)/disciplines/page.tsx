@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { useRouter } from 'next/navigation'
-import { apiService } from '@/services/axiosService' 
+import { apiService } from '@/services/axiosService'
 
 interface Discipline {
   id_disp: number
@@ -14,9 +14,14 @@ interface Discipline {
 
 const GoToPageButton = () => {
   const router = useRouter()
+
   return (
     <button
-      onClick={() => router.push('/catalogue')}
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        router.push('/catalogue')
+      }}
       className="mt-4 px-6 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:shadow-xl transition duration-300"
     >
       Перейти до каталогу дисциплін
@@ -28,56 +33,25 @@ const SearchInput: React.FC<{
   index: number
   selectedItems: string[]
   setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>
-  setDisciplineData: React.Dispatch<React.SetStateAction<Discipline[]>>
-}> = ({ index, selectedItems, setSelectedItems, setDisciplineData }) => {
+  disciplineOptions: Discipline[]
+}> = ({ index, selectedItems, setSelectedItems, disciplineOptions }) => {
   const [searchValue, setSearchValue] = useState('')
-  const [allDisciplines, setAllDisciplines] = useState<Discipline[]>([])
   const [filteredItems, setFilteredItems] = useState<Discipline[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
 
   useEffect(() => {
-    const fetchDisciplines = async () => {
-      try {
-        const studentDataRaw = getCookie(USER_PROFLE)
-        if (!studentDataRaw) {
-          console.error('No student profile found in cookies')
-          return
-        }
-
-        const student = JSON.parse(studentDataRaw)
-        const isEvenSemester = index >= 2
-
-        const data = await apiService.get<any>(
-          `DisciplineTab/GetDisciplinesBySemester?studentId=${student.id}&isEvenSemester=${isEvenSemester}`
-        )
-
-        const parsed = data.disciplines.map((d: any) => ({
-          id_disp: d.idAddDisciplines,
-          name_disp: `${d.codeAddDisciplines} ${d.nameAddDisciplines}`,
-          semester_disp: isEvenSemester,
-        }))
-
-        setAllDisciplines(parsed)
-        setFilteredItems(parsed)
-
-        setDisciplineData((prev) => {
-          const newIds = new Set(parsed.map((d) => d.id_disp))
-          const filtered = prev.filter((d) => !newIds.has(d.id_disp))
-          return [...filtered, ...parsed]
-        })
-      } catch (error) {
-        console.error('Failed to fetch disciplines:', error)
-      }
-    }
-
-    fetchDisciplines()
-  }, [index, setDisciplineData])
+    const filtered = disciplineOptions.filter(
+      (d) =>
+        !selectedItems.includes(d.name_disp) || selectedItems[index] === d.name_disp
+    )
+    setFilteredItems(filtered)
+  }, [disciplineOptions, selectedItems, index])
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase()
     setSearchValue(query)
 
-    const filtered = allDisciplines.filter(
+    const filtered = disciplineOptions.filter(
       (disp) =>
         disp.name_disp.toLowerCase().includes(query) &&
         (!selectedItems.includes(disp.name_disp) || selectedItems[index] === disp.name_disp)
@@ -106,7 +80,7 @@ const SearchInput: React.FC<{
           value={searchValue}
           onChange={handleSearch}
           onFocus={() => {
-            const filtered = allDisciplines.filter(
+            const filtered = disciplineOptions.filter(
               (disp) =>
                 !selectedItems.includes(disp.name_disp) || selectedItems[index] === disp.name_disp
             )
@@ -143,21 +117,42 @@ const SearchInput: React.FC<{
 
 const Page: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>(['', '', '', ''])
-  const [disciplineData, setDisciplineData] = useState<Discipline[]>([])
   const [studentId, setStudentId] = useState<number | null>(null)
+  const [oddDisciplines, setOddDisciplines] = useState<Discipline[]>([])
+  const [evenDisciplines, setEvenDisciplines] = useState<Discipline[]>([])
 
   useEffect(() => {
-    const raw = getCookie(USER_PROFLE)
-    if (!raw) {
-      console.error('Student profile missing')
-      return
+    const loadData = async () => {
+      const raw = getCookie(USER_PROFLE)
+      if (!raw) {
+        console.error('Student profile missing')
+        return
+      }
+
+      try {
+        const parsed = JSON.parse(raw)
+        setStudentId(parsed.idStudents)
+
+        const [oddData, evenData] = await Promise.all([
+          apiService.get<Discipline>(`DisciplineTab/GetDisciplinesBySemester?studentId=${parsed.id}&isEvenSemester=false`),
+          apiService.get<Discipline>(`DisciplineTab/GetDisciplinesBySemester?studentId=${parsed.id}&isEvenSemester=true`)
+        ])
+
+        const parseData = (data: any, isEven: boolean): Discipline[] =>
+          data.disciplines.map((d: any) => ({
+            id_disp: d.idAddDisciplines,
+            name_disp: `${d.codeAddDisciplines} ${d.nameAddDisciplines}`,
+            semester_disp: isEven
+          }))
+
+        setOddDisciplines(parseData(oddData, false))
+        setEvenDisciplines(parseData(evenData, true))
+      } catch (error) {
+        console.error('Error loading disciplines:', error)
+      }
     }
-    try {
-      const parsed = JSON.parse(raw)
-      setStudentId(parsed.idStudents)
-    } catch (error) {
-      console.error('Invalid profile JSON:', error)
-    }
+
+    loadData()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,8 +162,10 @@ const Page: React.FC = () => {
       return
     }
 
+    const allDisciplines = [...oddDisciplines, ...evenDisciplines]
+
     const selectedDisciplines = selectedItems
-      .map((name) => disciplineData.find((d) => d.name_disp === name))
+      .map((name) => allDisciplines.find((d) => d.name_disp === name))
       .filter((d): d is Discipline => Boolean(d))
 
     for (const discipline of selectedDisciplines) {
@@ -208,7 +205,7 @@ const Page: React.FC = () => {
               index={index}
               selectedItems={selectedItems}
               setSelectedItems={setSelectedItems}
-              setDisciplineData={setDisciplineData}
+              disciplineOptions={index >= 2 ? evenDisciplines : oddDisciplines}
             />
           </div>
         ))}

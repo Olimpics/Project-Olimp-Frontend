@@ -19,51 +19,70 @@ const headerLinks = [
   { name: 'Logout', link: ROUTES.mainpage }
 ]
 
+const headerLinksUnlogin = [
+  { name: 'Project Olimp', link: ROUTES.mainpage }
+]
+
 interface Notification {
   idNotification: number
   title: string
   message: string
 }
 
-const headerLinksUnlogin = [
-  { name: 'Project Olimp', link: ROUTES.mainpage }
-]
-
 export const Navigation: FunctionComponent = () => {
   const pathname = usePathname()
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isNotificationFetch, setIsNotificationFetch] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [userId, setUserId] = useState<number | null>(null)
 
   useEffect(() => {
     const init = async () => {
-      const studentProfile = getCookie(USER_PROFLE)
+      const studentProfileString = getCookie(USER_PROFLE)
 
-      const studentProfileParsed = JSON.parse(studentProfile)
-
-      if (studentProfile) {
-        setIsLoggedIn(true)
-
-        try {
-          const res = await fetch(`http://185.237.207.78:5000/api/Notification/user/${studentProfileParsed.userId}?includeRead=false`)
-          const data = await res.json()
-
-          if (Array.isArray(data)) {
-            setIsNotificationFetch(data)
-          } else if (Array.isArray(data.notifications)) {
-            setIsNotificationFetch(data.notifications)
-          } else {
-            console.warn('Unexpected notification format', data)
-            setIsNotificationFetch([])
-          }
-        } catch (error) {
-          console.error('Failed to fetch notifications', error)
-          setIsNotificationFetch([])
-        }
-      } else {
+      if (!studentProfileString) {
         setIsLoggedIn(false)
-        setIsNotificationFetch([])
+        setNotifications([])
+        setUserId(null)
+        return
+      }
+
+      try {
+        const studentProfile = JSON.parse(studentProfileString)
+        const uid = studentProfile?.userId
+
+        if (uid) {
+          setIsLoggedIn(true)
+          setUserId(uid)
+
+          try {
+            const res = await fetch(`http://185.237.207.78:5000/api/Notification/user/${uid}?isRead=false`)
+            const data = await res.json()
+
+            if (Array.isArray(data)) {
+              setNotifications(data)
+            } else if (Array.isArray(data.notifications)) {
+              setNotifications(data.notifications)
+            } else {
+              console.warn('Unexpected notification format', data)
+              setNotifications([])
+            }
+          } catch (error) {
+            console.error('Failed to fetch notifications', error)
+            setNotifications([])
+          }
+        } else {
+          setIsLoggedIn(false)
+          setNotifications([])
+          setUserId(null)
+        }
+      } catch (err) {
+        console.error('Error parsing student profile cookie:', err)
+        setIsLoggedIn(false)
+        setNotifications([])
+        setUserId(null)
       }
     }
 
@@ -83,6 +102,9 @@ export const Navigation: FunctionComponent = () => {
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault()
+    if (userId !== null) {
+      localStorage.removeItem(`${userId}_permissions`)
+    }
     Cookies.remove(USER_PROFLE)
     window.dispatchEvent(new Event('student-auth-changed'))
     router.push(ROUTES.mainpage)
@@ -97,22 +119,14 @@ export const Navigation: FunctionComponent = () => {
         <Link
           key={ROUTES.mainpage}
           href={ROUTES.mainpage}
-          className={clsx(
-            'flex items-center font-medium rounded-3xl bg-white py-1 px-3 text-main',
-          )}
+          className='flex items-center font-medium rounded-3xl bg-white py-1 px-3 text-main'
         >
           Project Olimp
         </Link>
 
         <div className="flex">
           <NotificationSvg
-            notifications={Array.isArray(isNotificationFetch)
-              ? isNotificationFetch.map(n => ({
-                  idNotification: n.idNotification,
-                  title: n.title,
-                  message: n.message,
-                }))
-              : []}
+            notifications={notifications}
           />
 
           <nav className="gap-10 flex m0 px-5">

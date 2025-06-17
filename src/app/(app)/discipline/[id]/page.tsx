@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 
 interface DisciplineDetails {
   idAddDisciplines: number;
@@ -33,7 +33,7 @@ interface Params {
 }
 
 export default function ProductPage({ params }: Params) {
-  const { id } = params;
+  const { id } = use(params);
   const [discipline, setDiscipline] = useState<DisciplineDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

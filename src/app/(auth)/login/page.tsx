@@ -50,7 +50,12 @@ export default function LoginPage() {
       setToken(result_auth.token)
 
       const final = await apiService.get<StudentProfile>('/Auth/AuthChecker')
-      setCookie(USER_PROFLE, JSON.stringify(final))
+
+      localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(final.permissions))
+
+      const { permissions, ...finalWithoutPermissions } = final
+
+      setCookie(USER_PROFLE, JSON.stringify(finalWithoutPermissions))
       console.log(getCookie(USER_PROFLE))
 
       window.dispatchEvent(new Event('student-auth-changed'))

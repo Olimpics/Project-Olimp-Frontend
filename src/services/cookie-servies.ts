@@ -5,6 +5,8 @@ export const getCookie = (key: any) => {
 }
 
 export const setCookie = (key: string, value: string) => {
+    const size = encodeURIComponent(`${key}=${value}`).length
+    console.log(size)
     Cookies.set(key, value)
 }
 

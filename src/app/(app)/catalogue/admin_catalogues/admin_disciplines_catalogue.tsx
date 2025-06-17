@@ -180,11 +180,11 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             }
 
             const res = await fetch(
-                `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplines?${query.toString()}`
+                `http://185.237.207.78:5000/api/AddDiscipline/GetAllDisciplines?${query.toString()}`
             )
             const data = await res.json()
 
-            const formatted = (data.disciplines || []).map((d: Discipline) => ({
+            const formatted = (data.items || []).map((d: Discipline) => ({
                 ...d,
                 studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
             }))
@@ -242,7 +242,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
         setIsModalOpen(true)
     }
     const columns: Column[] = [
-        { header: 'Факультет', accessor: 'faculty' },
+        { header: 'Факультет', accessor: 'facultyAbbreviation' },
         { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
         { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
         { header: 'Кількість студентів', accessor: 'studentCount' },

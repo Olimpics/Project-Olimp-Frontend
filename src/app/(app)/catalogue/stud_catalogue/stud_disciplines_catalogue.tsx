@@ -41,10 +41,10 @@ interface Column {
 }
 
 const sortingOptions = [
-  { label: 'Алфавіт (А-Я)', value: 0 },
-  { label: 'Алфавіт (Я-А)', value: 1 },
-  { label: 'Учасники (↑)', value: 2 },
-  { label: 'Учасники (↓)', value: 3 },
+  { label: 'Алфавіт (А-Я)', value: 1 },
+  { label: 'Алфавіт (Я-А)', value: 0 },
+  { label: 'Учасники (↑)', value: 3 },
+  { label: 'Учасники (↓)', value: 2 },
 ]
 
 const Pagination: React.FC<{
@@ -197,9 +197,9 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
     ]
   )
 
-  useEffect(() => {
+  /*useEffect(() => {
     fetchFilteredData(1)
-  }, [selectedSorting])
+  }, [selectedSorting])*/
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -318,9 +318,11 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
               const newSort = Number(e.target.value)
               setSelectedSorting(newSort)
               setCurrentPage(1)
+              fetchFilteredData(1)
             }}
             className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
+
             {sortingOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -330,7 +332,15 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
         </div>
 
         <div className="overflow-x-auto">
-          <DataTable columns={columns} data={disciplines} />
+          <DataTable
+              onClick={(el)=>{
+                console.log(el)
+                window.open("/discipline/"+el.idAddDisciplines)
+
+              }}
+              columns={columns}
+              data={disciplines}
+          />
           <Pagination
             totalPages={totalPages}
             currentPage={currentPage}
