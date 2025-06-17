@@ -28,6 +28,11 @@ interface ScheduleItem {
   subject: string
 }
 
+interface AdminRole {
+  idRole: number
+  nameRole: string
+}
+
 const defaultSchedule: ScheduleItem[] = [
   { day: 'Понеділок', time: '08:30 - 10:00', subject: 'Лінійна алгебра' },
   { day: 'Вівторок', time: '10:15 - 11:45', subject: 'Програмування на C#' },
@@ -36,6 +41,7 @@ const defaultSchedule: ScheduleItem[] = [
   { day: 'П’ятниця', time: '16:00 - 17:30', subject: 'Англійська мова' },
 ]
 
+
 export default function Page() {
   const [activeTab, setActiveTab] = useState<'schedule' | 'plan'>('schedule')
   const [planBySemester, setPlanBySemester] = useState<Record<number, DisciplineDto[]>>({})
@@ -43,6 +49,7 @@ export default function Page() {
   const [degreeName, setDegreeName] = useState('')
   const [loadingPlan, setLoadingPlan] = useState(false)
   const [errorPlan, setErrorPlan] = useState<string | null>(null)
+  const [adminRoleName, setAdminRoleName] = useState<string>('')
 
   useEffect(() => {
     const rawProfile = getCookie(USER_PROFLE)
@@ -54,35 +61,52 @@ export default function Page() {
 
     const studentProfile = JSON.parse(rawProfile)
     setStudentName(studentProfile.name)
-    setDegreeName(studentProfile.degreeName || '')
 
     if (studentProfile.roleId === 2) {
-      return
-    }
+      fetchAdminRole(studentProfile)
+    } else {
+      setDegreeName(studentProfile.degreeName || '')
 
-    const fetchPlan = async () => {
-      setLoadingPlan(true)
-      try {
-        const data = await apiService.get<PlanResponse>(
-          `StudentPage/disciplines/by-semester/${studentProfile.id}`
-        )
-        const grouped = Object.fromEntries(
-          Object.entries(data.mainDisciplinesBySemester).map(([key, value]) => [
-            Number(key),
-            value,
-          ])
-        )
-        setPlanBySemester(grouped)
-      } catch (error) {
-        console.error(error)
-        setErrorPlan('Не вдалося завантажити навчальний план')
-      } finally {
-        setLoadingPlan(false)
+      const fetchPlan = async () => {
+        setLoadingPlan(true)
+        try {
+          const data = await apiService.get<PlanResponse>(
+            `StudentPage/disciplines/by-semester/${studentProfile.id}`
+          )
+          const grouped = Object.fromEntries(
+            Object.entries(data.mainDisciplinesBySemester).map(([key, value]) => [
+              Number(key),
+              value,
+            ])
+          )
+          setPlanBySemester(grouped)
+        } catch (error) {
+          console.error(error)
+          setErrorPlan('Не вдалося завантажити навчальний план')
+        } finally {
+          setLoadingPlan(false)
+        }
       }
-    }
 
-    fetchPlan()
+      fetchPlan()
+    }
   }, [])
+
+  const fetchAdminRole = async (studentProfile: any) => {
+    try {
+      const adminFetch = await apiService.get<AdminRole>(`Role/${studentProfile.roleId}`)
+      setAdminRoleName(adminFetch.nameRole)
+    } catch (error) {
+      console.error('Не вдалося завантажити роль адміністратора', error)
+    }
+  }
+
+  useEffect(() => {
+    if (adminRoleName) {
+      setDegreeName(adminRoleName)
+    }
+  }, [adminRoleName])
+
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8">

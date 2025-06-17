@@ -51,11 +51,11 @@ export default function LoginPage() {
 
       const final = await apiService.get<StudentProfile>('/Auth/AuthChecker')
 
-      localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(final.permissions))
+      const userPermissions = await apiService.get<Permission[]>(`Auth/permissions/${final.roleId}`)
 
-      const { permissions, ...finalWithoutPermissions } = final
+      localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(userPermissions))
 
-      setCookie(USER_PROFLE, JSON.stringify(finalWithoutPermissions))
+      setCookie(USER_PROFLE, JSON.stringify(final))
       console.log(getCookie(USER_PROFLE))
 
       window.dispatchEvent(new Event('student-auth-changed'))
