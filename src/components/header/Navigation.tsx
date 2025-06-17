@@ -15,7 +15,17 @@ const headerLinks = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Вибір дисциплін', link: ROUTES.catalogue },
   { name: 'Рейтинги', link: '#' },
+  { name: 'Контакти, інформація', link: '##' },
+  { name: 'Новини', link: '###' },
+  { name: 'Logout', link: ROUTES.mainpage }
+]
+
+const headerLinksAdmin = [
+  { name: 'Особистий кабінет', link: ROUTES.cabinet },
+  { name: 'Каталоги', link: ROUTES.catalogue },
+  { name: 'Рейтинги', link: '#' },
   { name: 'Аналітика', link: '##' },
+  { name: 'Новини', link: '###' },
   { name: 'Logout', link: ROUTES.mainpage }
 ]
 
@@ -37,6 +47,7 @@ export const Navigation: FunctionComponent = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userId, setUserId] = useState<number | null>(null)
+  const [roleId, setRoleId] = useState<number | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -44,21 +55,26 @@ export const Navigation: FunctionComponent = () => {
 
       if (!studentProfileString) {
         setIsLoggedIn(false)
-        setNotifications([])
         setUserId(null)
+        setRoleId(null)
+        setNotifications([])
         return
       }
 
       try {
         const studentProfile = JSON.parse(studentProfileString)
         const uid = studentProfile?.userId
+        const role = studentProfile?.roleId
 
         if (uid) {
           setIsLoggedIn(true)
           setUserId(uid)
+          setRoleId(role ?? null)
 
           try {
-            const res = await fetch(`http://185.237.207.78:5000/api/Notification/user/${uid}?isRead=false`)
+            const res = await fetch(
+              `http://185.237.207.78:5000/api/Notification/user/${uid}?isRead=false`
+            )
             const data = await res.json()
 
             if (Array.isArray(data)) {
@@ -75,28 +91,27 @@ export const Navigation: FunctionComponent = () => {
           }
         } else {
           setIsLoggedIn(false)
-          setNotifications([])
           setUserId(null)
+          setRoleId(null)
+          setNotifications([])
         }
       } catch (err) {
         console.error('Error parsing student profile cookie:', err)
         setIsLoggedIn(false)
-        setNotifications([])
         setUserId(null)
+        setRoleId(null)
+        setNotifications([])
       }
     }
 
     init()
 
-    const handleStorageUpdate = () => init()
-    const handleCustomEvent = () => init()
-
-    window.addEventListener('storage', handleStorageUpdate)
-    window.addEventListener('student-auth-changed', handleCustomEvent)
+    window.addEventListener('storage', init)
+    window.addEventListener('student-auth-changed', init)
 
     return () => {
-      window.removeEventListener('storage', handleStorageUpdate)
-      window.removeEventListener('student-auth-changed', handleCustomEvent)
+      window.removeEventListener('storage', init)
+      window.removeEventListener('student-auth-changed', init)
     }
   }, [])
 
@@ -111,7 +126,11 @@ export const Navigation: FunctionComponent = () => {
     setIsMenuOpen(false)
   }
 
-  const links = isLoggedIn ? headerLinks : headerLinksUnlogin
+  const links = isLoggedIn
+    ? roleId === 2
+      ? headerLinksAdmin
+      : headerLinks
+    : headerLinksUnlogin
 
   return (
     <div className='flex justify-center'>
@@ -125,10 +144,7 @@ export const Navigation: FunctionComponent = () => {
         </Link>
 
         <div className="flex">
-          <NotificationSvg
-            notifications={notifications}
-          />
-
+          <NotificationSvg notifications={notifications} />
           <nav className="gap-10 flex m0 px-5">
             <button onClick={() => setIsMenuOpen(prev => !prev)}>
               <HamburgerSvg className="w-8 h-8 text-white" />
