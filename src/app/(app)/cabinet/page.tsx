@@ -45,31 +45,33 @@ export default function Page() {
   const [errorPlan, setErrorPlan] = useState<string | null>(null)
 
   useEffect(() => {
+    const rawProfile = getCookie(USER_PROFLE)
+
+    if (!rawProfile) {
+      console.error('No student profile found in cookie')
+      return
+    }
+
+    const studentProfile = JSON.parse(rawProfile)
+    setStudentName(studentProfile.name)
+    setDegreeName(studentProfile.degreeName || '')
+
+    if (studentProfile.roleId === 2) {
+      return
+    }
+
     const fetchPlan = async () => {
-      const rawProfile = getCookie(USER_PROFLE)
-
-      if (!rawProfile) {
-        console.error('No student profile found in localStorage')
-        return
-      }
-
-      const studentProfile = JSON.parse(rawProfile)
-
       setLoadingPlan(true)
       try {
         const data = await apiService.get<PlanResponse>(
           `StudentPage/disciplines/by-semester/${studentProfile.id}`
         )
-        setStudentName(data.studentName)
-        setDegreeName(data.degreeName)
-
         const grouped = Object.fromEntries(
           Object.entries(data.mainDisciplinesBySemester).map(([key, value]) => [
             Number(key),
             value,
           ])
         )
-
         setPlanBySemester(grouped)
       } catch (error) {
         console.error(error)
