@@ -114,6 +114,8 @@ export const AdminDepartmentCatalogue = () => {
 
       const res = await fetch(`http://185.237.207.78:5000/api/Department?${query.toString()}`)
 
+      console.log(res)
+
       if (!res.ok) {
         throw new Error('Failed to fetch departments')
       }

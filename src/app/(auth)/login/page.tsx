@@ -55,7 +55,7 @@ export default function LoginPage() {
 
       localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(userPermissions))
 
-      setCookie(USER_PROFLE, JSON.stringify(final))
+      setCookie(USER_PROFLE, JSON.stringify(result_auth))
       console.log(getCookie(USER_PROFLE))
 
       window.dispatchEvent(new Event('student-auth-changed'))

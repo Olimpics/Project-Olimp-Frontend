@@ -122,6 +122,7 @@ export const AdminEducationalProgramCatalogue = () => {
       const profile = JSON.parse(rawProfile)
       setToken(profile.token)
     }
+    console.log(rawProfile)
   }, [])
 
   const fetchPrograms = useCallback(async (page: number = currentPage) => {
