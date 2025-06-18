@@ -1,221 +1,397 @@
 'use client'
+
 import React, { useState, useEffect } from 'react'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
-import { apiService } from '@/services/axiosService' 
+import { apiService } from '@/services/axiosService'
 
+// DTO
 interface DisciplineDto {
-  idBindMainDisciplines: number
-  codeMainDisciplines: string
-  nameBindMainDisciplines: string
-  loans: number
-  formControll?: string
-  semestr: number
-  educationalProgramName: string
+    idBindMainDisciplines: number
+    codeMainDisciplines: string
+    nameBindMainDisciplines: string
+    loans: number
+    formControll?: string
+    semestr: number
 }
-
+interface AdditionalDto {
+    idBindAddDisciplines: number
+    studentId: number
+    studentFullName: string
+    addDisciplinesId: number
+    addDisciplineName: string
+    semestr: number
+    loans: number
+    inProcess: boolean
+}
 interface PlanResponse {
-  studentId: number
-  studentName: string
-  degreeName: string
-  mainDisciplinesBySemester: Record<string, DisciplineDto[]>
-  additionalDisciplinesBySemester: Record<string, any[]>
+    studentId: number
+    studentName: string
+    degreeName: string
+    mainDisciplinesBySemester: Record<string, DisciplineDto[]>
+    additionalDisciplinesBySemester: Record<string, AdditionalDto[]>
+}
+interface EventItem {
+    id: number
+    name: string
+    date: string
+    points: number
 }
 
-interface ScheduleItem {
-  day: string
-  time: string
-  subject: string
-}
-
-interface AdminRole {
-  idRole: number
-  nameRole: string
-}
-
-const defaultSchedule: ScheduleItem[] = [
-  { day: 'Понеділок', time: '08:30 - 10:00', subject: 'Лінійна алгебра' },
-  { day: 'Вівторок', time: '10:15 - 11:45', subject: 'Програмування на C#' },
-  { day: 'Середа', time: '12:00 - 13:30', subject: 'Бази даних' },
-  { day: 'Четвер', time: '14:00 - 15:30', subject: 'Операційні системи' },
-  { day: 'П’ятниця', time: '16:00 - 17:30', subject: 'Англійська мова' },
+// static events
+const staticEvents: EventItem[] = [
+    { id: 1, name: 'Hackathon 2025', date: '2025-05-12', points: 5 },
+    { id: 2, name: 'Workshop AI', date: '2025-06-01', points: 3 },
+    { id: 3, name: 'Open Lecture', date: '2025-06-20', points: 2 },
 ]
 
-
 export default function Page() {
-  const [activeTab, setActiveTab] = useState<'schedule' | 'plan'>('schedule')
-  const [planBySemester, setPlanBySemester] = useState<Record<number, DisciplineDto[]>>({})
-  const [studentName, setStudentName] = useState('')
-  const [degreeName, setDegreeName] = useState('')
-  const [loadingPlan, setLoadingPlan] = useState(false)
-  const [errorPlan, setErrorPlan] = useState<string | null>(null)
-  const [adminRoleName, setAdminRoleName] = useState<string>('')
+    const [activeTab, setActiveTab] = useState<'schedule' | 'plan' | 'events'>(
+        'schedule'
+    )
+    const [selectedDay, setSelectedDay] = useState<string>('Понеділок')
 
-  useEffect(() => {
-    const rawProfile = getCookie(USER_PROFLE)
+    const [mainBySem, setMainBySem] = useState<Record<number, DisciplineDto[]>>(
+        {}
+    )
+    const [addBySem, setAddBySem] = useState<Record<number, AdditionalDto[]>>(
+        {}
+    )
 
-    if (!rawProfile) {
-      console.error('No student profile found in cookie')
-      return
-    }
+    const [studentName, setStudentName] = useState('')
+    const [degreeName, setDegreeName] = useState('')
+    const [specialty, setSpecialty] = useState('')
+    const [course, setCourse] = useState<number | null>(null)
+    const [degreeLevel, setDegreeLevel] = useState('')
 
-    const studentProfile = JSON.parse(rawProfile)
-    setStudentName(studentProfile.name)
-
-    if (studentProfile.roleId === 2) {
-      fetchAdminRole(studentProfile)
-    } else {
-      setDegreeName(studentProfile.degreeName || '')
-
-      const fetchPlan = async () => {
-        setLoadingPlan(true)
-        try {
-          const data = await apiService.get<PlanResponse>(
-            `StudentPage/disciplines/by-semester/${studentProfile.id}`
-          )
-          const grouped = Object.fromEntries(
-            Object.entries(data.mainDisciplinesBySemester).map(([key, value]) => [
-              Number(key),
-              value,
-            ])
-          )
-          setPlanBySemester(grouped)
-        } catch (error) {
-          console.error(error)
-          setErrorPlan('Не вдалося завантажити навчальний план')
-        } finally {
-          setLoadingPlan(false)
+    // static schedule
+    const defaultSchedule: Record<string, { time: string; subject: string }[]> =
+        {
+            Понеділок: [
+                { time: '08:30 - 10:00', subject: 'Лінійна алгебра' },
+                { time: '10:15 - 11:45', subject: 'Програмування на C#' },
+            ],
+            Вівторок: [{ time: '12:00 - 13:30', subject: 'Бази даних' }],
+            Середа: [{ time: '14:00 - 15:30', subject: 'Операційні системи' }],
+            Четвер: [{ time: '16:00 - 17:30', subject: 'Англійська мова' }],
+            'П’ятниця': [],
         }
-      }
+    const days = Object.keys(defaultSchedule)
 
-      fetchPlan()
-    }
-  }, [])
+    useEffect(() => {
+        const raw = getCookie(USER_PROFLE)
+        if (!raw) return
+        const prof = JSON.parse(raw)
+        console.log(prof)
+        setStudentName(prof.name)
+        setDegreeName(prof.nameFaculty)
+        setSpecialty(prof.speciality || '')
+        setCourse(prof.course || null)
+        setDegreeLevel(prof.degreeLevel || '-')
 
-  const fetchAdminRole = async (studentProfile: any) => {
-    try {
-      const adminFetch = await apiService.get<AdminRole>(`Role/${studentProfile.roleId}`)
-      setAdminRoleName(adminFetch.nameRole)
-    } catch (error) {
-      console.error('Не вдалося завантажити роль адміністратора', error)
-    }
-  }
+        // fetch data from server
+        const fetchPlan = async () => {
+            try {
+                // const { data } = await apiService.get<PlanResponse>(
+                //     `/StudentPage/disciplines/by-semester/${prof.id}`
+                // )
 
-  useEffect(() => {
-    if (adminRoleName) {
-      setDegreeName(adminRoleName)
-    }
-  }, [adminRoleName])
+                const response = await fetch(
+                    `http://185.237.207.78:5000/api/StudentPage/disciplines/by-semester/${prof.id}`
+                )
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`)
+                }
+                const data: PlanResponse = await response.json()
+                const main = Object.fromEntries(
+                    Object.entries(data.mainDisciplinesBySemester).map(
+                        ([k, v]) => [Number(k), v]
+                    )
+                ) as Record<number, DisciplineDto[]>
+                const add = Object.fromEntries(
+                    Object.entries(data.additionalDisciplinesBySemester).map(
+                        ([k, v]) => [Number(k), v]
+                    )
+                ) as Record<number, AdditionalDto[]>
+                setMainBySem(main)
+                setAddBySem(add)
+            } catch (err: any) {
+                console.error(
+                    'Error fetching plan:',
+                    err.response?.status || err.message
+                )
+            } finally {
+            }
+        }
+        fetchPlan()
+    }, [])
 
+    return (
+        <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 lg:p-8">
+            {/* Sidebar */}
+            <aside className="w-full lg:w-64 text-center mb-6 lg:mb-0">
+                <div className="w-32 h-32 mx-auto rounded-full bg-gray-200 mb-4"></div>
+                <h2 className="text-xl sm:text-2xl font-semibold">
+                    {studentName || '---'}
+                </h2>
+                <p className="text-sm sm:text-base text-gray-600 mb-2">
+                    {degreeName || '---'}
+                </p>
+                <p className="text-sm text-gray-700">
+                    Спеціальність: {specialty || '---'}
+                </p>
+                <p className="text-sm text-gray-700">Курс: {course ?? '-'}</p>
+                <p className="text-sm text-gray-700">
+                    Освітній ступінь: {degreeLevel}
+                </p>
+            </aside>
 
-  return (
-    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8">
-      {/* Sidebar */}
-      <section className="w-full lg:w-72 text-center mb-6 lg:mb-0">
-        {studentName ? (
-          <>
-            <h2 className="text-xl sm:text-2xl font-semibold">{studentName}</h2>
-            <p className="text-sm sm:text-base text-gray-600">{degreeName}</p>
-          </>
-        ) : (
-          <p className="text-gray-500">Завантаження профілю...</p>
-        )}
-      </section>
+            {/* Content */}
+            <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow hover:shadow-md transition">
+                <nav className="flex space-x-4 border-b pb-2 mb-6 overflow-x-auto">
+                    {['schedule', 'plan', 'events'].map((tab) => (
+                        <button
+                            key={tab}
+                            className={`whitespace-nowrap pb-1 font-medium transition-colors ${
+                                activeTab === tab
+                                    ? 'border-b-2 border-blue-600 text-blue-600'
+                                    : 'border-b-2 border-transparent hover:text-gray-700'
+                            }`}
+                            onClick={() => setActiveTab(tab as any)}
+                        >
+                            {tab === 'schedule'
+                                ? 'Розклад'
+                                : tab === 'plan'
+                                  ? 'Навчальний план'
+                                  : 'Події'}
+                        </button>
+                    ))}
+                </nav>
 
-      {/* Content */}
-      <section className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
-        <div className="flex space-x-8 border-b pb-2 mb-4 overflow-x-auto">
-          {['schedule', 'plan'].map((tab) => (
-            <button
-              key={tab}
-              className={`whitespace-nowrap pb-1 font-medium transition-colors ${
-                activeTab === tab
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'border-b-2 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab(tab as 'schedule' | 'plan')}
-            >
-              {tab === 'schedule' ? 'Розклад занять' : 'Навчальний план'}
-            </button>
-          ))}
-        </div>
+                {activeTab === 'schedule' && (
+                    <>
+                        {/* Day tabs */}
+                        <div className="flex space-x-2 overflow-x-auto mb-4">
+                            {days.map((day) => (
+                                <button
+                                    key={day}
+                                    className={`whitespace-nowrap px-3 py-1 rounded-md transition-colors ${
+                                        selectedDay === day
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                    onClick={() => setSelectedDay(day)}
+                                >
+                                    {day}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[400px] border-collapse">
+                                <thead className="bg-blue-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left">
+                                            Час
+                                        </th>
+                                        <th className="px-4 py-2 text-left">
+                                            Предмет
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {defaultSchedule[selectedDay]?.length ? (
+                                        defaultSchedule[selectedDay].map(
+                                            (itm, i) => (
+                                                <tr
+                                                    key={i}
+                                                    className="hover:bg-blue-50"
+                                                >
+                                                    <td className="px-4 py-2">
+                                                        {itm.time}
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                        {itm.subject}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        )
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={2}
+                                                className="px-4 py-4 text-center italic text-gray-500"
+                                            >
+                                                Немає занять
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
 
-        {activeTab === 'schedule' ? (
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <table className="table-fixed w-full min-w-[600px] border border-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="hidden sm:table-cell w-1/3 border px-3 py-2 text-left text-sm sm:text-base">День</th>
-                  <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">Час</th>
-                  <th className="w-1/3 border px-3 py-2 text-left text-sm sm:text-base">Предмет</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defaultSchedule.map((item, idx) => (
-                  <tr key={idx} className={idx % 2 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="hidden sm:table-cell border px-3 py-2 text-sm">{item.day}</td>
-                    <td className="border px-3 py-2 text-sm">{item.time}</td>
-                    <td className="border px-3 py-2 text-sm">{item.subject}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div>
-            {loadingPlan && <p>Завантаження навчального плану...</p>}
-            {errorPlan && <p className="text-red-600">{errorPlan}</p>}
-            {!loadingPlan && !errorPlan && (
-              <div className="space-y-8">
-                {Object.keys(planBySemester)
-                  .map(Number)
-                  .sort((a, b) => a - b)
-                  .map((sem) => (
-                    <div key={sem}>
-                      <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                        {sem} семестр
-                      </h3>
-                      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                        <table className="table-fixed w-full min-w-[400px] border border-gray-200">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">
-                                Дисципліна
-                              </th>
-                              <th className="w-1/2 border px-3 py-2 text-left text-sm sm:text-base">
-                                Форма контролю
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {planBySemester[sem]?.length ? (
-                              planBySemester[sem].map((disc, idx) => (
-                                <tr key={disc.idBindMainDisciplines} className={idx % 2 ? 'bg-gray-50' : 'bg-white'}>
-                                  <td className="border px-3 py-2 text-sm sm:text-base">
-                                    {disc.nameBindMainDisciplines}
-                                  </td>
-                                  <td className="border px-3 py-2 text-sm sm:text-base">
-                                    {disc.formControll || '-'}
-                                  </td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td colSpan={2} className="border px-3 py-4 text-center italic text-gray-500 text-sm">
-                                  Немає дисциплін
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                {activeTab === 'plan' && (
+                    <div className="space-y-8">
+                        {Object.keys(mainBySem).map((s) => {
+                            const sem = Number(s)
+                            const main = mainBySem[sem] || []
+                            const add = addBySem[sem] || []
+                            return (
+                                <section key={sem}>
+                                    <h3 className="text-lg sm:text-xl font-semibold mb-2">
+                                        {sem} семестр
+                                    </h3>
+
+                                    {/* Основні дисципліни */}
+                                    <div className="overflow-x-auto mb-4">
+                                        <table className="w-full min-w-[400px] border border-gray-200">
+                                            <thead className="bg-blue-50">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Дисципліна
+                                                    </th>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Форма контролю
+                                                    </th>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Бали
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {main.length ? (
+                                                    main.map((d, i) => (
+                                                        <tr
+                                                            key={
+                                                                d.idBindMainDisciplines
+                                                            }
+                                                            className="hover:bg-blue-50"
+                                                        >
+                                                            <td className="px-4 py-2">
+                                                                {
+                                                                    d.nameBindMainDisciplines
+                                                                }
+                                                            </td>
+                                                            <td className="px-4 py-2">
+                                                                {d.formControll ||
+                                                                    '-'}
+                                                            </td>
+                                                            <td className="px-4 py-2">
+                                                                {d.loans}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={3}
+                                                            className="px-4 py-4 text-center italic text-gray-500"
+                                                        >
+                                                            Немає дисциплін
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Додаткові дисципліни */}
+                                    <div className="overflow-x-auto bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                        <h4 className="text-md sm:text-lg font-medium mb-2 text-blue-800">
+                                            Додаткові дисципліни
+                                        </h4>
+                                        <table className="w-full min-w-[400px] border border-gray-300">
+                                            <thead className="bg-blue-100">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Дисципліна
+                                                    </th>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Статус
+                                                    </th>
+                                                    <th className="px-4 py-2 text-left">
+                                                        Бали
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {add.length ? (
+                                                    add.map((d, i) => (
+                                                        <tr
+                                                            key={
+                                                                d.idBindAddDisciplines
+                                                            }
+                                                            className="hover:bg-blue-50"
+                                                        >
+                                                            <td className="px-4 py-2">
+                                                                {
+                                                                    d.addDisciplineName
+                                                                }
+                                                            </td>
+                                                            <td className="px-4 py-2">
+                                                                {d.inProcess
+                                                                    ? 'В процесі'
+                                                                    : 'Завершено'}
+                                                            </td>
+                                                            <td className="px-4 py-2">
+                                                                {d.loans}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={3}
+                                                            className="px-4 py-4 text-center italic text-gray-500"
+                                                        >
+                                                            Немає дисциплін
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            )
+                        })}
                     </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-    </div>
-  )
+                )}
+
+                {activeTab === 'events' && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[400px] border border-gray-200">
+                            <thead className="bg-blue-50">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">
+                                        Назва події
+                                    </th>
+                                    <th className="px-4 py-2 text-left">
+                                        Дата
+                                    </th>
+                                    <th className="px-4 py-2 text-left">
+                                        Бали
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {staticEvents.map((ev) => (
+                                    <tr
+                                        key={ev.id}
+                                        className="hover:bg-blue-50"
+                                    >
+                                        <td className="px-4 py-2">{ev.name}</td>
+                                        <td className="px-4 py-2">{ev.date}</td>
+                                        <td className="px-4 py-2">
+                                            {ev.points}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </main>
+        </div>
+    )
 }
