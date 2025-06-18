@@ -33,6 +33,7 @@ type Courses = {
 type Specialities = {
   id: number
   name: string
+  code: string
 }
 
 type Groupes = {
@@ -102,7 +103,7 @@ export const AdminStudentCatalogue = () => {
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
   const [specialities, setSpecialities] = useState<Specialities[]>([])
-  const [pendingSpecialities, setPendingSpecialities] = useState<string[]>([])
+  const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
   const [groupes, setGroupes] = useState<Groupes[]>([])
   const [pendingGroupes, setPendingGroupes] = useState<string[]>([])
   const [courses] = useState<Courses[]>([
@@ -194,11 +195,16 @@ export const AdminStudentCatalogue = () => {
       const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
       const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
       const specData = await (await fetch('http://185.237.207.78:5000/api/Filter/specialities')).json()
+      const formattedSpecs = specData.map((s: Specialities) => ({
+        ...s,
+        label: `${s.code} - ${s.name}`
+      }))
       const groupData = await (await fetch('http://185.237.207.78:5000/api/Filter/groups')).json()
+      console.log(specData)
 
       setFaculties(facData)
       setEduDegrees(eduData)
-      setSpecialities(specData)
+      setSpecialities(formattedSpecs)
       setGroupes(groupData)
 
       fetchFilteredData(1)
@@ -282,10 +288,13 @@ export const AdminStudentCatalogue = () => {
           <FilterBox
             name="Спеціальність"
             options={specialities}
-            accessor="name"
+            accessor="code"
+            valueName="label"
             selectedValues={pendingSpecialities}
             onChange={setPendingSpecialities}
           />
+
+
           <FilterBox
             name="Факультет"
             options={faculties}

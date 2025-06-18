@@ -9,9 +9,8 @@ type FilterBoxProps<T> = {
   selectedValues: string[]
   onChange: (selected: string[]) => void
   collapsible?: boolean
-  valueName?: string
-  searchName?: string
-
+  valueName?: keyof T
+  searchName?: keyof T
 }
 
 export const FilterBox = <T extends Record<string, any>>({
@@ -21,14 +20,13 @@ export const FilterBox = <T extends Record<string, any>>({
   selectedValues,
   onChange,
   valueName,
-  collapsible = true,
-  searchName
+  searchName,
+  collapsible = true
 }: FilterBoxProps<T>) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState('')
 
   const toggleOption = (value: string) => {
-    console.log(value)
     if (selectedValues.includes(value)) {
       onChange(selectedValues.filter((v) => v !== value))
     } else {
@@ -37,17 +35,11 @@ export const FilterBox = <T extends Record<string, any>>({
   }
 
   const filteredOptions = options.filter((option) => {
-    if (searchName) {
-      return String(option[searchName])
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    } else {
-      return String(option[accessor])
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    }
+    const targetKey = searchName || valueName || accessor
+    const targetValue = String(option[targetKey] ?? '')
+    return targetValue.toLowerCase().includes(searchTerm.toLowerCase())
   })
-  console.log(`filteredOptions`, filteredOptions)
+
   return (
     <div className="pb-3">
       <h2
@@ -74,20 +66,20 @@ export const FilterBox = <T extends Record<string, any>>({
             className={`space-y-2 ${options.length > 10 ? 'max-h-[250px] overflow-y-auto pr-1' : ''}`}
           >
             {filteredOptions.map((option, idx) => {
-              const name = valueName ?String(option[valueName]) :  String(option[accessor])
-              const value =  String(option[accessor])
+              const displayName = String(option[valueName ?? accessor])
+              const value = String(option[accessor])
 
               return (
                 <div key={idx} className="flex items-center">
                   <input
                     type="checkbox"
-                    id={`${name}-${value}`}
+                    id={`${displayName}-${value}`}
                     checked={selectedValues.includes(value)}
                     onChange={() => toggleOption(value)}
                     className="mr-2"
                   />
-                  <label htmlFor={`${name}-${value}`} className="text-gray-700">
-                    {name}
+                  <label htmlFor={`${displayName}-${value}`} className="text-gray-700">
+                    {displayName}
                   </label>
                 </div>
               )
