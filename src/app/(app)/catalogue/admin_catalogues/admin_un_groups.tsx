@@ -145,7 +145,7 @@ export const AdminGroupsCatalogue = () => {
     }
 
     const res = await fetch(
-      `http://185.237.207.78:5000/api/University/groups?${query.toString()}`
+      `http://185.237.207.78:5000/api/Group?${query.toString()}`
     )
     const data = await res.json()
 
@@ -202,7 +202,7 @@ export const AdminGroupsCatalogue = () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://185.237.207.78:5000/api/University/groups/${selectedGroup.id}`, {
+      const response = await fetch(`http://185.237.207.78:5000/api/Group/${selectedGroup.id}`, {
         method: 'DELETE'
       })
 
@@ -221,7 +221,7 @@ export const AdminGroupsCatalogue = () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://185.237.207.78:5000/api/University/groups/${selectedGroup.id}`, {
+      const response = await fetch(`http://185.237.207.78:5000/api/Group/${selectedGroup.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

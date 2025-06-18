@@ -107,16 +107,6 @@ const Page = () => {
                       Кафедра
                   </button>
                   <button
-                    onClick={() => setActiveTab(5)}
-                    className={`px-6 py-3 text-lg font-semibold ${
-                      activeTab === 5
-                        ? 'border-b-4 border-blue-600 text-blue-600'
-                        : 'text-gray-600 hover:text-blue-500'
-                    }`}
-                  >
-                      Програма
-                  </button>
-                  <button
                     onClick={() => setActiveTab(6)}
                     className={`px-6 py-3 text-lg font-semibold ${
                       activeTab === 6

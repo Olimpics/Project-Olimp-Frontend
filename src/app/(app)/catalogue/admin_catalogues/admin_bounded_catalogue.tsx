@@ -125,17 +125,17 @@ export const AdminBindLoansPage = () => {
 
     const query = new URLSearchParams({
       Page: page.toString(),
-      PageSize: "50",
+      PageSize: "13",
       Search: searchTerm,
       SortOrder: selectedSorting.toString()
     })
 
     if (selectedDisciplines.length > 0) {
-      query.append("AddDisciplines", selectedDisciplines.join(","))
+      query.append("addDisciplinesIds", selectedDisciplines.join(","))
     }
 
     if (selectedSpecialities.length > 0) {
-      query.append("Specialities", selectedSpecialities.join(","))
+      query.append("educationalProgramIds", selectedSpecialities.join(","))
     }
 
     try {
@@ -144,7 +144,7 @@ export const AdminBindLoansPage = () => {
       )
       const data = await res.json()
       setBindLoans(data.items || [])
-      setTotalPages(Math.ceil(data.totalCount / 50) || 1)
+      setTotalPages(Math.ceil(data.totalCount / 13) || 1)
     } catch (error) {
       console.error('Error fetching bind loans:', error)
     }
