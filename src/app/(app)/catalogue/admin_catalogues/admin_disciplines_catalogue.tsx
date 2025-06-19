@@ -8,6 +8,8 @@ import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { Modal } from '@/components/ui/Modal'
 import { router } from 'next/client';
+import Import_button from '@/app/(app)/catalogue/admin_catalogues/import_button';
+import FileUploadModal from '@/app/(app)/catalogue/admin_catalogues/import_button';
 
 type Discipline = {
     idAddDisciplines: number
@@ -316,9 +318,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                         Експорт
                     </button>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        Імпорт
-                    </button>
+                <FileUploadModal/>
                     <select
                         value={selectedSorting}
                         onChange={(e) => {
