@@ -278,6 +278,7 @@ export const AdminStudentCatalogue = () => {
     { header: 'Cпеціальність', accessor: 'speciality' },
     { header: 'Рівень освіти', accessor: 'degreeName' },
     { header: 'Курс', accessor: 'course' },
+    { header: 'Група', accessor: 'groupName'}
 
   ]
 

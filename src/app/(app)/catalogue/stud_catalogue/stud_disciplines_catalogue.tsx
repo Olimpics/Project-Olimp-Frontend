@@ -225,11 +225,12 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
   }
 
   const columns: Column[] = [
+    { header: 'ПІБ студента', accessor: 'nameStudent' },
     { header: 'Факультет', accessor: 'facultyAbbreviation' },
-    { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
-    { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
-    { header: 'Кількість студентів', accessor: 'studentCount' },
-    { header: 'Рівень освіти', accessor: 'degreeLevelName' },
+    { header: 'Cпеціальність', accessor: 'speciality' },
+    { header: 'Рівень освіти', accessor: 'degreeName' },
+    { header: 'Курс', accessor: 'course' },
+    { header: 'Група', accessor: 'groupName'}
   ]
 
   return (

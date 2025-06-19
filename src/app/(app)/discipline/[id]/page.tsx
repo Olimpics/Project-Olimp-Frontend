@@ -1,17 +1,21 @@
 "use client"
+import { apiService } from '@/services/axiosService';
 import { useEffect, useState, use } from 'react';
 
 interface DisciplineDetails {
   idAddDisciplines: number;
   nameAddDisciplines: string;
   codeAddDisciplines: string;
-  faculty: string;
+  facultyAbbreviation: string;
+  facultyId: number;
   minCountPeople: number | null;
   maxCountPeople: number | null;
   minCourse: number | null;
   maxCourse: number | null;
   addSemestr: number;
   degreeLevelName: string;
+  degreeLevelId: number;
+  departmentId: number;
   departmentName: string;
   teacher: string;
   recomend: string;
@@ -24,6 +28,25 @@ interface DisciplineDetails {
   additionaLiterature: string;
   typesOfTraining: string;
   typeOfControll: string;
+}
+
+interface Faculty {
+  idFaculty: number
+  nameFaculty: string
+  abbreviation: string
+}
+
+interface Department {
+  idDepartment: number
+  facultyId: number
+  nameDepartment: string
+  abbreviation: string
+  facultyName: string
+}
+
+interface Degree {
+  idEducationalDegree: number
+  nameEducationalDegreec: string
 }
 
 interface Params {
@@ -39,29 +62,44 @@ export default function ProductPage({ params }: Params) {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>(null);
+  const [faculty, setFaculty] = useState<Faculty[] | null>(null)
+  const [departament, setDepartment] = useState<Department[] | null>(null)
+  const [degrees, setDegrees] = useState<Degree[] | null>(null)
 
   useEffect(() => {
-    const fetchDiscipline = async () => {
+    const fetchDisciplineAndFaculty = async () => {
       try {
         const response = await fetch(`http://185.237.207.78:5000/api/DisciplineTab/GetDisciplineWithDetails/${id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         const data: DisciplineDetails = await response.json();
+        const fac_res = await apiService.get<Faculty[]>('Faculty');
+        const dep_res = await apiService.get<Department[]>('Department?page=1&pageSize=500&sortOrder=0')
+        const deg_res = await apiService.get<Degree[]>('EducationalDegree')
+        
+        setDegrees(deg_res)
         setDiscipline(data);
-        // Initialize edit data with the fetched discipline
+        setDepartment(dep_res)
+        setFaculty(fac_res); 
+        console.log(faculty)
+
         setEditData({
           nameAddDisciplines: data.nameAddDisciplines,
           codeAddDisciplines: data.codeAddDisciplines,
-          faculty: data.faculty,
+          faculty: data.facultyAbbreviation,
+          facultyId: 0,
           minCountPeople: data.minCountPeople,
           maxCountPeople: data.maxCountPeople,
           minCourse: data.minCourse,
           maxCourse: data.maxCourse,
           addSemestr: data.addSemestr.toString(),
-          degreeLevel: data.degreeLevelName,
+          degreeLevelName: data.degreeLevelName,
+          degreeLevelId: 0,
           details: {
-            departmentName: data.departmentName,
+            departmentId: 0,
+            departamentName: data.departmentName,
             teacher: data.teacher,
             recomend: data.recomend,
             prerequisites: data.prerequisites,
@@ -76,6 +114,7 @@ export default function ProductPage({ params }: Params) {
           },
           idAddDisciplines: data.idAddDisciplines
         });
+
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -83,33 +122,87 @@ export default function ProductPage({ params }: Params) {
       }
     };
 
-    fetchDiscipline();
+    fetchDisciplineAndFaculty();
   }, [id]);
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
 
-    // Check if the field is in the main object or in details
+    // Handle faculty selection (top-level object)
+    if (name === 'faculty') {
+      const selectedId = Number(value);
+      const selectedFaculty = faculty.find(f => f.idFaculty === selectedId);
+      if (selectedFaculty) {
+        setEditData(prev => ({
+          ...prev,
+          faculty: {
+            idFaculty: selectedFaculty.idFaculty,
+            nameFaculty: selectedFaculty.nameFaculty,
+          }
+        }));
+      }
+      return;
+    }
+
+    // Handle department selection (inside details)
+    if (name === 'details.departmentId') {
+      const selectedId = Number(value);
+      const selectedDepartment = departament?.items.find(d => d.idDepartment === selectedId);
+      if (selectedDepartment) {
+        setEditData(prev => ({
+          ...prev,
+          details: {
+            ...prev.details,
+            departmentId: selectedDepartment.idDepartment,
+          }
+        }));
+      }
+      return;
+    }
+
+    // ✅ Handle degree level
+    if (name === 'degreeLevelId') {
+      const selectedId = Number(value);
+      const selectedDegree = degrees.find(d => d.idEducationalDegree === selectedId);
+      if (selectedDegree) {
+        setEditData(prev => ({
+          ...prev,
+          degreeLevelId: selectedDegree.idEducationalDegree,
+          degreeLevelName: selectedDegree.nameEducationalDegreec,
+        }));
+      }
+      return;
+    }
+
+    // Other top-level fields
     if (name in editData) {
-      setEditData({
-        ...editData,
+      setEditData(prev => ({
+        ...prev,
         [name]: value
-      });
-    } else if (name.startsWith('details.')) {
+      }));
+      return;
+    }
+
+    // Other nested `details.*` fields
+    if (name.startsWith('details.')) {
       const detailField = name.split('.')[1];
-      setEditData({
-        ...editData,
+      setEditData(prev => ({
+        ...prev,
         details: {
-          ...editData.details,
+          ...prev.details,
           [detailField]: value
         }
-      });
+      }));
     }
   };
+
+
 
   const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -148,8 +241,6 @@ export default function ProductPage({ params }: Params) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const updatedData = await response.json();
-      setDiscipline(updatedData);
       setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -213,15 +304,19 @@ export default function ProductPage({ params }: Params) {
                   )}
                   {isEditing ? (
                     <select
-                      name="degreeLevel"
-                      value={editData.degreeLevel}
+                      name="degreeLevelId"
+                      value={editData.degreeLevelId ?? ''}
                       onChange={handleInputChange}
                       className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2"
                     >
-                      <option value="Bachelor">Bachelor</option>
-                      <option value="Master">Master</option>
-                      <option value="PhD">PhD</option>
+                      <option value="">Оберіть рівень освіти</option>
+                      {degrees.map(degree => (
+                        <option key={degree.idEducationalDegree} value={degree.idEducationalDegree}>
+                          {degree.nameEducationalDegreec}
+                        </option>
+                      ))}
                     </select>
+
                   ) : (
                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2">
                       {discipline.degreeLevelName}
@@ -258,16 +353,26 @@ export default function ProductPage({ params }: Params) {
                   <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Основна інформація</h2>
                   <EditInfoItem
                     label="Факультет"
-                    name="faculty"
-                    value={editData.faculty}
+                    name="facultyId"
+                    value={editData.faculty.facultyId}
                     onChange={handleInputChange}
+                    options={faculty}
+                    optionValue="idFaculty"
+                    optionLabel="nameFaculty"
                   />
+
                   <EditInfoItem
                     label="Кафедра"
-                    name="details.departmentName"
-                    value={editData.details.departmentName}
+                    name="details.departmentId"
+                    value={editData.details.departmentId}
                     onChange={handleInputChange}
+                    options={departament?.items}
+                    optionValue="idDepartment"
+                    optionLabel="nameDepartment"
                   />
+
+
+
                   <EditInfoItem
                     label="Викладач"
                     name="details.teacher"
@@ -391,7 +496,7 @@ export default function ProductPage({ params }: Params) {
               <div className="md:col-span-1 space-y-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Основна інформація</h2>
-                  <InfoItem label="Факультет" value={discipline.faculty} />
+                  <InfoItem label="Факультет" value={discipline.facultyAbbreviation} />
                   <InfoItem label="Кафедра" value={discipline.departmentName} />
                   <InfoItem label="Викладач" value={discipline.teacher} />
                   <InfoItem label="Мова" value={discipline.language} />
@@ -462,53 +567,119 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EditInfoItem({
-                        label,
-                        name,
-                        value,
-                        onChange,
-                        type = "text"
-                      }: {
+type EditInfoItemProps<T = any> = {
   label?: string;
   name: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   type?: string;
-}) {
+  options?: T[] | null;
+  optionValue?: keyof T;
+  optionLabel?: keyof T;
+};
+
+type EditTextAreaItemProps<T = any> = {
+  label?: string;
+  name: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
+  options?: T[] | null;
+  optionValue?: keyof T;
+  optionLabel?: keyof T;
+};
+
+export function EditInfoItem<T = any>({
+  label,
+  name,
+  value,
+  onChange,
+  type = 'text',
+  options,
+  optionValue,
+  optionLabel,
+}: EditInfoItemProps<T>) {
+  const isDropdown = options && options.length > 0 && optionValue && optionLabel;
+
   return (
     <div className="mb-3">
       {label && <p className="text-sm font-medium text-gray-500">{label}</p>}
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full p-2 border border-gray-300 rounded-md"
-      />
+      {isDropdown ? (
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full p-2 border border-gray-300 rounded-md h-10"
+        >
+          <option value="">Оберіть значення</option>
+          {options!.map((item, idx) => (
+            <option key={idx} value={String(item[optionValue])}>
+              {String(item[optionLabel])}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full p-2 border border-gray-300 rounded-md"
+        />
+      )}
     </div>
   );
 }
 
-function EditTextAreaItem({
-                            label,
-                            name,
-                            value,
-                            onChange
-                          }: {
-  label?: string;
-  name: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-}) {
+export function EditTextAreaItem<T = any>({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  optionValue,
+  optionLabel,
+}: EditTextAreaItemProps<T>) {
+  const isDropdown = options && options.length > 0;
+
   return (
     <div className="mb-3">
       {label && <p className="text-sm font-medium text-gray-500">{label}</p>}
-      <textarea
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full p-2 border border-gray-300 rounded-md h-24"
-      />
+      {isDropdown ? (
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full p-2 border border-gray-300 rounded-md h-10"
+        >
+          <option value="">Оберіть значення</option>
+          {options!.map((item, idx) => {
+            const optionVal =
+              optionValue && typeof item === 'object'
+                ? String(item[optionValue])
+                : String(item);
+            const optionLbl =
+              optionLabel && typeof item === 'object'
+                ? String(item[optionLabel])
+                : String(item);
+            return (
+              <option key={idx} value={optionVal}>
+                {optionLbl}
+              </option>
+            );
+          })}
+        </select>
+      ) : (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full p-2 border border-gray-300 rounded-md h-24"
+        />
+      )}
     </div>
   );
 }
