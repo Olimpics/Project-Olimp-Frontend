@@ -341,7 +341,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     <DataTable
                         onClick={(el)=>{
                           console.log(el)
-                          router.push("/discipline/"+el.idAddDisciplines)
+                          window.open("/discipline/"+el.idAddDisciplines) // НЕ ЧІПАТИ
 
                         }}
                         onEdit={handleEdit}

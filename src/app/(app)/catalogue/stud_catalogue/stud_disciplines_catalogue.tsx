@@ -336,7 +336,7 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
           <DataTable
               onClick={(el)=>{
                 console.log(el)
-                window.open("/discipline/"+el.idAddDisciplines)
+                window.open("/discipline/"+el.idAddDisciplines) // НЕ ЧІПАТИ
 
               }}
               columns={columns}
