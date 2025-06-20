@@ -8,6 +8,7 @@ const FileUploadModal = () => {
   const [selectedTable, setSelectedTable] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tables = [
@@ -42,17 +43,40 @@ const FileUploadModal = () => {
     setError(null);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setSelectedFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (validateFileType(file)) {
+        setSelectedFile(file);
+      }
       e.dataTransfer.clearData();
     }
   }, []);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-      setError(null);
+      const file = e.target.files[0];
+      if (validateFileType(file)) {
+        setSelectedFile(file);
+        setError(null);
+      }
     }
   }, []);
+
+  const validateFileType = (file: File): boolean => {
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'text/csv', // .csv
+      'application/json' // .json
+    ];
+
+    if (!validTypes.includes(file.type)) {
+      setError('Непідтримуваний тип файлу. Будь ласка, виберіть файл Word, Excel, CSV або JSON.');
+      return false;
+    }
+    return true;
+  };
 
   const openFileDialog = () => {
     fileInputRef.current?.click();
@@ -63,31 +87,50 @@ const FileUploadModal = () => {
     setIsChecked(false);
     setSelectedTable("");
     setError(null);
+    setSuccessMessage(null);
     setIsLoading(false);
   };
 
   const handleSubmit = async () => {
-    if (!selectedFile || !selectedTable) {
-      setError("Будь ласка, виберіть файл і таблицю");
+    if (!selectedFile) {
+      setError("Будь ласка, виберіть файл");
+      return;
+    }
+
+    if (!selectedTable || selectedTable === "Таблиці") {
+      setError("Будь ласка, виберіть таблицю");
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
-      // Здесь имитация загрузки файла
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const formData = new FormData();
+      formData.append('File', selectedFile);
+      formData.append('TableName', selectedTable);
+      formData.append('IsCreate', String(isChecked));
 
-      // Если нужно обработать ошибку, можно раскомментировать:
-      // throw new Error("Помилка завантаження файлу");
+      const response = await fetch('http://185.237.207.78:5000/api/Import', {
+        method: 'POST',
+        body: formData,
+        // Headers are automatically set by browser for FormData
+      });
 
-      console.log("Файл:", selectedFile.name);
-      console.log("Таблиця:", selectedTable);
-      console.log("Галочка:", isChecked);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Помилка завантаження файлу');
+      }
 
-      setIsOpen(false);
-      resetState();
+      const data = await response.json();
+      setSuccessMessage(data.message || 'Файл успішно завантажено!');
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setIsOpen(false);
+        resetState();
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Сталася невідома помилка");
       setIsLoading(false);
@@ -142,6 +185,7 @@ const FileUploadModal = () => {
               onChange={handleFileInput}
               className="hidden"
               disabled={isLoading}
+              accept=".doc,.docx,.xls,.xlsx,.csv,.json"
             />
 
             <div className="mb-4">
@@ -152,8 +196,8 @@ const FileUploadModal = () => {
                 className="w-full p-2 border border-gray-300 rounded"
                 disabled={isLoading}
               >
-                <option value="">-- Виберіть таблицю --</option>
-                {tables.map((table) => (
+                <option value="Таблиці">-- Виберіть таблицю --</option>
+                {tables.filter(t => t !== "Таблиці").map((table) => (
                   <option key={table} value={table}>
                     {table}
                   </option>
@@ -171,12 +215,16 @@ const FileUploadModal = () => {
                 disabled={isLoading}
               />
               <label htmlFor="agree" className="text-gray-700">
-                Додати,якщо нема
+                Додати, якщо немає
               </label>
             </div>
 
             {error && (
               <div className="mb-4 text-red-500 text-sm">{error}</div>
+            )}
+
+            {successMessage && (
+              <div className="mb-4 text-green-500 text-sm">{successMessage}</div>
             )}
 
             <div className="flex justify-end space-x-3">
@@ -196,9 +244,9 @@ const FileUploadModal = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!selectedFile || !selectedTable || isLoading}
+                disabled={!selectedFile || !selectedTable || selectedTable === "Таблиці" || isLoading}
                 className={`px-4 py-2 rounded transition ${
-                  !selectedFile || !selectedTable || isLoading
+                  !selectedFile || !selectedTable || selectedTable === "Таблиці" || isLoading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-green-500 text-white hover:bg-green-600"
                 }`}
