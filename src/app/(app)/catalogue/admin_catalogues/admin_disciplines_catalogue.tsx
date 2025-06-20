@@ -45,10 +45,11 @@ interface Column {
 }
 
 const sortingOptions = [
-    { label: 'Алфавіт (А-Я)', value: 0 },
-    { label: 'Алфавіт (Я-А)', value: 1 },
-    { label: 'Учасники (↑)', value: 2 },
-    { label: 'Учасники (↓)', value: 3 },
+    { label: 'Назва програми (А-Я)', value: 1 },
+    { label: 'Назва програми (Я-А)', value: 2 },
+    { label: 'Код спеціальності (↓)', value: 3 }, 
+    { label: 'Кількість студентів (↑)', value: 4 },
+    { label: 'Кількість студентів (↓)', value: 5 },
 ]
 
 const Pagination: React.FC<{

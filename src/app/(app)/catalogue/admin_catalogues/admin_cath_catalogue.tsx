@@ -27,8 +27,8 @@ interface Column {
 }
 
 const sortingOptions = [
-  { label: 'Алфавіт (А-Я)', value: 0 },
-  { label: 'Алфавіт (Я-А)', value: 1 },
+  { label: 'Код кафедри (А-Я)', value: 0 },
+  { label: 'Код кафедри (Я-А)', value: 1 },
   { label: 'Факультет (А-Я)', value: 2 },
   { label: 'Факультет (Я-А)', value: 3 },
 ]

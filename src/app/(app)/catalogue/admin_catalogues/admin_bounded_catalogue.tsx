@@ -32,10 +32,10 @@ interface Column {
 }
 
 const sortingOptions = [
-  { label: 'Дисципліна (А-Я)', value: 0 },
-  { label: 'Дисципліна (Я-А)', value: 1 },
-  { label: 'Освітня програма (А-Я)', value: 2 },
-  { label: 'Освітня програма (Я-А)', value: 3 },
+  { label: 'Код дисципліни (А-Я)', value: 0 },
+  { label: 'Код дисципліни (Я-А)', value: 1 },
+  { label: 'Код спеціальності (А-Я)', value: 2 },
+  { label: 'Код спеціальності (Я-А)', value: 3 },
 ]
 
 const Pagination: React.FC<{
