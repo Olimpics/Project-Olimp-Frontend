@@ -1,5 +1,7 @@
 "use client"
+import { USER_PROFLE } from '@/constants/cookies';
 import { apiService } from '@/services/axiosService';
+import { getCookie } from '@/services/cookie-servies'
 import { useEffect, useState, use } from 'react';
 
 interface DisciplineDetails {
@@ -57,6 +59,8 @@ interface Params {
 
 export default function ProductPage({ params }: Params) {
   const { id } = use(params);
+  const user = JSON.parse(getCookie(USER_PROFLE) || '{}');
+  const isAdmin = user.roleId === 2;
   const [discipline, setDiscipline] = useState<DisciplineDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +70,7 @@ export default function ProductPage({ params }: Params) {
   const [departament, setDepartment] = useState<Department[] | null>(null)
   const [degrees, setDegrees] = useState<Degree[] | null>(null)
 
-  useEffect(() => {
+  useEffect(() => {  
     const fetchDisciplineAndFaculty = async () => {
       try {
         const response = await fetch(`http://185.237.207.78:5000/api/DisciplineTab/GetDisciplineWithDetails/${id}`);
@@ -135,16 +139,17 @@ export default function ProductPage({ params }: Params) {
     const { name, value } = e.target;
 
     // Handle faculty selection (top-level object)
-    if (name === 'faculty') {
+    if (name === 'facultyId') {
       const selectedId = Number(value);
       const selectedFaculty = faculty.find(f => f.idFaculty === selectedId);
       if (selectedFaculty) {
         setEditData(prev => ({
           ...prev,
+          facultyId: selectedFaculty.idFaculty, // Update facultyId
           faculty: {
             idFaculty: selectedFaculty.idFaculty,
             nameFaculty: selectedFaculty.nameFaculty,
-          }
+          } // Update faculty name
         }));
       }
       return;
@@ -289,7 +294,7 @@ export default function ProductPage({ params }: Params) {
                   <h1 className="text-3xl font-bold">{discipline.nameAddDisciplines}</h1>
                 )}
                 <div className="flex flex-wrap items-center mt-2">
-                  {isEditing ? (
+                  {isEditing? (
                     <input
                       type="text"
                       name="codeAddDisciplines"
@@ -302,7 +307,7 @@ export default function ProductPage({ params }: Params) {
                       {discipline.codeAddDisciplines}
                     </span>
                   )}
-                  {isEditing ? (
+                  {isEditing? (
                     <select
                       name="degreeLevelId"
                       value={editData.degreeLevelId ?? ''}
@@ -322,7 +327,7 @@ export default function ProductPage({ params }: Params) {
                       {discipline.degreeLevelName}
                     </span>
                   )}
-                  {isEditing ? (
+                  {isEditing && isAdmin ? (
                     <input
                       type="text"
                       name="details.typesOfTraining"
@@ -337,12 +342,13 @@ export default function ProductPage({ params }: Params) {
                   )}
                 </div>
               </div>
-              <button
-                onClick={isEditing ? handleSubmit : handleEditToggle}
+              {isAdmin && (<button
+                onClick={isEditing && isAdmin ? handleSubmit : handleEditToggle}
                 className={`px-4 py-2 rounded-md ${isEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
               >
-                {isEditing ? 'Зберегти' : 'Редагувати'}
-              </button>
+                {isEditing ?'Зберегти' : 'Редагувати'}
+              </button>)}
+              
             </div>
           </div>
 
@@ -543,7 +549,7 @@ export default function ProductPage({ params }: Params) {
           {/* Footer */}
           <div className="bg-gray-100 px-6 py-4 flex justify-between items-center">
             <span className="text-sm text-gray-600">ID дисципліни: {discipline.idAddDisciplines}</span>
-            {!isEditing && (
+            {(!isEditing && isAdmin) && (
               <button
                 onClick={handleEditToggle}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"

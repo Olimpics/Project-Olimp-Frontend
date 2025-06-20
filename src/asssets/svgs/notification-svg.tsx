@@ -193,6 +193,7 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
             <button
               onClick={()=>{
                 router.push('/notifications');
+                setIsOpen(false)
               }}
               type="button"
               className="w-full px-4 py-3 text-blue-600 hover:bg-gray-50 font-medium"
