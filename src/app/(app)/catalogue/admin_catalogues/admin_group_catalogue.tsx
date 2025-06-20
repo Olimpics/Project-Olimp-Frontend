@@ -12,6 +12,7 @@ type EducationalProgram = {
   idEducationalProgram: number
   nameEducationalProgram: string
   degree: string
+  specialityCode: string
   speciality: string
   accreditation: number
   accreditationType: string
@@ -35,12 +36,12 @@ interface Column {
 }
 
 const sortingOptions = [
-  { label: 'Код групи (А-Я)', value: 0 },
-  { label: 'Код групи (Я-А)', value: 1 },
-  { label: 'Аббревіатура факультету (↑)', value: 2 },
-  { label: 'Аббревіатура факультету (↓)', value: 3 },
-  { label: 'Курс (↑)', value: 4 },
-  { label: 'Курс (↓)', value: 5 },
+  { label: 'Код спеціальності (↑)', value: 0 },
+  { label: 'Код спеціальності (↓)', value: 3 },
+  { label: 'Назва навчальної програми (А-Я)', value: 1 },
+  { label: 'Назва навчальної програми (Я-А)', value: 2 },
+  { label: 'Кількість студентів (↑)', value: 3 },
+  { label: 'Кількість студенті (↓)', value: 4 },
 ]
 
 const Pagination: React.FC<{
@@ -107,6 +108,7 @@ export const AdminEducationalProgramCatalogue = () => {
     nameEducationalProgram: '',
     degree: '',
     speciality: '',
+    specialityCode: '',
     accreditation: 0,
     accreditationType: '',
     studentsAmount: 0,
@@ -198,6 +200,7 @@ export const AdminEducationalProgramCatalogue = () => {
       nameEducationalProgram: '',
       degree: degrees[0]?.nameEducationalDegreec || '',
       speciality: '',
+      specialityCode: '',
       accreditation: 0,
       accreditationType: '',
       studentsAmount: 0,
@@ -304,6 +307,7 @@ export const AdminEducationalProgramCatalogue = () => {
     { header: 'Назва програми', accessor: 'nameEducationalProgram' },
     { header: 'Рівень освіти', accessor: 'degree' },
     { header: 'Спеціальність', accessor: 'speciality' },
+    { header: 'Код спеціальності', accessor: 'specialityCode'},
     { header: 'Кількість студентів', accessor: 'studentsAmount' },
   ]
 

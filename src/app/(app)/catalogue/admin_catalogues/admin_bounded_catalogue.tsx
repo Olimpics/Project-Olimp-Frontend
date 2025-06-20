@@ -11,9 +11,11 @@ const USER_PROFILE = 'userProfile'
 type BindLoan = {
   idBindLoan: number
   addDisciplinesId: number
-  addDisciplinesName: string
+  addDisciplineName: string
   educationalProgramId: number
   educationalProgramName: string
+  codeAddDisciplines: string
+  specialityCode: string
 }
 
 type AddDiscipline = {
@@ -32,10 +34,10 @@ interface Column {
 }
 
 const sortingOptions = [
-  { label: 'Код дисципліни (А-Я)', value: 0 },
-  { label: 'Код дисципліни (Я-А)', value: 1 },
-  { label: 'Код спеціальності (А-Я)', value: 2 },
-  { label: 'Код спеціальності (Я-А)', value: 3 },
+  { label: 'Код дисципліни (↑)', value: 0 },
+  { label: 'Код дисципліни (↓)', value: 1 },
+  { label: 'Код спеціальності (↑)', value: 2 },
+  { label: 'Код спеціальності (↓)', value: 3 },
 ]
 
 const Pagination: React.FC<{
@@ -102,6 +104,12 @@ export const AdminBindLoansPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalType, setModalType] = useState<'add' | 'edit' | 'delete' | null>(null)
   const [selectedBindLoan, setSelectedBindLoan] = useState<Partial<BindLoan> | null>(null)
+
+  useEffect(() => {
+    fetchFilteredData(1);
+    setCurrentPage(1);
+  }, [selectedSorting]);
+
 
   useEffect(() => {
     const rawProfile = getCookie(USER_PROFILE)
@@ -266,7 +274,9 @@ export const AdminBindLoansPage = () => {
 
   const columns: Column[] = [
     { header: 'Назва дисціпліни', accessor: 'addDisciplineName' },
+    { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
     { header: 'Назва програми', accessor: 'educationalProgramName' },
+    { header: 'Код спеціальності', accessor: 'specialityCode' },
   ]
 console.log(`bindLoans`,bindLoans)
   return (
@@ -321,6 +331,7 @@ console.log(`bindLoans`,bindLoans)
               value={selectedSorting}
               onChange={(e) => {
                 const newSort = Number(e.target.value)
+                console.log(newSort)
                 setSelectedSorting(newSort)
                 setCurrentPage(1)
               }}
