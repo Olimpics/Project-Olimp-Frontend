@@ -87,7 +87,6 @@ export default function ProductPage({ params }: Params) {
         setDiscipline(data);
         setDepartment(dep_res)
         setFaculty(fac_res); 
-        console.log(faculty)
 
         setEditData({
           nameAddDisciplines: data.nameAddDisciplines,
@@ -138,24 +137,19 @@ export default function ProductPage({ params }: Params) {
   ) => {
     const { name, value } = e.target;
 
-    // Handle faculty selection (top-level object)
     if (name === 'facultyId') {
       const selectedId = Number(value);
       const selectedFaculty = faculty.find(f => f.idFaculty === selectedId);
       if (selectedFaculty) {
         setEditData(prev => ({
           ...prev,
-          facultyId: selectedFaculty.idFaculty, // Update facultyId
-          faculty: {
-            idFaculty: selectedFaculty.idFaculty,
-            nameFaculty: selectedFaculty.nameFaculty,
-          } // Update faculty name
+          facultyId: selectedFaculty.idFaculty, 
+          nameFaculty: selectedFaculty.nameFaculty,
         }));
       }
       return;
     }
 
-    // Handle department selection (inside details)
     if (name === 'details.departmentId') {
       const selectedId = Number(value);
       const selectedDepartment = departament?.items.find(d => d.idDepartment === selectedId);
@@ -171,7 +165,6 @@ export default function ProductPage({ params }: Params) {
       return;
     }
 
-    // ✅ Handle degree level
     if (name === 'degreeLevelId') {
       const selectedId = Number(value);
       const selectedDegree = degrees.find(d => d.idEducationalDegree === selectedId);
@@ -234,6 +227,20 @@ export default function ProductPage({ params }: Params) {
     e.preventDefault();
     setLoading(true);
     try {
+      const requiredFields = [
+        { key: 'degreeLevelId', label: 'Рівень освіти' },
+        { key: 'facultyId', label: 'Факультет' },
+        //{ key: 'departmentId', label: 'Кафедра' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = (editData as any)[field.key];
+        if (!value || value === 0) {
+          console.log(value)
+          throw new Error(`Поле '${field.label}' відсутнє!`);
+        }
+      }
+
       const response = await fetch(`http://185.237.207.78:5000/api/DisciplineTab/UpdateDisciplineWithDetails/${id}`, {
         method: 'PUT',
         headers: {
@@ -631,7 +638,7 @@ export function EditInfoItem<T = any>({
         <input
           type={type}
           name={name}
-          value={value}
+          value={value ?? ""}
           onChange={onChange}
           className="w-full p-2 border border-gray-300 rounded-md"
         />
