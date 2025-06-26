@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useRouter } from 'next/navigation';
 
 const FileUploadModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,11 +10,13 @@ const FileUploadModal = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [useLimit, setUseLimit] = useState(false);
+  const [limit, setLimit] = useState("500");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tables = [
     "Таблиці",
-    "Вибіркові дисципліни",
+    "Виборчі дисціпліни",
     "Студенти",
     "Спеціальності",
     "Групи"
@@ -61,14 +64,16 @@ const FileUploadModal = () => {
     }
   }, []);
 
+  const router = useRouter();
+
   const validateFileType = (file: File): boolean => {
     const validTypes = [
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-      'application/msword', // .doc
-      'application/vnd.ms-excel', // .xls
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'text/csv', // .csv
-      'application/json' // .json
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv',
+      'application/json'
     ];
 
     if (!validTypes.includes(file.type)) {
@@ -89,6 +94,8 @@ const FileUploadModal = () => {
     setError(null);
     setSuccessMessage(null);
     setIsLoading(false);
+    setUseLimit(false);
+    setLimit("500");
   };
 
   const handleSubmit = async () => {
@@ -108,14 +115,14 @@ const FileUploadModal = () => {
 
     try {
       const formData = new FormData();
-      formData.append('File', selectedFile);
-      formData.append('TableName', selectedTable);
-      formData.append('IsCreate', String(isChecked));
+      formData.append("File", selectedFile);
+      formData.append("TableName", selectedTable);
+      formData.append("IsCreate", String(isChecked));
+      formData.append("Limit", useLimit ? limit : "0"); // 0 означает "без лимита"
 
       const response = await fetch('http://185.237.207.78:5000/api/Import', {
         method: 'POST',
-        body: formData,
-        // Headers are automatically set by browser for FormData
+        body: formData
       });
 
       if (!response.ok) {
@@ -125,8 +132,13 @@ const FileUploadModal = () => {
 
       const data = await response.json();
       setSuccessMessage(data.message || 'Файл успішно завантажено!');
+      sessionStorage.setItem('navigationState', JSON.stringify(data.result?.students));
 
-      // Close modal after 2 seconds
+      if (selectedTable === "Студенти" && data.result?.students) {
+        router.push('/imported-students');
+        return;
+      }
+
       setTimeout(() => {
         setIsOpen(false);
         resetState();
@@ -149,7 +161,7 @@ const FileUploadModal = () => {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div
-            className={`w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden p-6 ${
+            className={`w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden p-6 ${
               isDragging ? "border-2 border-blue-500" : ""
             }`}
             onDragEnter={handleDragEnter}
@@ -188,21 +200,48 @@ const FileUploadModal = () => {
               accept=".doc,.docx,.xls,.xlsx,.csv,.json"
             />
 
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Оберіть таблицю:</label>
-              <select
-                value={selectedTable}
-                onChange={(e) => setSelectedTable(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                disabled={isLoading}
-              >
-                <option value="Таблиці">-- Виберіть таблицю --</option>
-                {tables.filter(t => t !== "Таблиці").map((table) => (
-                  <option key={table} value={table}>
-                    {table}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-gray-700 mb-2">Оберіть таблицю:</label>
+                <select
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  disabled={isLoading}
+                >
+                  <option value="Таблиці">-- Виберіть таблицю --</option>
+                  {tables.filter(t => t !== "Таблиці").map((table) => (
+                    <option key={table} value={table}>
+                      {table}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-2">Ліміт записів:</label>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="useLimit"
+                    checked={useLimit}
+                    onChange={(e) => setUseLimit(e.target.checked)}
+                    className="mr-2"
+                    disabled={isLoading}
+                  />
+                  <label htmlFor="useLimit" className="text-gray-700 mr-2">
+                    Обмежити
+                  </label>
+                  <input
+                    type="number"
+                    value={limit}
+                    onChange={(e) => setLimit(e.target.value)}
+                    className="w-20 p-2 border border-gray-300 rounded"
+                    disabled={!useLimit || isLoading}
+                    min="1"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center mb-6">
