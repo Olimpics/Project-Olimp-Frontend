@@ -1,10 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Column<T> {
   header: string
   accessor: keyof T
+  href?: (row: T) => string
 }
 
 interface DataTableProps<T> {
@@ -27,6 +29,7 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
   onClick,
 }: DataTableProps<T>) => {
   const [openRowIndex, setOpenRowIndex] = useState<number | null>(null)
+  const router = useRouter()
 
   const toggleDropdown = (index: number) => {
     setOpenRowIndex((prev) => (prev === index ? null : index))
@@ -56,20 +59,37 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
           {data.length > 0 ? (
             data.map((row, rowIndex) => (
               <tr
-                {...(onClick ? { onClick: () => onClick(row) } : {})}
                 key={row.id ?? `row-${rowIndex}`}
                 className={`relative ${
                   onClick ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'
                 }`}
+                {...(onClick ? { onClick: () => onClick(row) } : {})}
               >
-                {columns.map((col) => (
-                  <td
-                    key={`${row.id ?? rowIndex}-${String(col.accessor)}`}
-                    className="py-2 px-4 border-b"
-                  >
-                    {String(row[col.accessor])}
-                  </td>
-                ))}
+                {columns.map((col) => {
+                  const cellContent = String(row[col.accessor])
+                  const href = col.href?.(row)
+
+                  return (
+                    <td
+                      key={`${row.id ?? rowIndex}-${String(col.accessor)}`}
+                      className="py-2 px-4 border-b"
+                    >
+                      {href ? (
+                        <span
+                          className="text-blue-600 hover:underline cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.open(href)
+                          }}
+                        >
+                          {cellContent}
+                        </span>
+                      ) : (
+                        cellContent
+                      )}
+                    </td>
+                  )
+                })}
 
                 {isActionEnabled && (
                   <td className="py-2 px-4 border-b relative">

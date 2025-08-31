@@ -148,7 +148,7 @@ export const AdminBindLoansPage = () => {
 
     try {
       const res = await fetchWithAuth(
-        `http://185.237.207.78:5000/api/BindLoansMain?${query.toString()}`
+        `https://localhost:7011/api/BindLoansMain?${query.toString()}`
       )
       const data = await res.json()
       setBindLoans(data.items || [])
@@ -164,8 +164,8 @@ export const AdminBindLoansPage = () => {
 
       try {
         const [disciplinesRes, specialitiesRes] = await Promise.all([
-          fetchWithAuth('http://185.237.207.78:5000/api/Filter/add-disciplines'),
-          fetchWithAuth('http://185.237.207.78:5000/api/Filter/specialities')
+          fetchWithAuth('https://localhost:7011/api/Filter/add-disciplines'),
+          fetchWithAuth('https://localhost:7011/api/Filter/specialities')
         ])
 
         const disciplinesData = await disciplinesRes.json()
@@ -213,7 +213,7 @@ export const AdminBindLoansPage = () => {
 
     try {
       const response = await fetchWithAuth(
-        `http://185.237.207.78:5000/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
+        `https://localhost:7011/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
         { method: 'DELETE' }
       )
 
@@ -234,7 +234,7 @@ export const AdminBindLoansPage = () => {
     try {
       let response
       if (modalType === 'add') {
-        response = await fetchWithAuth('http://185.237.207.78:5000/api/BindLoansMain', {
+        response = await fetchWithAuth('https://localhost:7011/api/BindLoansMain', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ export const AdminBindLoansPage = () => {
         })
       } else {
         response = await fetchWithAuth(
-          `http://185.237.207.78:5000/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
+          `https://localhost:7011/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
           {
             method: 'PUT',
             headers: {

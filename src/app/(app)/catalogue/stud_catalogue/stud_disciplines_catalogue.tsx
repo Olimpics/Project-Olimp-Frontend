@@ -173,7 +173,7 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
       }
 
       const res = await fetch(
-        `http://185.237.207.78:5000/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
+        `https://localhost:7011/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
       )
       const data = await res.json()
 
@@ -204,10 +204,10 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
   useEffect(() => {
     const fetchInitialData = async () => {
       const facData = await (
-        await fetch('http://185.237.207.78:5000/api/Faculty')
+        await fetch('https://localhost:7011/api/Faculty')
       ).json()
       const eduData = await (
-        await fetch('http://185.237.207.78:5000/api/EducationalDegree')
+        await fetch('https://localhost:7011/api/EducationalDegree')
       ).json()
 
       setFaculties(facData)

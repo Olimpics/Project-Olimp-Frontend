@@ -73,7 +73,7 @@ export default function ProductPage({ params }: Params) {
   useEffect(() => {  
     const fetchDisciplineAndFaculty = async () => {
       try {
-        const response = await fetch(`http://185.237.207.78:5000/api/DisciplineTab/GetDisciplineWithDetails/${id}`);
+        const response = await fetch(`https://localhost:7011/api/DisciplineTab/GetDisciplineWithDetails/${id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -241,7 +241,7 @@ export default function ProductPage({ params }: Params) {
         }
       }
 
-      const response = await fetch(`http://185.237.207.78:5000/api/DisciplineTab/UpdateDisciplineWithDetails/${id}`, {
+      const response = await fetch(`https://localhost:7011/api/DisciplineTab/UpdateDisciplineWithDetails/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

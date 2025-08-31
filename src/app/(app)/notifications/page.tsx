@@ -60,7 +60,7 @@ export default function NotificationPage() {
       if (readFilter.includes('Прочитані')) query.append('isRead', 'true')
       if (readFilter.includes('Непрочитані')) query.append('isRead', 'false')
 
-      const res = await fetch(`http://185.237.207.78:5000/api/Notification/user/${student.userId}?${query.toString()}`)
+      const res = await fetch(`https://localhost:7011/api/Notification/user/${student.userId}?${query.toString()}`)
       const data = await res.json()
 
       const updated = data.notifications.map((n: Notification) => ({

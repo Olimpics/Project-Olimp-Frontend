@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import React from 'react'
+import { useSearchParams } from 'next/navigation'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
@@ -41,9 +42,10 @@ type Groupes = {
   code: string
 }
 
-interface Column {
+interface Column<T> {
   header: string
-  accessor: keyof Student
+  accessor: keyof T
+  href?: (row: T) => string
 }
 
 const sortingOptions = [
@@ -97,32 +99,33 @@ const Pagination: React.FC<{
   )
 }
 
-
 export const AdminStudentCatalogue = () => {
+  const searchParams = useSearchParams()
+  const groupGive = searchParams.get('groupName') || ''
+
   const [students, setStudents] = useState<Student[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
   const [specialities, setSpecialities] = useState<Specialities[]>([])
-  const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
   const [groupes, setGroupes] = useState<Groupes[]>([])
+  const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
+  const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
+  const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
+  const [pendingCourses, setPendingCourses] = useState<string[]>([])
   const [pendingGroupes, setPendingGroupes] = useState<string[]>([])
+
   const [courses] = useState<Courses[]>([
     { courseNumber: 1 },
     { courseNumber: 2 },
     { courseNumber: 3 },
     { courseNumber: 4 },
   ])
-  console.log(`studentsstudents`,students)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
-  const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
-  const [pendingCourses, setPendingCourses] = useState<string[]>([])
-  const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSorting, setSelectedSorting] = useState<number>(0)
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Состояния для модального окна
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalType, setModalType] = useState<'edit' | 'delete' | null>(null)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
@@ -130,13 +133,13 @@ export const AdminStudentCatalogue = () => {
   const fetchFilteredData = useCallback(async (page: number = currentPage) => {
     const query = new URLSearchParams({
       page: page.toString(),
-      pageSize: "17",
+      pageSize: '17',
       search: searchTerm,
       sortOrder: selectedSorting.toString()
     })
 
     if (pendingFaculties.length > 0) {
-      query.append("faculties", pendingFaculties.join(","))
+      query.append('faculties', pendingFaculties.join(','))
     }
 
     const degreeIds = eduDegrees
@@ -144,35 +147,38 @@ export const AdminStudentCatalogue = () => {
       .map((d) => d.idEducationalDegree)
 
     if (degreeIds.length > 0) {
-      query.append("degreeLevelIds", degreeIds.join(","))
+      query.append('degreeLevelIds', degreeIds.join(','))
     }
 
     if (pendingCourses.length > 0) {
-      query.append("courses", pendingCourses.join(","))
+      query.append('courses', pendingCourses.join(','))
     }
 
     if (pendingSpecialities.length > 0) {
-      query.append("speciality", pendingSpecialities.join(","))
+      query.append('speciality', pendingSpecialities.join(','))
     }
 
     if (pendingGroupes.length > 0) {
-      const selectedGroupIds = groupes
-        .filter((g) => pendingGroupes.includes(g.code))
-        .map((g) => g.id)
+      if (groupGive) {
+        const matchingGroup = groupData.find((g: Groupes) => g.code === groupGive)
+        if (matchingGroup) {
+          setPendingGroupes([matchingGroup.code])
+        }
+      } else {
+        const selectedGroupIds = groupes
+          .filter((g) => pendingGroupes.includes(g.code))
+          .map((g) => g.id)
 
-      if (selectedGroupIds.length > 0) {
-        query.append("group", selectedGroupIds.join(","))
+        if (selectedGroupIds.length > 0) {
+          query.append('group', selectedGroupIds.join(','))
+        }
       }
     }
 
-    const res = await fetch(
-      `http://185.237.207.78:5000/api/Student?${query.toString()}`
-    )
+    const res = await fetch(`https://localhost:7011/api/Student?${query.toString()}`)
     const data = await res.json()
 
-    const formatted = (data.students || []).map((d: Student) => ({ ...d }))
-
-    setStudents(formatted)
+    setStudents(data.students || [])
     setTotalPages(data.totalPages || 1)
   }, [
     currentPage,
@@ -183,30 +189,26 @@ export const AdminStudentCatalogue = () => {
     pendingSpecialities,
     selectedSorting,
     eduDegrees,
-    pendingGroupes
+    pendingGroupes,
+    groupes
   ])
 
   useEffect(() => {
-    fetchFilteredData(1)
-  }, [selectedSorting])
-
-  useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://185.237.207.78:5000/api/Faculty')).json()
-      const eduData = await (await fetch('http://185.237.207.78:5000/api/EducationalDegree')).json()
-      const specData = await (await fetch('http://185.237.207.78:5000/api/Filter/specialities')).json()
+      const facData = await (await fetch('https://localhost:7011/api/Faculty')).json()
+      const eduData = await (await fetch('https://localhost:7011/api/EducationalDegree')).json()
+      const specData = await (await fetch('https://localhost:7011/api/Filter/specialities')).json()
+      const groupData = await (await fetch('https://localhost:7011/api/Filter/groups')).json()
+
       const formattedSpecs = specData.map((s: Specialities) => ({
         ...s,
-        label: `${s.code} - ${s.name}`
+        label: `${s.code} - ${s.name}`,
       }))
-      const groupData = await (await fetch('http://185.237.207.78:5000/api/Filter/groups')).json()
-      console.log(specData)
 
       setFaculties(facData)
       setEduDegrees(eduData)
       setSpecialities(formattedSpecs)
       setGroupes(groupData)
-
       fetchFilteredData(1)
     }
 
@@ -232,54 +234,47 @@ export const AdminStudentCatalogue = () => {
 
   const confirmDelete = async () => {
     if (!selectedStudent) return
+    const response = await fetch(`https://localhost:7011/api/Student/${selectedStudent.idStudents}`, {
+      method: 'DELETE'
+    })
 
-    try {
-      const response = await fetch(`http://185.237.207.78:5000/api/Student/${selectedStudent.idStudents}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при видаленні студента')
-      }
-    } catch (error) {
-      console.error('Помилка при видаленні студента:', error)
+    if (response.ok) {
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
+    } else {
+      console.error('Помилка при видаленні студента')
     }
   }
 
   const saveChanges = async () => {
     if (!selectedStudent) return
+    const response = await fetch(`https://localhost:7011/api/Student/${selectedStudent.idStudents}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(selectedStudent)
+    })
 
-    try {
-      const response = await fetch(`http://185.237.207.78:5000/api/Student/${selectedStudent.idStudents}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(selectedStudent)
-      })
-
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при оновленні даних студента')
-      }
-    } catch (error) {
-      console.error('Помилка при оновленні даних студента:', error)
+    if (response.ok) {
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
+    } else {
+      console.error('Помилка при оновленні даних студента')
     }
   }
 
-  const columns: Column[] = [
+  const columns: Column<Student>[] = [
     { header: 'ПІБ студента', accessor: 'nameStudent' },
     { header: 'Факультет', accessor: 'facultyAbbreviation' },
     { header: 'Cпеціальність', accessor: 'speciality' },
     { header: 'Рівень освіти', accessor: 'degreeName' },
     { header: 'Курс', accessor: 'course' },
-    { header: 'Група', accessor: 'groupName'}
-
+    {
+      header: 'Група',
+      accessor: 'groupName',
+      href: (row) => `/catalogue?activeTab=2&groupName=${encodeURIComponent(row.groupName)}`,
+    },
   ]
 
   return (
@@ -294,8 +289,6 @@ export const AdminStudentCatalogue = () => {
             selectedValues={pendingSpecialities}
             onChange={setPendingSpecialities}
           />
-
-
           <FilterBox
             name="Факультет"
             options={faculties}
