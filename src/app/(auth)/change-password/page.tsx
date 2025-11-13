@@ -85,7 +85,7 @@ const ChangePasswordPage = ()=>{
   
         await handleLogIn()
       } catch (err: any) {
-        setError(err?.response?.data?.message || err.message || 'Помилка зміни')
+        setError(err?.response?.data || err.message || 'Помилка зміни')
       } finally {
         setLoading(false)
       }
@@ -164,7 +164,7 @@ const ChangePasswordPage = ()=>{
      
           <button
             type="submit"
-            disabled={loading || oldPassword!==password}
+            disabled={loading }
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? 'Завантаження...' : 'Увійти'}
