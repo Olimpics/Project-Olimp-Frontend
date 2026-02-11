@@ -61,6 +61,10 @@ export default function LoginPage() {
       window.dispatchEvent(new Event('student-auth-changed'))
       router.push('/cabinet')
     } catch (err: any) {
+      if(err.response.data.requirePasswordChange){
+        router.push(`/change-password?error=${encodeURIComponent(err.response.data.message)}&email=${encodeURIComponent(email)}`)
+        return
+      }
       setError(err?.response?.data?.message || err.message || 'Помилка входу')
     } finally {
       setLoading(false)
