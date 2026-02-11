@@ -63,10 +63,22 @@ export default function NotificationPage() {
       const res = await fetch(`https://localhost:7011/api/Notification/user/${student.userId}?${query.toString()}`)
       const data = await res.json()
 
-      const updated = data.notifications.map((n: Notification) => ({
-        ...n,
-        status: n.isRead ? 'Прочитано' : 'Непрочитано',
-      }))
+      const updated = data.notifications.map((n: Notification) => {
+        const date = new Date(n.createdAt)
+        const formattedDate = date.toLocaleString("uk-UA", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+
+        return {
+          ...n,
+          createdAt: formattedDate,
+          status: n.isRead ? 'Прочитано' : 'Непрочитано',
+        }
+      })
 
       setNotifications(updated)
       setFiltered(updated)

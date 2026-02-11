@@ -103,16 +103,19 @@ export const FilterBox = <T extends Record<string, any>>({
               const value = String(option[accessor])
 
               return (
-                <div key={idx} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`${displayName}-${value}`}
-                    checked={selectedValues.includes(value)}
-                    onChange={() => toggleOption(value)}
-                    className="mr-2"
-                  />
-                  <label htmlFor={`${displayName}-${value}`} className="text-gray-700">
-                    {displayName}
+                <div key={idx} className="flex items-center cursor-pointer">
+                  <label
+                    htmlFor={`${displayName}-${value}`}
+                    className="flex items-center w-full cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      id={`${displayName}-${value}`}
+                      checked={selectedValues.includes(value)}
+                      onChange={() => toggleOption(value)}
+                      className="mr-2"
+                    />
+                    <span className="text-gray-700">{displayName}</span>
                   </label>
                 </div>
               )

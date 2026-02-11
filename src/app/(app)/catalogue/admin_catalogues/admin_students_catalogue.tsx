@@ -13,6 +13,7 @@ type Student = {
   speciality: string
   degreeName: string
   groupName: string
+  groupId: string
   course: number
 }
 
@@ -101,13 +102,14 @@ const Pagination: React.FC<{
 
 export const AdminStudentCatalogue = () => {
   const searchParams = useSearchParams()
-  const groupGive = searchParams.get('groupName') || ''
+  const groupGive = searchParams.get('groupId') || ''
 
   const [students, setStudents] = useState<Student[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
   const [specialities, setSpecialities] = useState<Specialities[]>([])
   const [groupes, setGroupes] = useState<Groupes[]>([])
+  
   const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
   const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
   const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
@@ -138,6 +140,7 @@ export const AdminStudentCatalogue = () => {
       sortOrder: selectedSorting.toString()
     })
 
+    // Standard filters
     if (pendingFaculties.length > 0) {
       query.append('faculties', pendingFaculties.join(','))
     }
@@ -158,22 +161,38 @@ export const AdminStudentCatalogue = () => {
       query.append('speciality', pendingSpecialities.join(','))
     }
 
-    if (pendingGroupes.length > 0) {
-      if (groupGive) {
-        const matchingGroup = groupData.find((g: Groupes) => g.code === groupGive)
-        if (matchingGroup) {
-          setPendingGroupes([matchingGroup.code])
+    if (groupGive) {
+      try {
+        const groupRes = await fetch('https://localhost:7011/api/Filter/groups')
+        if (groupRes.ok) {
+          const groupList: Groupes[] = await groupRes.json()
+          
+          const matchingGroup = groupList.find((g) => g.code === groupGive)
+          
+          if (matchingGroup) {
+            query.append('group', matchingGroup.id.toString())
+            
+            setPendingGroupes((prev) => {
+               if (!prev.includes(matchingGroup.code)) {
+                   return [...prev, matchingGroup.code]
+               }
+               return prev
+            })
+          }
         }
-      } else {
-        const selectedGroupIds = groupes
-          .filter((g) => pendingGroupes.includes(g.code))
-          .map((g) => g.id)
+      } catch (error) {
+        console.error("Error resolving group by name:", error)
+      }
+    } else if (pendingGroupes.length > 0) {
+      const selectedIds = groupes
+        .filter((g) => pendingGroupes.includes(g.code))
+        .map((g) => g.id)
 
-        if (selectedGroupIds.length > 0) {
-          query.append('group', selectedGroupIds.join(','))
-        }
+      if (selectedIds.length > 0) {
+        query.append('group', selectedIds.join(','))
       }
     }
+    // -------------------------
 
     const res = await fetch(`https://localhost:7011/api/Student?${query.toString()}`)
     const data = await res.json()
@@ -190,6 +209,7 @@ export const AdminStudentCatalogue = () => {
     selectedSorting,
     eduDegrees,
     pendingGroupes,
+    groupGive,
     groupes
   ])
 
@@ -209,10 +229,14 @@ export const AdminStudentCatalogue = () => {
       setEduDegrees(eduData)
       setSpecialities(formattedSpecs)
       setGroupes(groupData)
+      
+      // Trigger initial student load
       fetchFilteredData(1)
     }
 
     fetchInitialData()
+    // We only want this to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSearch = () => {
@@ -273,7 +297,7 @@ export const AdminStudentCatalogue = () => {
     {
       header: 'Група',
       accessor: 'groupName',
-      href: (row) => `/catalogue?activeTab=2&groupName=${encodeURIComponent(row.groupName)}`,
+      href: (row) => `/catalogue?activeTab=2&groupId=${encodeURIComponent(row.groupName || row.groupId)}`,
     },
   ]
 
@@ -286,7 +310,7 @@ export const AdminStudentCatalogue = () => {
             options={specialities}
             accessor="code"
             valueName="label"
-            selectedValues={pendingSpecialities}
+            selectedValues={pendingSpecialities} 
             onChange={setPendingSpecialities}
           />
           <FilterBox
@@ -316,7 +340,8 @@ export const AdminStudentCatalogue = () => {
             options={groupes}
             accessor="code"
             selectedValues={pendingGroupes}
-            onChange={setPendingGroupes}
+            // Ensure this accepts string[] now
+            onChange={(vals) => setPendingGroupes(vals as string[])}
           />
         </div>
         <button
@@ -390,7 +415,7 @@ export const AdminStudentCatalogue = () => {
                 <input
                   type="text"
                   value={selectedStudent.nameStudent}
-                  onChange={(e) => setSelectedStudent({...selectedStudent, nameStudent: e.target.value})}
+                  onChange={(e) => setSelectedStudent({ ...selectedStudent, nameStudent: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
@@ -399,7 +424,7 @@ export const AdminStudentCatalogue = () => {
                 <input
                   type="text"
                   value={selectedStudent.facultyAbbreviation}
-                  onChange={(e) => setSelectedStudent({...selectedStudent, facultyAbbreviation: e.target.value})}
+                  onChange={(e) => setSelectedStudent({ ...selectedStudent, facultyAbbreviation: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
