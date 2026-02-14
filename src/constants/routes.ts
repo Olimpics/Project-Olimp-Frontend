@@ -4,5 +4,6 @@ export const ROUTES = {
     disciplines: '/disciplines',
     mainpage: '/',
     stud_catalogue: '/stud_disciplines_catalogue.tsx',
-    notifications: '/notifications'
+    notifications: '/notifications',
+    periods: '/periods',
 }
