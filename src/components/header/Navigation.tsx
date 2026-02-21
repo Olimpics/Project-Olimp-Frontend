@@ -23,6 +23,7 @@ const headerLinks = [
 const headerLinksAdmin = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Каталоги', link: ROUTES.catalogue },
+  { name: 'Періоди вибірних дисциплін', link: ROUTES.periods },
   { name: 'Рейтинги', link: '#' },
   { name: 'Аналітика', link: '##' },
   { name: 'Новини', link: '###' },
