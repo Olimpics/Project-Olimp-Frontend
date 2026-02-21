@@ -1,24 +1,80 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
+import { apiService } from '@/services/axiosService'
+import { getCookie } from '@/services/cookie-servies'
+import { USER_PROFLE } from '@/constants/cookies'
 
-type Semester = 'Осінь' | 'Весна'
-type PeriodStatus = 'Відкрито' | 'Закрито' | 'Архів'
+const DEPARTMENT_ID = 21
+
+type TargetAudience = 'Всіх' | 'Перевибір'
+type PeriodStatus = 'Відкрито' | 'Закрито'
+
+type ForCourse = '1' | '2' | '3' | 'Для всіх'
 
 type Period = {
   id: string
-  academicYear: string 
-  semester: Semester
-  startDate: string 
-  endDate: string 
+  apiId: number
+  forCourse: ForCourse
+  targetAudience: TargetAudience
+  startDate: string
+  endDate: string
   status: PeriodStatus
-  updatedAtLabel: string 
+  updatedAtLabel: string
 }
 
-const academicYears = ['2025 / 2026', '2024 / 2025', '2023 / 2024']
-const semesters: Semester[] = ['Осінь', 'Весна']
-const statuses: PeriodStatus[] = ['Відкрито', 'Закрито', 'Архів']
+// API: periodType 0=Всіх 1=Перевибір, periodCourse 0=Для всіх 1,2,3, isClose 0=Відкрито 1=Закрито
+type DisciplineChoicePeriodDto = {
+  id?: number
+  periodType: number
+  periodCourse: number
+  isClose: number
+  facultyId?: number
+  departmentId?: number
+  startDate: string
+  endDate: string
+}
+
+function toPeriodType(t: TargetAudience): number {
+  return t === 'Всіх' ? 0 : 1
+}
+function fromPeriodType(n: number): TargetAudience {
+  return n === 0 ? 'Всіх' : 'Перевибір'
+}
+function toPeriodCourse(c: ForCourse): number {
+  if (c === 'Для всіх') return 0
+  return Number(c) as 1 | 2 | 3
+}
+function fromPeriodCourse(n: number): ForCourse {
+  if (n === 0) return 'Для всіх'
+  return String(n) as ForCourse
+}
+function toIsClose(s: PeriodStatus): number {
+  return s === 'Закрито' ? 1 : 0
+}
+function fromIsClose(n: number): PeriodStatus {
+  return n === 1 ? 'Закрито' : 'Відкрито'
+}
+
+function apiToPeriod(dto: DisciplineChoicePeriodDto): Period {
+  const start = dto.startDate.slice(0, 10)
+  const end = dto.endDate.slice(0, 10)
+  return {
+    id: String(dto.id),
+    apiId: dto.id ?? 0,
+    forCourse: fromPeriodCourse(dto.periodCourse),
+    targetAudience: fromPeriodType(dto.periodType),
+    startDate: start,
+    endDate: end,
+    status: fromIsClose(dto.isClose),
+    updatedAtLabel: '—',
+  }
+}
+
+const forCourseOptions: ForCourse[] = ['Для всіх', '1', '2', '3']
+const targetAudienceOptions: TargetAudience[] = ['Всіх', 'Перевибір']
+const statusDropdownOptions: PeriodStatus[] = ['Відкрито', 'Закрито']
 
 const formatDateRange = (startISO: string, endISO: string) => {
   const toDM = (iso: string) => {
@@ -34,8 +90,6 @@ const statusPillClass = (status: PeriodStatus) => {
       return 'bg-emerald-100 text-emerald-800'
     case 'Закрито':
       return 'bg-gray-200 text-gray-700'
-    case 'Архів':
-      return 'bg-amber-100 text-amber-800'
   }
 }
 
@@ -73,13 +127,80 @@ function IconLock(props: { className?: string }) {
   )
 }
 
+function CloseConfirmModal({
+  period,
+  lockUntil,
+  onConfirm,
+  onClose,
+}: {
+  period: Period
+  lockUntil: number
+  onConfirm: () => void | Promise<void>
+  onClose: () => void
+}) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const secondsLeft = Math.max(0, Math.ceil((lockUntil - now) / 1000))
+  const canConfirm = secondsLeft === 0
+
+  return (
+    <Modal isOpen onClose={onClose}>
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-xl font-semibold text-gray-900">Закриття періоду</h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="mt-4 space-y-3">
+        <p className="text-gray-700">
+          Ви збираєтесь <strong>закрити</strong> період вибору дисциплін. Після закриття студенти не
+          зможуть змінювати свій вибір у межах цього періоду. Переконайтесь, що всі потрібні дані
+          збережені та що ви дійсно хочете завершити період.
+        </p>
+        <p className="text-sm text-gray-600">
+          Період: для курсу {period.forCourse}, семестр {period.targetAudience},{' '}
+          {formatDateRange(period.startDate, period.endDate)}.
+        </p>
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50"
+        >
+          Скасувати
+        </button>
+        <button
+          onClick={() => (canConfirm ? onConfirm() : undefined)}
+          disabled={!canConfirm}
+          className="px-4 py-2 rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          {canConfirm ? 'Підтвердити закриття' : `Підтвердити закриття (${secondsLeft} с)`}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
 type PeriodModalMode = 'create' | 'edit'
 type PeriodModalDraft = {
-  academicYear: string
-  semester: Semester
+  forCourse: ForCourse
+  targetAudience: TargetAudience
   startDate: string
   endDate: string
   status: PeriodStatus
+}
+
+function getTomorrowYYYYMMDD(): string {
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  return t.toISOString().slice(0, 10)
 }
 
 function PeriodModal({
@@ -98,6 +219,8 @@ function PeriodModal({
   onSave: () => void
 }) {
   const title = mode === 'create' ? 'Створення періоду' : 'Редагування періоду'
+  const isEdit = mode === 'edit'
+  const minStartDate = getTomorrowYYYYMMDD()
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -112,42 +235,43 @@ function PeriodModal({
         </button>
       </div>
 
+      {isEdit && (
+        <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+          При редагуванні можна змінити лише дату завершення та статус (відкрито/закрито).
+        </p>
+      )}
+
       <div className="mt-4 space-y-4">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Рік навчання</label>
+          <label className="block text-sm text-gray-600 mb-1">Для курсу</label>
           <select
-            value={draft.academicYear}
-            onChange={(e) => onChangeDraft({ ...draft, academicYear: e.target.value })}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={draft.forCourse}
+            onChange={(e) => onChangeDraft({ ...draft, forCourse: e.target.value as ForCourse })}
+            disabled={isEdit}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
-            {academicYears.map((y) => (
-              <option key={y} value={y}>
-                {y}
+            {forCourseOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-2">Семестр</label>
-          <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
-            {semesters.map((s) => {
-              const active = draft.semester === s
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => onChangeDraft({ ...draft, semester: s })}
-                  className={[
-                    'px-4 py-2 text-sm font-medium',
-                    active ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50',
-                  ].join(' ')}
-                >
-                  {s}
-                </button>
-              )
-            })}
-          </div>
+          <label className="block text-sm text-gray-600 mb-1">Семестр</label>
+          <select
+            value={draft.targetAudience}
+            onChange={(e) => onChangeDraft({ ...draft, targetAudience: e.target.value as TargetAudience })}
+            disabled={isEdit}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            {targetAudienceOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -157,8 +281,13 @@ function PeriodModal({
               type="date"
               value={draft.startDate}
               onChange={(e) => onChangeDraft({ ...draft, startDate: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isEdit}
+              min={isEdit ? undefined : minStartDate}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
+            {!isEdit && (
+              <p className="mt-0.5 text-xs text-gray-500">Не раніше ніж завтра</p>
+            )}
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Дата завершення</label>
@@ -166,8 +295,12 @@ function PeriodModal({
               type="date"
               value={draft.endDate}
               onChange={(e) => onChangeDraft({ ...draft, endDate: e.target.value })}
+              min={draft.startDate || minStartDate}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {!isEdit && draft.startDate && (
+              <p className="mt-0.5 text-xs text-gray-500">Не раніше дати початку</p>
+            )}
           </div>
         </div>
 
@@ -178,7 +311,7 @@ function PeriodModal({
             onChange={(e) => onChangeDraft({ ...draft, status: e.target.value as PeriodStatus })}
             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {statuses.map((s) => (
+            {statusDropdownOptions.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -206,44 +339,61 @@ function PeriodModal({
 }
 
 export default function PeriodsPage() {
-  const [periods, setPeriods] = useState<Period[]>([
-    {
-      id: 'p1',
-      academicYear: '2025 / 2026',
-      semester: 'Осінь',
-      startDate: '2025-09-01',
-      endDate: '2025-09-15',
-      status: 'Відкрито',
-      updatedAtLabel: '2 дні тому',
-    },
-    {
-      id: 'p2',
-      academicYear: '2025 / 2026',
-      semester: 'Весна',
-      startDate: '2026-02-10',
-      endDate: '2026-02-20',
-      status: 'Закрито',
-      updatedAtLabel: '5 місяців тому',
-    },
-  ])
+  const [periods, setPeriods] = useState<Period[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // TODO: тут фетчимо періоди з бекенду, коли будуть ендпоінти
-  // useEffect(() => { fetchPeriods() }, [])
+  const getFacultyId = useCallback((): number => {
+    try {
+      const raw = getCookie(USER_PROFLE)
+      if (!raw) return 0
+      const user = JSON.parse(raw) as { idFaculty?: number; facultyId?: number }
+      return user?.idFaculty ?? user?.facultyId ?? 0
+    } catch {
+      return 0
+    }
+  }, [])
 
-  const [pendingYear, setPendingYear] = useState<string>(academicYears[0])
-  const [pendingSemester, setPendingSemester] = useState<string>('Осінь і Весна')
-  const [pendingStatus, setPendingStatus] = useState<string>('Активний та Архів')
+  const fetchPeriods = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const facultyId = getFacultyId()
+    try {
+      const params = new URLSearchParams()
+      params.set('facultyId', String(facultyId))
+      params.set('departmentId', String(DEPARTMENT_ID))
+      const list = await apiService.get<DisciplineChoicePeriodDto[]>(
+        `DisciplineChoicePeriod?${params.toString()}`
+      )
+      setPeriods((Array.isArray(list) ? list : []).map(apiToPeriod))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Помилка завантаження періодів')
+      setPeriods([])
+    } finally {
+      setLoading(false)
+    }
+  }, [getFacultyId])
 
-  const [year, setYear] = useState<string>(academicYears[0])
-  const [semester, setSemester] = useState<string>('Осінь і Весна')
-  const [status, setStatus] = useState<string>('Активний та Архів')
+  useEffect(() => {
+    fetchPeriods()
+  }, [fetchPeriods])
+
+  const [pendingForCourse, setPendingForCourse] = useState<ForCourse>('Для всіх')
+  const [pendingTarget, setPendingTarget] = useState<string>('Всіх')
+  const [pendingStatus, setPendingStatus] = useState<string>('Усі')
+
+  const [forCourse, setForCourse] = useState<ForCourse>('Для всіх')
+  const [targetFilter, setTargetFilter] = useState<string>('Всіх')
+  const [statusFilter, setStatusFilter] = useState<string>('Усі')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<PeriodModalMode>('create')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [closeConfirmPeriod, setCloseConfirmPeriod] = useState<Period | null>(null)
+  const [closeConfirmLockUntil, setCloseConfirmLockUntil] = useState(0)
   const [draft, setDraft] = useState<PeriodModalDraft>({
-    academicYear: academicYears[0],
-    semester: 'Осінь',
+    forCourse: 'Для всіх',
+    targetAudience: 'Всіх',
     startDate: '2025-09-01',
     endDate: '2025-09-15',
     status: 'Відкрито',
@@ -251,39 +401,43 @@ export default function PeriodsPage() {
 
   const filteredPeriods = useMemo(() => {
     return periods.filter((p) => {
-      if (year && p.academicYear !== year) return false
+      if (forCourse && p.forCourse !== forCourse) return false
 
-      if (semester === 'Осінь' && p.semester !== 'Осінь') return false
-      if (semester === 'Весна' && p.semester !== 'Весна') return false
+      if (targetFilter === 'Всіх' && p.targetAudience !== 'Всіх') return false
+      if (targetFilter === 'Перевибір' && p.targetAudience !== 'Перевибір') return false
 
-      if (status === 'Активний' && p.status !== 'Відкрито') return false
-      if (status === 'Архів' && p.status !== 'Архів') return false
+      if (statusFilter === 'Відкрито' && p.status !== 'Відкрито') return false
+      if (statusFilter === 'Закрито' && p.status !== 'Закрито') return false
 
       return true
     })
-  }, [periods, year, semester, status])
+  }, [periods, forCourse, targetFilter, statusFilter])
 
   const grouped = useMemo(() => {
     const map = new Map<string, Period[]>()
     for (const p of filteredPeriods) {
-      if (!map.has(p.academicYear)) map.set(p.academicYear, [])
-      map.get(p.academicYear)!.push(p)
+      if (!map.has(p.forCourse)) map.set(p.forCourse, [])
+      map.get(p.forCourse)!.push(p)
     }
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+    const order: ForCourse[] = ['Для всіх', '1', '2', '3']
+    return Array.from(map.entries()).sort(
+      (a, b) => order.indexOf(a[0] as ForCourse) - order.indexOf(b[0] as ForCourse)
+    )
   }, [filteredPeriods])
 
   const handleApplyFilters = () => {
-    setYear(pendingYear)
-    setSemester(pendingSemester)
-    setStatus(pendingStatus)
+    setForCourse(pendingForCourse)
+    setTargetFilter(pendingTarget)
+    setStatusFilter(pendingStatus)
   }
 
   const openCreate = () => {
+    setError(null)
     setModalMode('create')
     setEditingId(null)
     setDraft({
-      academicYear: pendingYear ?? academicYears[0],
-      semester: 'Осінь',
+      forCourse: 'Для всіх',
+      targetAudience: 'Всіх',
       startDate: '',
       endDate: '',
       status: 'Відкрито',
@@ -292,11 +446,12 @@ export default function PeriodsPage() {
   }
 
   const openEdit = (p: Period) => {
+    setError(null)
     setModalMode('edit')
     setEditingId(p.id)
     setDraft({
-      academicYear: p.academicYear,
-      semester: p.semester,
+      forCourse: p.forCourse,
+      targetAudience: p.targetAudience,
       startDate: p.startDate,
       endDate: p.endDate,
       status: p.status,
@@ -304,42 +459,70 @@ export default function PeriodsPage() {
     setIsModalOpen(true)
   }
 
-  const handleSave = () => {
-    if (!draft.academicYear || !draft.startDate || !draft.endDate) return
+  const handleSave = async () => {
+    if (!draft.startDate || !draft.endDate) return
     if (draft.endDate < draft.startDate) return
 
-    if (modalMode === 'create') {
-      // TODO: тут робимо POST на бекенд для створення періоду
-      const next: Period = {
-        id: `tmp-${Date.now()}`,
-        academicYear: draft.academicYear,
-        semester: draft.semester,
-        startDate: draft.startDate,
-        endDate: draft.endDate,
-        status: draft.status,
-        updatedAtLabel: 'щойно',
-      }
-      setPeriods((prev) => [next, ...prev])
-    } else if (modalMode === 'edit' && editingId) {
-      // TODO: тут робимо PUT/PATCH на бекенд для редагування періоду
-      setPeriods((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                academicYear: draft.academicYear,
-                semester: draft.semester,
-                startDate: draft.startDate,
-                endDate: draft.endDate,
-                status: draft.status,
-                updatedAtLabel: 'щойно',
-              }
-            : p
-        )
-      )
-    }
+    const facultyId = getFacultyId()
+    const startISO = `${draft.startDate}T00:00:00.000Z`
+    const endISO = `${draft.endDate}T23:59:59.999Z`
+    const tomorrow = getTomorrowYYYYMMDD()
 
-    setIsModalOpen(false)
+    if (modalMode === 'create') {
+      if (draft.startDate < tomorrow) {
+        setError('Дата початку має бути не раніше ніж завтра')
+        return
+      }
+      setError(null)
+      try {
+        const body: DisciplineChoicePeriodDto = {
+          periodType: toPeriodType(draft.targetAudience),
+          periodCourse: toPeriodCourse(draft.forCourse),
+          isClose: toIsClose(draft.status),
+          facultyId,
+          departmentId: DEPARTMENT_ID,
+          startDate: startISO,
+          endDate: endISO,
+        }
+        const created = await apiService.post<DisciplineChoicePeriodDto>(
+          'DisciplineChoicePeriod',
+          body
+        )
+        setPeriods((prev) => [apiToPeriod(created), ...prev])
+        setIsModalOpen(false)
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Помилка створення періоду')
+      }
+    } else if (modalMode === 'edit' && editingId) {
+      const period = periods.find((p) => p.id === editingId)
+      if (!period) return
+      try {
+        const body = {
+          id: period.apiId,
+          isClose: toIsClose(draft.status),
+          endDate: `${draft.endDate}T23:59:59.999Z`,
+        }
+        await apiService.put(
+          `DisciplineChoicePeriod/UpdateAfterStart?id=${period.apiId}`,
+          body
+        )
+        setPeriods((prev) =>
+          prev.map((p) =>
+            p.id === editingId
+              ? {
+                  ...p,
+                  endDate: draft.endDate,
+                  status: draft.status,
+                  updatedAtLabel: 'щойно',
+                }
+              : p
+          )
+        )
+        setIsModalOpen(false)
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Помилка збереження періоду')
+      }
+    }
   }
 
   return (
@@ -347,15 +530,15 @@ export default function PeriodsPage() {
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4 space-y-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Рік навчання</label>
+            <label className="block text-sm text-gray-600 mb-1">Для курсу</label>
             <select
-              value={pendingYear}
-              onChange={(e) => setPendingYear(e.target.value)}
+              value={pendingForCourse}
+              onChange={(e) => setPendingForCourse(e.target.value as ForCourse)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {academicYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}
+              {forCourseOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
                 </option>
               ))}
             </select>
@@ -364,13 +547,12 @@ export default function PeriodsPage() {
           <div>
             <label className="block text-sm text-gray-600 mb-1">Семестр</label>
             <select
-              value={pendingSemester}
-              onChange={(e) => setPendingSemester(e.target.value)}
+              value={pendingTarget}
+              onChange={(e) => setPendingTarget(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Осінь і Весна">Осінь і Весна</option>
-              <option value="Осінь">Осінь</option>
-              <option value="Весна">Весна</option>
+              <option value="Всіх">Всіх</option>
+              <option value="Перевибір">Перевибір</option>
             </select>
           </div>
 
@@ -381,9 +563,9 @@ export default function PeriodsPage() {
               onChange={(e) => setPendingStatus(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Активний та Архів">Активний та Архів</option>
-              <option value="Активний">Активний</option>
-              <option value="Архів">Архів</option>
+              <option value="Усі">Усі</option>
+              <option value="Відкрито">Відкрито</option>
+              <option value="Закрито">Закрито</option>
             </select>
           </div>
         </div>
@@ -409,7 +591,16 @@ export default function PeriodsPage() {
         </div>
 
         <div className="space-y-4">
-          {grouped.length === 0 ? (
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="bg-white border border-gray-300 rounded-md p-6 text-gray-600">
+              Завантаження…
+            </div>
+          ) : grouped.length === 0 ? (
             <div className="bg-white border border-gray-300 rounded-md p-6 text-gray-600">
               Немає періодів за вибраними фільтрами
             </div>
@@ -423,17 +614,14 @@ export default function PeriodsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {items
-                    .slice()
-                    .sort((a, b) => a.semester.localeCompare(b.semester))
-                    .map((p) => (
+                  {items.map((p) => (
                       <div
                         key={p.id}
                         className="bg-white border border-gray-300 rounded-md shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
                       >
                         <div className="min-w-0">
                           <div className="font-medium text-gray-900">
-                            {p.semester === 'Осінь' ? 'Осінній період' : 'Весняний період'}
+                            Для курсу: {p.forCourse} · Семестр: {p.targetAudience}
                           </div>
                           <div className="text-sm text-gray-500">Остання зміна: {p.updatedAtLabel}</div>
                         </div>
@@ -444,7 +632,7 @@ export default function PeriodsPage() {
                           </div>
                           <span
                             className={[
-                              'px-3 py-1 rounded-full text-sm font-medium',
+                              'px-3 py-1 rounded-full text-sm font-medium w-24 text-center',
                               statusPillClass(p.status),
                             ].join(' ')}
                           >
@@ -459,18 +647,35 @@ export default function PeriodsPage() {
                               <IconEdit />
                             </button>
                             <button
-                              onClick={() => {
-                                setPeriods((prev) =>
-                                  prev.map((x) =>
-                                    x.id === p.id
-                                      ? {
-                                          ...x,
-                                          status: x.status === 'Закрито' ? 'Відкрито' : 'Закрито',
-                                          updatedAtLabel: 'щойно',
-                                        }
-                                      : x
+                              onClick={async () => {
+                                const nextStatus: PeriodStatus =
+                                  p.status === 'Закрито' ? 'Відкрито' : 'Закрито'
+                                if (nextStatus === 'Закрито') {
+                                  setCloseConfirmPeriod(p)
+                                  setCloseConfirmLockUntil(Date.now() + 5000)
+                                  return
+                                }
+                                try {
+                                  await apiService.put(
+                                    `DisciplineChoicePeriod/OpenOrClose?id=${p.apiId}`,
+                                    { id: p.apiId, isClose: 0 }
                                   )
-                                )
+                                  setPeriods((prev) =>
+                                    prev.map((x) =>
+                                      x.id === p.id
+                                        ? {
+                                            ...x,
+                                            status: 'Відкрито',
+                                            updatedAtLabel: 'щойно',
+                                          }
+                                        : x
+                                    )
+                                  )
+                                } catch (e: unknown) {
+                                  setError(
+                                    e instanceof Error ? e.message : 'Помилка зміни статусу'
+                                  )
+                                }
                               }}
                               className="p-2 rounded-md hover:bg-gray-100 text-gray-700"
                               aria-label="Lock"
@@ -495,6 +700,32 @@ export default function PeriodsPage() {
           onChangeDraft={setDraft}
           onSave={handleSave}
         />
+
+        {closeConfirmPeriod && (
+          <CloseConfirmModal
+            period={closeConfirmPeriod}
+            lockUntil={closeConfirmLockUntil}
+            onConfirm={async () => {
+              try {
+                await apiService.put(
+                  `DisciplineChoicePeriod/OpenOrClose?id=${closeConfirmPeriod.apiId}`,
+                  { id: closeConfirmPeriod.apiId, isClose: 1 }
+                )
+                setPeriods((prev) =>
+                  prev.map((x) =>
+                    x.id === closeConfirmPeriod.id
+                      ? { ...x, status: 'Закрито' as PeriodStatus, updatedAtLabel: 'щойно' }
+                      : x
+                  )
+                )
+                setCloseConfirmPeriod(null)
+              } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : 'Помилка закриття періоду')
+              }
+            }}
+            onClose={() => setCloseConfirmPeriod(null)}
+          />
+        )}
       </main>
     </div>
   )
