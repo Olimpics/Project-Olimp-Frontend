@@ -197,7 +197,7 @@ const CourseCataloguePage = () => {
         if (searchTerm.trim()) params.set('search', searchTerm.trim())
 
         if (pendingFaculties.length > 0) {
-          params.set('faculties', pendingFaculties.join(','))
+          params.set('faculties', [getFacultyId()].join(','))
         }
 
         if (pendingCourses.length > 0) {
@@ -438,18 +438,29 @@ const CourseCataloguePage = () => {
     performSave()
   }
 
+  
+  const getFacultyId = useCallback((): number => {
+    try {
+      const raw = getCookie(USER_PROFLE)
+      if (!raw) return 0
+      const user = JSON.parse(raw) as { idFaculty?: number; facultyId?: number }
+      return user?.idFaculty ?? user?.facultyId ?? 0
+    } catch {
+      return 0
+    }
+  }, [])
   return (
     <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4 space-y-4">
-          <FilterBox
+          {/* <FilterBox
             name="Факультет"
             options={faculties}
             accessor="idFaculty"
             valueName="abbreviation"
             selectedValues={pendingFaculties}
             onChange={setPendingFaculties}
-          />
+          /> */}
           <FilterBox
             name="Рівень освіти"
             options={degrees}
