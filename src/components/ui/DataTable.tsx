@@ -7,6 +7,7 @@ interface Column<T> {
   header: string
   accessor: keyof T
   href?: (row: T) => string
+  render?: (row: T) => React.ReactNode
 }
 
 interface DataTableProps<T> {
@@ -68,7 +69,7 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
                 {...(onClick ? { onClick: () => onClick(row) } : {})}
               >
                 {columns.map((col) => {
-                  const cellContent = String(row[col.accessor])
+                  const content = col.render ? col.render(row) : String(row[col.accessor])
                   const href = col.href?.(row)
 
                   return (
@@ -84,10 +85,10 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
                             window.open(href)
                           }}
                         >
-                          {cellContent}
+                          {content}
                         </span>
                       ) : (
-                        cellContent
+                        content
                       )}
                     </td>
                   )

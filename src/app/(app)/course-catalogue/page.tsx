@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
+import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 
@@ -55,7 +56,9 @@ type StudentRow = {
   degreeLevelName: string
   year: number
   group: string
-  disciplinesSummary: string
+  disciplinesShort: string
+  disciplinesAll: string[]
+  rawChoices: StudentSelectedDiscipline[]
   selectionStatus: number
   confirmationStatus: number
   selectionLabel: string
@@ -167,6 +170,21 @@ const CourseCataloguePage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [modalError, setModalError] = useState<string | null>(null)
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false)
+  const [declineConfirmLockUntil, setDeclineConfirmLockUntil] = useState(0)
+
+  type LocalChoice = {
+    bindId: number
+    label: string
+    isConfirm: 0 | 1
+  }
+
+  const [modalStudent, setModalStudent] = useState<StudentRow | null>(null)
+  const [modalChoices, setModalChoices] = useState<LocalChoice[]>([])
+
   const fetchStudents = useCallback(
     async (page: number = currentPage) => {
       setLoading(true)
@@ -222,12 +240,15 @@ const CourseCataloguePage = () => {
         const list: StudentWithChoices[] = data.students || []
 
         const mapped: StudentRow[] = list.map((s) => {
-          const disciplinesSummary =
+          const allDisciplines =
             s.selectedDisciplines.length === 0
-              ? 'Немає вибраних дисциплін'
-              : s.selectedDisciplines
-                  .map((d) => `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`)
-                  .join(', ')
+              ? []
+              : s.selectedDisciplines.map(
+                  (d) => `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`
+                )
+
+          const disciplinesShort =
+            allDisciplines.length === 0 ? 'Немає вибраних дисциплін' : allDisciplines[0]
 
           const selectionLabel =
             s.selectionStatus === 1 ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'
@@ -241,7 +262,9 @@ const CourseCataloguePage = () => {
             degreeLevelName: s.degreeLevelName,
             year: s.year,
             group: s.group,
-            disciplinesSummary,
+            disciplinesShort,
+            disciplinesAll: allDisciplines,
+            rawChoices: s.selectedDisciplines,
             selectionStatus: s.selectionStatus,
             confirmationStatus: s.confirmationStatus,
             selectionLabel,
@@ -314,7 +337,39 @@ const CourseCataloguePage = () => {
       { header: 'Рівень освіти', accessor: 'degreeLevelName' },
       { header: 'Курс', accessor: 'year' },
       { header: 'Група', accessor: 'group' },
-      { header: 'Обрані дисципліни', accessor: 'disciplinesSummary' },
+      {
+        header: 'Обрані дисципліни',
+        accessor: 'disciplinesShort',
+        render: (row: StudentRow) => {
+          const first = row.disciplinesShort
+          const rest = row.disciplinesAll.slice(1)
+
+          if (row.disciplinesAll.length <= 1) {
+            return first
+          }
+
+          const moreCount = row.disciplinesAll.length - 1
+
+          return (
+            <span className="inline-flex items-center gap-2">
+              <span>{first}</span>
+              <span className="relative inline-flex group">
+                <span
+                  className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold cursor-pointer"
+                  title={rest.join(', ')}
+                >
+                  +{moreCount}
+                </span>
+                <div className="absolute z-20 hidden group-hover:block left-0 top-full mt-1 w-72 rounded-md bg-gray-900 text-white text-xs p-2 shadow-lg whitespace-pre-line">
+                  {rest.map((text: string, index: number) => (
+                    <div key={index}>{text}</div>
+                  ))}
+                </div>
+              </span>
+            </span>
+          )
+        },
+      },
       { header: 'Статус набору', accessor: 'selectionLabel' },
       { header: 'Підтвердження', accessor: 'confirmationLabel' },
     ],
@@ -322,8 +377,65 @@ const CourseCataloguePage = () => {
   )
 
   const handleEdit = (row: StudentRow) => {
-    console.log('Edit student with choices', row)
-    // TODO: модалка з деталями вибору дисциплін
+    const localChoices: LocalChoice[] =
+      row.rawChoices.length === 0
+        ? []
+        : row.rawChoices.map((d) => ({
+            bindId: d.idBindAddDisciplines,
+            label: `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`,
+            isConfirm: 1,
+          }))
+
+    setModalStudent(row)
+    setModalChoices(localChoices)
+    setModalError(null)
+    setIsModalOpen(true)
+  }
+
+  const performSave = useCallback(async () => {
+    if (!modalStudent || modalChoices.length === 0) return
+
+    try {
+      setModalSaving(true)
+      setModalError(null)
+
+      const payload = modalChoices.map((c) => ({
+        bindId: c.bindId,
+        isConfirm: c.isConfirm,
+      }))
+
+      const res = await fetch('https://localhost:7011/api/DisciplineTabAdmin/UpdateChoice', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error('Не вдалося зберегти зміни')
+
+      setShowDeclineConfirm(false)
+      setIsModalOpen(false)
+      await fetchStudents(currentPage)
+    } catch (e: unknown) {
+      setModalError(e instanceof Error ? e.message : 'Сталася помилка при збереженні')
+    } finally {
+      setModalSaving(false)
+    }
+  }, [modalStudent, modalChoices, fetchStudents, currentPage])
+
+  const handleSaveModal = () => {
+    if (!modalStudent || modalChoices.length === 0) {
+      setIsModalOpen(false)
+      return
+    }
+
+    const hasDeclined = modalChoices.some((c) => c.isConfirm === 0)
+    if (hasDeclined) {
+      setShowDeclineConfirm(true)
+      setDeclineConfirmLockUntil(Date.now() + 5000)
+      return
+    }
+
+    performSave()
   }
 
   return (
@@ -496,7 +608,223 @@ const CourseCataloguePage = () => {
           )}
         </div>
       </main>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        {modalStudent && (
+          <div className="max-w-xl">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Перегляд вибору дисциплін</h2>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
+                    {modalStudent.fullName
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0])
+                      .join('')}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{modalStudent.fullName}</div>
+                    <div className="text-sm text-gray-600">
+                      {modalStudent.group} • {modalStudent.degreeLevelName}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Закрити"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+              {modalChoices.map((choice, index) => {
+                const approved = choice.isConfirm === 1
+                return (
+                  <div
+                    key={choice.bindId}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+                      approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-6 w-6 rounded-full border border-gray-300 flex items-center justify-center text-xs text-gray-600 bg-white">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{choice.label}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setModalChoices((prev) =>
+                            prev.map((c) =>
+                              c.bindId === choice.bindId ? { ...c, isConfirm: 1 } : c
+                            )
+                          )
+                        }
+                        className={`h-8 w-8 rounded-full flex items-center justify-center border text-white ${
+                          approved
+                            ? 'bg-emerald-500 border-emerald-500'
+                            : 'bg-emerald-100 border-emerald-200 text-emerald-600'
+                        }`}
+                        aria-label="Схвалити"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setModalChoices((prev) =>
+                            prev.map((c) =>
+                              c.bindId === choice.bindId ? { ...c, isConfirm: 0 } : c
+                            )
+                          )
+                        }
+                        className={`h-8 w-8 rounded-full flex items-center justify-center border ${
+                          !approved
+                            ? 'bg-red-500 border-red-500 text-white'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                        }`}
+                        aria-label="Відхилити"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {modalChoices.length === 0 && (
+                <div className="text-sm text-gray-500">
+                  У цього студента ще немає вибраних дисциплін.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-between text-sm text-gray-700">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                  Схвалено:{' '}
+                  {
+                    modalChoices.filter((c) => c.isConfirm === 1)
+                      .length
+                  }
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                  Відхилено:{' '}
+                  {
+                    modalChoices.filter((c) => c.isConfirm === 0)
+                      .length
+                  }
+                </span>
+              </div>
+            </div>
+
+            {modalError && (
+              <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                {modalError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                disabled={modalSaving}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveModal}
+                disabled={modalSaving || modalChoices.length === 0}
+                className="px-5 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {modalSaving ? 'Збереження…' : 'Підтвердити зміни'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {showDeclineConfirm && (
+        <DeclineConfirmModal
+          lockUntil={declineConfirmLockUntil}
+          onConfirm={() => {
+            setShowDeclineConfirm(false)
+            performSave()
+          }}
+          onClose={() => setShowDeclineConfirm(false)}
+        />
+      )}
     </div>
+  )
+}
+
+function DeclineConfirmModal({
+  lockUntil,
+  onConfirm,
+  onClose,
+}: {
+  lockUntil: number
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 100)
+    return () => clearInterval(t)
+  }, [])
+
+  const secondsLeft = Math.max(0, Math.ceil((lockUntil - now) / 1000))
+  const canConfirm = secondsLeft === 0
+
+  return (
+    <Modal isOpen onClose={onClose}>
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-xl font-semibold text-gray-900">Підтвердження відхилення</h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Закрити"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="mt-4 space-y-3">
+        <p className="text-gray-700">
+          Ви відмовляєте студенту у частині обраних дисциплін. Студент буде повідомлений про
+          відхилення.
+        </p>
+        <p className="text-sm text-gray-600">Продовжити?</p>
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50"
+        >
+          Скасувати
+        </button>
+        <button
+          onClick={() => (canConfirm ? onConfirm() : undefined)}
+          disabled={!canConfirm}
+          className="px-4 py-2 rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          {canConfirm ? 'Продовжити' : `Продовжити (${secondsLeft} с)`}
+        </button>
+      </div>
+    </Modal>
   )
 }
 
