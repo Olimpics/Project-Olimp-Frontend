@@ -14,6 +14,7 @@ interface DataTableProps<T> {
   data: T[]
   emptyMessage?: string
   isActionEnabled?: boolean
+  showDeleteAction?: boolean
   onDelete?: (el: T) => void
   onEdit?: (el: T) => void
   onClick?: (el: T) => void
@@ -24,6 +25,7 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
   data,
   emptyMessage = 'Нічого не знайдено',
   isActionEnabled,
+  showDeleteAction = true,
   onDelete,
   onEdit,
   onClick,
@@ -103,24 +105,28 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
 
                     {openRowIndex === rowIndex && (
                       <div className="absolute z-10 mt-2 ml-[-130px] bg-white border border-gray-300 shadow-md rounded-md py-1 w-32">
-                        <button
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100"
-                          onClick={() => {
-                            onEdit?.(row)
-                            toggleDropdown(rowIndex)
-                          }}
-                        >
-                          Редагувати
-                        </button>
-                        <button
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
-                          onClick={() => {
-                            onDelete?.(row)
-                            toggleDropdown(rowIndex)
-                          }}
-                        >
-                          Видалити
-                        </button>
+                        {onEdit && (
+                          <button
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100"
+                            onClick={() => {
+                              onEdit(row)
+                              toggleDropdown(rowIndex)
+                            }}
+                          >
+                            Редагувати
+                          </button>
+                        )}
+                        {showDeleteAction && onDelete && (
+                          <button
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
+                            onClick={() => {
+                              onDelete(row)
+                              toggleDropdown(rowIndex)
+                            }}
+                          >
+                            Видалити
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
