@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
@@ -147,8 +148,6 @@ const Pagination: React.FC<{
 }
 
 const CourseCataloguePage = () => {
-  const [activeTab] = useState<'students'>('students')
-
   const [students, setStudents] = useState<StudentRow[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [degrees, setDegrees] = useState<EduDegree[]>([])
@@ -544,12 +543,18 @@ const CourseCataloguePage = () => {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <button
+              <Link
+                href="/course-catalogue"
                 className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-600"
-                disabled
               >
                 Студенти
-              </button>
+              </Link>
+              <Link
+                href="/course-catalogue/disciplines"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300"
+              >
+                Дисципліни
+              </Link>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
