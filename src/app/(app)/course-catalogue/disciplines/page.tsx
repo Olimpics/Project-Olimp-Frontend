@@ -44,10 +44,10 @@ const sortingOptions = [
 
 const statusFilterOptions = [
   { label: 'Усі статуси', value: 0 },
-  { label: 'Не обрана (Not Acquired)', value: 1 },
-  { label: 'Умовно обрана (Smartly Acquired)', value: 2 },
-  { label: 'Обрана (Accepted)', value: 3 },
-  { label: 'Набрана / закрита (Collected)', value: 4 },
+  { label: 'Не обрана', value: 1 },
+  { label: 'Умовно обрана', value: 2 },
+  { label: 'Обрана', value: 3 },
+  { label: 'Набрана', value: 4 },
 ]
 
 const getFacultyIdFromCookie = (): number => {
@@ -112,46 +112,76 @@ type StatusCode = 1 | 2 | 3 | 4
 
 const statusToCode = (status: string | null | undefined): StatusCode | null => {
   if (!status) return null
-  switch (status) {
-    case 'Not Acquired':
-      return 1
-    case 'Smartly Acquired':
-      return 2
-    case 'Accepted':
-      return 3
-    case 'Collected':
-      return 4
-    default:
-      return null
+  const normalized = status.trim().toLowerCase()
+
+  // 1 = Not Acquired / Не обрана
+  if (
+    normalized === 'not acquired' ||
+    normalized === 'не обрана' ||
+    normalized === 'не обрано' ||
+    normalized === 'не набрана'
+  ) {
+    return 1
   }
+
+  // 2 = Smartly Acquired / Умовно обрана
+  if (
+    normalized === 'smartly acquired' ||
+    normalized === 'умовно обрана' ||
+    normalized === 'умовно обрано'
+  ) {
+    return 2
+  }
+
+  // 3 = Accepted / Набрана (норматив виконано)
+  if (
+    normalized === 'accepted' ||
+    normalized === 'обрана' ||
+    normalized === 'набрано' ||
+    normalized === 'набрана'
+  ) {
+    return 3
+  }
+
+  // 4 = Collected / Набрана / закрита (максимум)
+  if (
+    normalized === 'collected' ||
+    normalized === 'набрана/закрита' ||
+    normalized === 'набрана / закрита' ||
+    normalized === 'закрита'
+  ) {
+    return 4
+  }
+
+  return null
 }
 
 const codeToStatusLabel = (code: StatusCode): string => {
   switch (code) {
     case 1:
-      return 'Не обрана (Not Acquired)'
+      return 'Не обрана'
     case 2:
-      return 'Умовно обрана (Smartly Acquired)'
+      return 'Умовно '
     case 3:
-      return 'Обрана (Accepted)'
+      return 'Обрана'
     case 4:
-      return 'Набрана / закрита (Collected)'
+      return 'Набрана'
   }
 }
 
-const getStatusConfig = (status: string) => {
-  switch (status) {
-    case 'Smartly Acquired':
+const getStatusConfig = (code: StatusCode | null) => {
+  switch (code) {
+    case 2:
       return {
         badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
         barClass: 'bg-amber-500',
       }
-    case 'Accepted':
+    case 3:
       return {
         badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         barClass: 'bg-emerald-500',
       }
-    case 'Collected':
+    case 4:
       return {
         badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
         barClass: 'bg-purple-500',
@@ -505,7 +535,10 @@ const DisciplineCataloguePage = () => {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {disciplines.map((d) => {
-                  const config = getStatusConfig(d.status)
+                  const statusCode = statusToCode(d.status)
+                  const config = getStatusConfig(statusCode)
+                  const statusLabel =
+                    statusCode != null ? codeToStatusLabel(statusCode) : d.status || 'Без статусу'
                   const { percent, rangeLabel, mode } = getProgressInfo(d)
 
                   return (
@@ -532,7 +565,7 @@ const DisciplineCataloguePage = () => {
                             <span
                               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
                             >
-                              {d.status || 'Без статусу'}
+                              {statusLabel}
                             </span>
                             {d.isForceChange === 1 && (
                               <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
@@ -640,15 +673,7 @@ const DisciplineCataloguePage = () => {
                   .map((opt) => {
                     const code = opt.value as StatusCode
                     const isSelected = selectedStatus === code
-                    const config = getStatusConfig(
-                      opt.value === 1
-                        ? 'Not Acquired'
-                        : opt.value === 2
-                        ? 'Smartly Acquired'
-                        : opt.value === 3
-                        ? 'Accepted'
-                        : 'Collected'
-                    )
+                    const config = getStatusConfig(code)
                     return (
                       <label
                         key={opt.value}
