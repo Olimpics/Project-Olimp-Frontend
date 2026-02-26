@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import Link from 'next/link'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
@@ -133,11 +133,10 @@ const Pagination: React.FC<{
           <button
             key={page}
             onClick={() => onPageChange(Number(page))}
-            className={`px-4 py-2 rounded ${
-              currentPage === page
+            className={`px-4 py-2 rounded ${currentPage === page
                 ? 'bg-blue-600 text-white font-bold'
                 : 'bg-white text-blue-600 border border-gray-300 hover:bg-blue-100'
-            }`}
+              }`}
           >
             {page}
           </button>
@@ -243,8 +242,8 @@ const CourseCataloguePage = () => {
             s.selectedDisciplines.length === 0
               ? []
               : s.selectedDisciplines.map(
-                  (d) => `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`
-                )
+                (d) => `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`
+              )
 
           const disciplinesShort =
             allDisciplines.length === 0 ? 'Немає вибраних дисциплін' : allDisciplines[0]
@@ -349,24 +348,12 @@ const CourseCataloguePage = () => {
 
           const moreCount = row.disciplinesAll.length - 1
 
-          return (
-            <span className="inline-flex items-center gap-2">
-              <span>{first}</span>
-              <span className="relative inline-flex group">
-                <span
-                  className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold cursor-pointer"
-                  title={rest.join(', ')}
-                >
-                  +{moreCount}
-                </span>
-                <div className="absolute z-20 hidden group-hover:block left-0 top-full mt-1 w-72 rounded-md bg-gray-900 text-white text-xs p-2 shadow-lg whitespace-pre-line">
-                  {rest.map((text: string, index: number) => (
-                    <div key={index}>{text}</div>
-                  ))}
-                </div>
-              </span>
-            </span>
-          )
+         return (
+  <span className="inline-flex items-center gap-2">
+    <span>{first}</span>
+    <MoreModalBadge rest={rest} moreCount={moreCount} />
+  </span>
+);
         },
       },
       { header: 'Статус набору', accessor: 'selectionLabel' },
@@ -380,10 +367,10 @@ const CourseCataloguePage = () => {
       row.rawChoices.length === 0
         ? []
         : row.rawChoices.map((d) => ({
-            bindId: d.idBindAddDisciplines,
-            label: `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`,
-            isConfirm: 1,
-          }))
+          bindId: d.idBindAddDisciplines,
+          label: `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`,
+          isConfirm: 1,
+        }))
 
     setModalStudent(row)
     setModalChoices(localChoices)
@@ -437,7 +424,7 @@ const CourseCataloguePage = () => {
     performSave()
   }
 
-  
+
   const getFacultyId = useCallback((): number => {
     try {
       const raw = getCookie(USER_PROFLE)
@@ -667,12 +654,11 @@ const CourseCataloguePage = () => {
               {modalChoices.map((choice, index) => {
                 const approved = choice.isConfirm === 1
                 return (
-                    <div
-                      key={choice.bindId}
-                      className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 ${
-                        approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
+                  <div
+                    key={choice.bindId}
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 ${approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
                       } transition-colors duration-150`}
-                    >
+                  >
                     <div className="flex items-center gap-3">
                       <div className="h-7 w-7 rounded-full border border-gray-300 flex items-center justify-center text-xs font-medium text-gray-600 bg-white">
                         {index + 1}
@@ -691,11 +677,10 @@ const CourseCataloguePage = () => {
                             )
                           )
                         }
-                        className={`h-9 w-9 rounded-full flex items-center justify-center border text-white transition-colors duration-150 ${
-                          approved
+                        className={`h-9 w-9 rounded-full flex items-center justify-center border text-white transition-colors duration-150 ${approved
                             ? 'bg-emerald-500 border-emerald-500'
                             : 'bg-emerald-100 border-emerald-200 text-emerald-600'
-                        }`}
+                          }`}
                         aria-label="Схвалити"
                       >
                         ✓
@@ -709,11 +694,10 @@ const CourseCataloguePage = () => {
                             )
                           )
                         }
-                        className={`h-9 w-9 rounded-full flex items-center justify-center border transition-colors duration-150 ${
-                          !approved
+                        className={`h-9 w-9 rounded-full flex items-center justify-center border transition-colors duration-150 ${!approved
                             ? 'bg-red-500 border-red-500 text-white'
                             : 'bg-gray-100 border-gray-300 text-gray-500'
-                        }`}
+                          }`}
                         aria-label="Відхилити"
                       >
                         ✕
@@ -849,6 +833,98 @@ function DeclineConfirmModal({
     </Modal>
   )
 }
+function MoreModalBadge({
+  rest,
+  moreCount,
+}: {
+  rest: string[];
+  moreCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
+  // Закрытие при клике вне окна
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <>
+      {/* Кнопка +N */}
+      <span
+        onClick={() => setOpen(true)}
+        className="
+          px-3 py-1
+          rounded-full
+          bg-blue-100 text-blue-800
+          text-sm font-semibold
+          cursor-pointer
+          hover:bg-blue-200
+        "
+      >
+        +{moreCount}
+      </span>
+
+      {/* Модальное окно */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Затемнение */}
+          <div className="absolute inset-0 bg-black/40" />
+
+          {/* Окно */}
+          <div
+            ref={modalRef}
+            className="
+              relative z-10
+              w-full max-w-lg
+              rounded-xl
+              bg-white
+              p-6
+              shadow-2xl
+            "
+          >
+            {/* Крестик */}
+            <button
+              onClick={() => setOpen(false)}
+              className="
+                absolute top-3 right-3
+                text-gray-400
+                hover:text-gray-600
+                text-xl
+              "
+            >
+              ×
+            </button>
+
+            <h3 className="text-lg font-semibold mb-4">
+              Список дисциплин
+            </h3>
+
+            <div className="space-y-2 text-sm text-gray-800 max-h-96 overflow-y-auto">
+              {rest.map((text, index) => (
+                <div key={index} className="border-b pb-1 last:border-none">
+                  {text}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 export default CourseCataloguePage
 
