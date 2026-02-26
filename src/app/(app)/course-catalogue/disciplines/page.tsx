@@ -240,7 +240,7 @@ const DisciplineCataloguePage = () => {
         } else {
           const facultyId = getFacultyIdFromCookie()
           if (facultyId > 0) {
-            params.set('faculties', String(facultyId))
+            params.set('faculties', String(faculties))
           }
         }
 

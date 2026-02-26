@@ -196,7 +196,7 @@ const CourseCataloguePage = () => {
         if (searchTerm.trim()) params.set('search', searchTerm.trim())
 
         if (pendingFaculties.length > 0) {
-          params.set('faculties', [getFacultyId()].join(','))
+          params.set('faculties', pendingFaculties.join(','))
         }
 
         if (pendingCourses.length > 0) {
@@ -452,14 +452,14 @@ const CourseCataloguePage = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row gap-5">
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 mb-4 space-y-4 p-4 sm:p-5 transition-shadow duration-200">
-          {/* <FilterBox
+          <FilterBox
             name="Факультет"
             options={faculties}
             accessor="idFaculty"
             valueName="abbreviation"
             selectedValues={pendingFaculties}
             onChange={setPendingFaculties}
-          /> */}
+          />
           <FilterBox
             name="Рівень освіти"
             options={degrees}
