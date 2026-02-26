@@ -449,9 +449,9 @@ const CourseCataloguePage = () => {
     }
   }, [])
   return (
-    <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row gap-5">
       <aside className="sm:w-1/5 w-full">
-        <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4 space-y-4">
+        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 mb-4 space-y-4 p-4 sm:p-5 transition-shadow duration-200">
           {/* <FilterBox
             name="Факультет"
             options={faculties}
@@ -486,13 +486,13 @@ const CourseCataloguePage = () => {
 
           <div className="pt-2 border-t border-gray-200 space-y-3">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Статус набору (дисципліни)
               </label>
               <select
                 value={selectionFilter}
                 onChange={(e) => setSelectionFilter(e.target.value as 'all' | '0' | '1')}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 <option value="all">Усі</option>
                 <option value="1">Набрано</option>
@@ -501,13 +501,13 @@ const CourseCataloguePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Статус підтвердження
               </label>
               <select
                 value={confirmationFilter}
                 onChange={(e) => setConfirmationFilter(e.target.value as 'all' | '0' | '1')}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 <option value="all">Усі</option>
                 <option value="1">Підтверджено</option>
@@ -516,11 +516,11 @@ const CourseCataloguePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Показувати тільки нові</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Показувати тільки нові</label>
               <select
                 value={isNewFilter}
                 onChange={(e) => setIsNewFilter(e.target.value as '0' | '1')}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 <option value="1">Так, тільки з останнього періоду</option>
                 <option value="0">Усі вибори за весь час</option>
@@ -531,27 +531,27 @@ const CourseCataloguePage = () => {
 
         <button
           onClick={handleApplyFilters}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          className="w-full mt-1 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
         >
           Застосувати фільтри
         </button>
       </aside>
 
       <main className="sm:w-4/5 w-full">
-        <div className="mb-4 flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold text-gray-900">Каталог курсів</h1>
+        <div className="mb-5 flex flex-col gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Каталог курсів</h1>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/course-catalogue"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-600"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700"
               >
                 Студенти
               </Link>
               <Link
                 href="/course-catalogue/disciplines"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
               >
                 Дисципліни
               </Link>
@@ -564,11 +564,11 @@ const CourseCataloguePage = () => {
                   placeholder="Пошук студента, факультету або групи..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 />
                 <button
                   onClick={handleApplyFilters}
-                  className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
                 >
                   Пошук
                 </button>
@@ -582,7 +582,7 @@ const CourseCataloguePage = () => {
                   setCurrentPage(1)
                   fetchStudents(1)
                 }}
-                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
+                className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 {sortingOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -595,31 +595,35 @@ const CourseCataloguePage = () => {
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm">
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50/90 p-3 text-sm text-red-700 shadow-sm">
             {error}
           </div>
         )}
 
-        <div className="bg-white border border-gray-300 rounded-md">
+        <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-md overflow-hidden">
           {loading ? (
-            <div className="p-6 text-gray-600">Завантаження...</div>
+            <div className="p-8 text-gray-600 text-sm">Завантаження...</div>
           ) : (
             <>
-              <DataTable
-                columns={columns}
-                data={students}
-                isActionEnabled
-                onEdit={handleEdit}
-                showDeleteAction={false}
-              />
-              <Pagination
-                totalPages={totalPages}
-                currentPage={currentPage}
-                onPageChange={(page) => {
-                  setCurrentPage(page)
-                  fetchStudents(page)
-                }}
-              />
+              <div className="p-3 sm:p-4 lg:p-5">
+                <DataTable
+                  columns={columns}
+                  data={students}
+                  isActionEnabled
+                  onEdit={handleEdit}
+                  showDeleteAction={false}
+                />
+              </div>
+              <div className="border-t border-slate-100 bg-slate-50/60 px-3 sm:px-4 lg:px-5 py-3">
+                <Pagination
+                  totalPages={totalPages}
+                  currentPage={currentPage}
+                  onPageChange={(page) => {
+                    setCurrentPage(page)
+                    fetchStudents(page)
+                  }}
+                />
+              </div>
             </>
           )}
         </div>
@@ -627,12 +631,14 @@ const CourseCataloguePage = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {modalStudent && (
-          <div className="max-w-xl">
-            <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="max-w-2xl">
+            <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Перегляд вибору дисциплін</h2>
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
+                <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
+                  Перегляд вибору дисциплін
+                </h2>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700 shadow-sm">
                     {modalStudent.fullName
                       .split(' ')
                       .filter(Boolean)
@@ -641,7 +647,7 @@ const CourseCataloguePage = () => {
                       .join('')}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{modalStudent.fullName}</div>
+                    <div className="font-semibold text-gray-900">{modalStudent.fullName}</div>
                     <div className="text-sm text-gray-600">
                       {modalStudent.group} • {modalStudent.degreeLevelName}
                     </div>
@@ -649,7 +655,7 @@ const CourseCataloguePage = () => {
                 </div>
               </div>
               <button
-                className="text-gray-400 hover:text-gray-600"
+                className="rounded-full p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
                 onClick={() => setIsModalOpen(false)}
                 aria-label="Закрити"
               >
@@ -657,22 +663,22 @@ const CourseCataloguePage = () => {
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
               {modalChoices.map((choice, index) => {
                 const approved = choice.isConfirm === 1
                 return (
-                  <div
-                    key={choice.bindId}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                      approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
-                    }`}
-                  >
+                    <div
+                      key={choice.bindId}
+                      className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 ${
+                        approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
+                      } transition-colors duration-150`}
+                    >
                     <div className="flex items-center gap-3">
-                      <div className="h-6 w-6 rounded-full border border-gray-300 flex items-center justify-center text-xs text-gray-600 bg-white">
+                      <div className="h-7 w-7 rounded-full border border-gray-300 flex items-center justify-center text-xs font-medium text-gray-600 bg-white">
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">{choice.label}</div>
+                        <div className="font-medium text-gray-900 text-sm">{choice.label}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -685,7 +691,7 @@ const CourseCataloguePage = () => {
                             )
                           )
                         }
-                        className={`h-8 w-8 rounded-full flex items-center justify-center border text-white ${
+                        className={`h-9 w-9 rounded-full flex items-center justify-center border text-white transition-colors duration-150 ${
                           approved
                             ? 'bg-emerald-500 border-emerald-500'
                             : 'bg-emerald-100 border-emerald-200 text-emerald-600'
@@ -703,7 +709,7 @@ const CourseCataloguePage = () => {
                             )
                           )
                         }
-                        className={`h-8 w-8 rounded-full flex items-center justify-center border ${
+                        className={`h-9 w-9 rounded-full flex items-center justify-center border transition-colors duration-150 ${
                           !approved
                             ? 'bg-red-500 border-red-500 text-white'
                             : 'bg-gray-100 border-gray-300 text-gray-500'
@@ -746,7 +752,7 @@ const CourseCataloguePage = () => {
             </div>
 
             {modalError && (
-              <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 {modalError}
               </div>
             )}
@@ -755,7 +761,7 @@ const CourseCataloguePage = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-colors duration-150"
                 disabled={modalSaving}
               >
                 Скасувати
@@ -764,7 +770,7 @@ const CourseCataloguePage = () => {
                 type="button"
                 onClick={handleSaveModal}
                 disabled={modalSaving || modalChoices.length === 0}
-                className="px-5 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-sm hover:bg-blue-700 hover:shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
               >
                 {modalSaving ? 'Збереження…' : 'Підтвердити зміни'}
               </button>

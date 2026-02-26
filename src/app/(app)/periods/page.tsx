@@ -8,7 +8,7 @@ import { USER_PROFLE } from '@/constants/cookies'
 
 const DEPARTMENT_ID = 21
 
-type TargetAudience = 'Всіх' | 'Перевибір'
+type TargetAudience = 'Для всіх' | 'Перевибір'
 type PeriodStatus = 'Відкрито' | 'Закрито'
 
 type ForCourse = '1' | '2' | '3' | 'Для всіх'
@@ -24,7 +24,7 @@ type Period = {
   updatedAtLabel: string
 }
 
-// API: periodType 0=Всіх 1=Перевибір, periodCourse 0=Для всіх 1,2,3, isClose 0=Відкрито 1=Закрито
+// API: periodType 0=Для всіх 1=Перевибір, periodCourse 0=Для всіх 1,2,3, isClose 0=Відкрито 1=Закрито
 type DisciplineChoicePeriodDto = {
   id?: number
   periodType: number
@@ -37,10 +37,10 @@ type DisciplineChoicePeriodDto = {
 }
 
 function toPeriodType(t: TargetAudience): number {
-  return t === 'Всіх' ? 0 : 1
+  return t === 'Для всіх' ? 0 : 1
 }
 function fromPeriodType(n: number): TargetAudience {
-  return n === 0 ? 'Всіх' : 'Перевибір'
+  return n === 0 ? 'Для всіх' : 'Перевибір'
 }
 function toPeriodCourse(c: ForCourse): number {
   if (c === 'Для всіх') return 0
@@ -73,7 +73,7 @@ function apiToPeriod(dto: DisciplineChoicePeriodDto): Period {
 }
 
 const forCourseOptions: ForCourse[] = ['Для всіх', '1', '2', '3']
-const targetAudienceOptions: TargetAudience[] = ['Всіх', 'Перевибір']
+const targetAudienceOptions: TargetAudience[] = ['Для всіх', 'Перевибір']
 const statusDropdownOptions: PeriodStatus[] = ['Відкрито', 'Закрито']
 
 const formatDateRange = (startISO: string, endISO: string) => {
@@ -165,7 +165,7 @@ function CloseConfirmModal({
           збережені та що ви дійсно хочете завершити період.
         </p>
         <p className="text-sm text-gray-600">
-          Період: для курсу {period.forCourse}, семестр {period.targetAudience},{' '}
+          Період: для курсу {period.forCourse}, тип періоду {period.targetAudience},{' '}
           {formatDateRange(period.startDate, period.endDate)}.
         </p>
       </div>
@@ -259,7 +259,7 @@ function PeriodModal({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Семестр</label>
+          <label className="block text-sm text-gray-600 mb-1">Тип періоду</label>
           <select
             value={draft.targetAudience}
             onChange={(e) => onChangeDraft({ ...draft, targetAudience: e.target.value as TargetAudience })}
@@ -379,11 +379,11 @@ export default function PeriodsPage() {
   }, [fetchPeriods])
 
   const [pendingForCourse, setPendingForCourse] = useState<ForCourse>('Для всіх')
-  const [pendingTarget, setPendingTarget] = useState<string>('Всіх')
+  const [pendingTarget, setPendingTarget] = useState<string>('Для всіх')
   const [pendingStatus, setPendingStatus] = useState<string>('Усі')
 
   const [forCourse, setForCourse] = useState<ForCourse>('Для всіх')
-  const [targetFilter, setTargetFilter] = useState<string>('Всіх')
+  const [targetFilter, setTargetFilter] = useState<string>('Для всіх')
   const [statusFilter, setStatusFilter] = useState<string>('Усі')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -393,7 +393,7 @@ export default function PeriodsPage() {
   const [closeConfirmLockUntil, setCloseConfirmLockUntil] = useState(0)
   const [draft, setDraft] = useState<PeriodModalDraft>({
     forCourse: 'Для всіх',
-    targetAudience: 'Всіх',
+    targetAudience: 'Для всіх',
     startDate: '2025-09-01',
     endDate: '2025-09-15',
     status: 'Відкрито',
@@ -403,7 +403,7 @@ export default function PeriodsPage() {
     return periods.filter((p) => {
       if (forCourse && p.forCourse !== forCourse) return false
 
-      if (targetFilter === 'Всіх' && p.targetAudience !== 'Всіх') return false
+      if (targetFilter === 'Для всіх' && p.targetAudience !== 'Для всіх') return false
       if (targetFilter === 'Перевибір' && p.targetAudience !== 'Перевибір') return false
 
       if (statusFilter === 'Відкрито' && p.status !== 'Відкрито') return false
@@ -437,7 +437,7 @@ export default function PeriodsPage() {
     setEditingId(null)
     setDraft({
       forCourse: 'Для всіх',
-      targetAudience: 'Всіх',
+      targetAudience: 'Для всіх',
       startDate: '',
       endDate: '',
       status: 'Відкрито',
@@ -545,13 +545,13 @@ export default function PeriodsPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Семестр</label>
+            <label className="block text-sm text-gray-600 mb-1">Тип періоду</label>
             <select
               value={pendingTarget}
               onChange={(e) => setPendingTarget(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Всіх">Всіх</option>
+              <option value="Для всіх">Для всіх</option>
               <option value="Перевибір">Перевибір</option>
             </select>
           </div>
@@ -621,7 +621,7 @@ export default function PeriodsPage() {
                       >
                         <div className="min-w-0">
                           <div className="font-medium text-gray-900">
-                            Для курсу: {p.forCourse} · Семестр: {p.targetAudience}
+                            Для курсу: {p.forCourse} · Тип періоду: {p.targetAudience}
                           </div>
                           <div className="text-sm text-gray-500">Остання зміна: {p.updatedAtLabel}</div>
                         </div>

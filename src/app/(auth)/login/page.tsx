@@ -26,8 +26,8 @@ interface StudentProfile {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('user00008@example.com')
-  const [password, setPassword] = useState('default_password')
+  const [email, setEmail] = useState('user00006@example.com')
+  const [password, setPassword] = useState('default_password2')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
