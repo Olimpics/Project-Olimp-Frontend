@@ -77,7 +77,7 @@ const ChangePasswordPage = ()=>{
       setLoading(true)
   
       try {
-        await apiService.post<StudentProfile>('/LoginPage/change-password', {
+        await apiService.post<StudentProfile>('/Auth/change-password', {
                 email: email,
                 oldPassword: oldPassword,
                 newPassword: password

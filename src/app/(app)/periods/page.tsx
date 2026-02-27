@@ -5,18 +5,21 @@ import { Modal } from '@/components/ui/Modal'
 import { apiService } from '@/services/axiosService'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { FilterBox } from '@/components/ui/FilterBox'
 
 const DEPARTMENT_ID = 21
 
 type TargetAudience = 'Для всіх' | 'Перевибір'
 type PeriodStatus = 'Відкрито' | 'Закрито'
-
-type ForCourse = '1' | '2' | '3' | 'Для всіх'
+type ForEduLevel = 'Для бакалаврів' | 'Для магістрів' | 'Для всіх'
+type ForCourse = 'Для всіх' | '1' | '2' | '3'
 
 type Period = {
   id: string
   apiId: number
   forCourse: ForCourse
+  degreeLevelId: number 
+  eduLevelLabel: ForEduLevel 
   targetAudience: TargetAudience
   startDate: string
   endDate: string
@@ -24,11 +27,11 @@ type Period = {
   updatedAtLabel: string
 }
 
-// API: periodType 0=Для всіх 1=Перевибір, periodCourse 0=Для всіх 1,2,3, isClose 0=Відкрито 1=Закрито
 type DisciplineChoicePeriodDto = {
   id?: number
   periodType: number
   periodCourse: number
+  degreeLevelId?: number 
   isClose: number
   facultyId?: number
   departmentId?: number
@@ -42,14 +45,32 @@ function toPeriodType(t: TargetAudience): number {
 function fromPeriodType(n: number): TargetAudience {
   return n === 0 ? 'Для всіх' : 'Перевибір'
 }
+
+function toEduLevel(label: ForEduLevel): number {
+  switch (label) {
+    case 'Для бакалаврів': return 1
+    case 'Для магістрів': return 2
+    case 'Для всіх': return 3
+    default: return 3
+  }
+}
+
+function fromEduLevel(n: number): ForEduLevel {
+  if (n === 1) return 'Для бакалаврів'
+  if (n === 2) return 'Для магістрів'
+  return 'Для всіх'
+}
+
 function toPeriodCourse(c: ForCourse): number {
   if (c === 'Для всіх') return 0
   return Number(c) as 1 | 2 | 3
 }
 function fromPeriodCourse(n: number): ForCourse {
-  if (n === 0) return 'Для всіх'
-  return String(n) as ForCourse
+  if (n === 0 || !n) return 'Для всіх'; 
+  const val = String(n);
+  return val as ForCourse;
 }
+
 function toIsClose(s: PeriodStatus): number {
   return s === 'Закрито' ? 1 : 0
 }
@@ -58,21 +79,21 @@ function fromIsClose(n: number): PeriodStatus {
 }
 
 function apiToPeriod(dto: DisciplineChoicePeriodDto): Period {
-  const start = dto.startDate.slice(0, 10)
-  const end = dto.endDate.slice(0, 10)
   return {
     id: String(dto.id),
     apiId: dto.id ?? 0,
     forCourse: fromPeriodCourse(dto.periodCourse),
+    degreeLevelId: dto.degreeLevelId ?? 3,
+    eduLevelLabel: fromEduLevel(dto.degreeLevelId ?? 3), 
     targetAudience: fromPeriodType(dto.periodType),
-    startDate: start,
-    endDate: end,
-    status: fromIsClose(dto.isClose),
+    startDate: (dto.startDate || "").slice(0, 10),
+    endDate: (dto.endDate || "").slice(0, 10),
+    status: dto.isClose === 1 ? 'Закрито' : 'Відкрито',
     updatedAtLabel: '—',
   }
 }
 
-const forCourseOptions: ForCourse[] = ['Для всіх', '1', '2', '3']
+const forCourseOptions: ForCourse[] = ['Для всіх', '1', '2', '3'] 
 const targetAudienceOptions: TargetAudience[] = ['Для всіх', 'Перевибір']
 const statusDropdownOptions: PeriodStatus[] = ['Відкрито', 'Закрито']
 
@@ -191,6 +212,7 @@ function CloseConfirmModal({
 type PeriodModalMode = 'create' | 'edit'
 type PeriodModalDraft = {
   forCourse: ForCourse
+  eduLevelLabel: ForEduLevel 
   targetAudience: TargetAudience
   startDate: string
   endDate: string
@@ -222,8 +244,11 @@ function PeriodModal({
   const isEdit = mode === 'edit'
   const minStartDate = getTomorrowYYYYMMDD()
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const isAlreadyStarted = isEdit && todayStr > draft.startDate
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} classSize='max-w-lg'>
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         <button
@@ -236,9 +261,13 @@ function PeriodModal({
       </div>
 
       {isEdit && (
-        <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
-          При редагуванні можна змінити лише дату завершення та статус (відкрито/закрито).
-        </p>
+        <div className="mt-2 space-y-1">
+          {isAlreadyStarted && (
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-2">
+              Період уже розпочався, тому більшість полів заблоковано.
+            </p>
+          )}
+        </div>
       )}
 
       <div className="mt-4 space-y-4">
@@ -247,7 +276,7 @@ function PeriodModal({
           <select
             value={draft.forCourse}
             onChange={(e) => onChangeDraft({ ...draft, forCourse: e.target.value as ForCourse })}
-            disabled={isEdit}
+            disabled={isAlreadyStarted}
             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             {forCourseOptions.map((opt) => (
@@ -259,11 +288,25 @@ function PeriodModal({
         </div>
 
         <div>
+          <label className="block text-sm text-gray-600 mb-1">Рівень освіти</label>
+          <select
+            value={draft.eduLevelLabel}
+            onChange={(e) => onChangeDraft({ ...draft, eduLevelLabel: e.target.value as ForEduLevel })}
+            disabled={isAlreadyStarted}
+            className="w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            {['Для бакалаврів', 'Для магістрів', 'Для всіх'].map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label className="block text-sm text-gray-600 mb-1">Тип періоду</label>
           <select
             value={draft.targetAudience}
             onChange={(e) => onChangeDraft({ ...draft, targetAudience: e.target.value as TargetAudience })}
-            disabled={isEdit}
+            disabled={isAlreadyStarted}
             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             {targetAudienceOptions.map((opt) => (
@@ -281,7 +324,7 @@ function PeriodModal({
               type="date"
               value={draft.startDate}
               onChange={(e) => onChangeDraft({ ...draft, startDate: e.target.value })}
-              disabled={isEdit}
+              disabled={isAlreadyStarted}
               min={isEdit ? undefined : minStartDate}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
@@ -298,9 +341,6 @@ function PeriodModal({
               min={draft.startDate || minStartDate}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {!isEdit && draft.startDate && (
-              <p className="mt-0.5 text-xs text-gray-500">Не раніше дати початку</p>
-            )}
           </div>
         </div>
 
@@ -342,12 +382,14 @@ export default function PeriodsPage() {
   const [periods, setPeriods] = useState<Period[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [buttonPeriodClass, setButtonPeriodClass] = useState<boolean>(true)
 
   const getFacultyId = useCallback((): number => {
     try {
       const raw = getCookie(USER_PROFLE)
       if (!raw) return 0
       const user = JSON.parse(raw) as { idFaculty?: number; facultyId?: number }
+      if (user?.facultyId != 1) { setButtonPeriodClass(false)}
       return user?.idFaculty ?? user?.facultyId ?? 0
     } catch {
       return 0
@@ -378,13 +420,15 @@ export default function PeriodsPage() {
     fetchPeriods()
   }, [fetchPeriods])
 
-  const [pendingForCourse, setPendingForCourse] = useState<ForCourse>('Для всіх')
-  const [pendingTarget, setPendingTarget] = useState<string>('Для всіх')
-  const [pendingStatus, setPendingStatus] = useState<string>('Усі')
+  const [pendingForCourse, setPendingForCourse] = useState<string[]>([])
+  const [pendingTarget, setPendingTarget] = useState<string[]>([])
+  const [pendingStatus, setPendingStatus] = useState<string[]>([])
+  const [pendingEduLevel, setPendingEduLevel] = useState<string[]>([])
 
-  const [forCourse, setForCourse] = useState<ForCourse>('Для всіх')
-  const [targetFilter, setTargetFilter] = useState<string>('Для всіх')
-  const [statusFilter, setStatusFilter] = useState<string>('Усі')
+  const [eduLevelFilter, setEduLevelFilter] = useState<string[]>([])  
+  const [forCourse, setForCourse] = useState<string[]>([])
+  const [targetFilter, setTargetFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<PeriodModalMode>('create')
@@ -394,6 +438,7 @@ export default function PeriodsPage() {
   const [draft, setDraft] = useState<PeriodModalDraft>({
     forCourse: 'Для всіх',
     targetAudience: 'Для всіх',
+    eduLevelLabel: 'Для всіх',
     startDate: '2025-09-01',
     endDate: '2025-09-15',
     status: 'Відкрито',
@@ -401,17 +446,14 @@ export default function PeriodsPage() {
 
   const filteredPeriods = useMemo(() => {
     return periods.filter((p) => {
-      if (forCourse && p.forCourse !== forCourse) return false
-
-      if (targetFilter === 'Для всіх' && p.targetAudience !== 'Для всіх') return false
-      if (targetFilter === 'Перевибір' && p.targetAudience !== 'Перевибір') return false
-
-      if (statusFilter === 'Відкрито' && p.status !== 'Відкрито') return false
-      if (statusFilter === 'Закрито' && p.status !== 'Закрито') return false
+      if (forCourse.length > 0 && !forCourse.includes(p.forCourse)) return false
+      if (targetFilter.length > 0 && !targetFilter.includes(p.targetAudience)) return false
+      if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false
+      if (eduLevelFilter.length > 0 && !eduLevelFilter.includes(p.eduLevelLabel)) return false
 
       return true
     })
-  }, [periods, forCourse, targetFilter, statusFilter])
+  }, [periods, forCourse, targetFilter, statusFilter, eduLevelFilter])
 
   const grouped = useMemo(() => {
     const map = new Map<string, Period[]>()
@@ -429,6 +471,7 @@ export default function PeriodsPage() {
     setForCourse(pendingForCourse)
     setTargetFilter(pendingTarget)
     setStatusFilter(pendingStatus)
+    setEduLevelFilter(pendingEduLevel)
   }
 
   const openCreate = () => {
@@ -438,6 +481,7 @@ export default function PeriodsPage() {
     setDraft({
       forCourse: 'Для всіх',
       targetAudience: 'Для всіх',
+      eduLevelLabel: 'Для всіх',
       startDate: '',
       endDate: '',
       status: 'Відкрито',
@@ -452,6 +496,7 @@ export default function PeriodsPage() {
     setDraft({
       forCourse: p.forCourse,
       targetAudience: p.targetAudience,
+      eduLevelLabel: fromEduLevel(p.degreeLevelId),
       startDate: p.startDate,
       endDate: p.endDate,
       status: p.status,
@@ -466,6 +511,7 @@ export default function PeriodsPage() {
     const facultyId = getFacultyId()
     const startISO = `${draft.startDate}T00:00:00.000Z`
     const endISO = `${draft.endDate}T23:59:59.999Z`
+    const today = new Date().toISOString().slice(0, 10)
     const tomorrow = getTomorrowYYYYMMDD()
 
     if (modalMode === 'create') {
@@ -478,41 +524,59 @@ export default function PeriodsPage() {
         const body: DisciplineChoicePeriodDto = {
           periodType: toPeriodType(draft.targetAudience),
           periodCourse: toPeriodCourse(draft.forCourse),
+          degreeLevelId: toEduLevel(draft.eduLevelLabel),
           isClose: toIsClose(draft.status),
           facultyId,
           departmentId: DEPARTMENT_ID,
           startDate: startISO,
           endDate: endISO,
         }
-        const created = await apiService.post<DisciplineChoicePeriodDto>(
-          'DisciplineChoicePeriod',
-          body
-        )
+        const created = await apiService.post<DisciplineChoicePeriodDto>('DisciplineChoicePeriod', body)
         setPeriods((prev) => [apiToPeriod(created), ...prev])
         setIsModalOpen(false)
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'Помилка створення періоду')
       }
-    } else if (modalMode === 'edit' && editingId) {
+      return 
+    }
+
+    if (modalMode === 'edit' && editingId) {
       const period = periods.find((p) => p.id === editingId)
       if (!period) return
+
+      const isBeforeStart = today < draft.startDate
+
       try {
-        const body = {
-          id: period.apiId,
-          isClose: toIsClose(draft.status),
-          endDate: `${draft.endDate}T23:59:59.999Z`,
+        let updatedDto: DisciplineChoicePeriodDto
+
+        if (isBeforeStart) {
+          const body: DisciplineChoicePeriodDto = {
+            id: period.apiId,
+            periodType: toPeriodType(draft.targetAudience),
+            periodCourse: toPeriodCourse(draft.forCourse),
+            degreeLevelId: toEduLevel(draft.eduLevelLabel),
+            isClose: toIsClose(draft.status),
+            facultyId,
+            departmentId: DEPARTMENT_ID,
+            startDate: startISO,
+            endDate: endISO,
+          }
+          updatedDto = await apiService.put<DisciplineChoicePeriodDto>(`DisciplineChoicePeriod/${period.apiId}`, body)
+        } else {
+          const body = {
+            id: period.apiId,
+            isClose: toIsClose(draft.status),
+            endDate: endISO,
+          }
+          await apiService.put(`DisciplineChoicePeriod/UpdateAfterStart?id=${period.apiId}`, body)
+          updatedDto = { ...period, ...body, apiId: period.apiId } as any 
         }
-        await apiService.put(
-          `DisciplineChoicePeriod/UpdateAfterStart?id=${period.apiId}`,
-          body
-        )
+
         setPeriods((prev) =>
           prev.map((p) =>
             p.id === editingId
               ? {
-                  ...p,
-                  endDate: draft.endDate,
-                  status: draft.status,
+                  ...apiToPeriod(updatedDto as DisciplineChoicePeriodDto),
                   updatedAtLabel: 'щойно',
                 }
               : p
@@ -527,52 +591,53 @@ export default function PeriodsPage() {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
-      <aside className="sm:w-1/5 w-full">
-        <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4 space-y-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Для курсу</label>
-            <select
-              value={pendingForCourse}
-              onChange={(e) => setPendingForCourse(e.target.value as ForCourse)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {forCourseOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
+      <aside className="sm:w-1/4 w-full">
+        <div className="bg-white p-5 rounded-lg shadow-md border border-gray-200 mb-4 divide-y divide-gray-100">
+        
+          <FilterBox
+            name="Для курсу"
+            options={forCourseOptions.map(opt => ({ id: opt, label: opt }))}
+            accessor="id"
+            valueName="label"
+            selectedValues={pendingForCourse}
+            onChange={setPendingForCourse}
+          />
 
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Тип періоду</label>
-            <select
-              value={pendingTarget}
-              onChange={(e) => setPendingTarget(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Для всіх">Для всіх</option>
-              <option value="Перевибір">Перевибір</option>
-            </select>
-          </div>
+          <FilterBox
+            name="Рівень освіти"
+            options={[
+              { id: 'Для бакалаврів', label: 'Для бакалаврів' },
+              { id: 'Для магістрів', label: 'Для магістрів' },
+              { id: 'Для всіх', label: 'Для всіх' }
+            ]}
+            accessor="id"
+            valueName="label"
+            selectedValues={pendingEduLevel}
+            onChange={setPendingEduLevel}
+          />
 
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Статус</label>
-            <select
-              value={pendingStatus}
-              onChange={(e) => setPendingStatus(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Усі">Усі</option>
-              <option value="Відкрито">Відкрито</option>
-              <option value="Закрито">Закрито</option>
-            </select>
-          </div>
+          <FilterBox
+            name="Тип періоду"
+            options={targetAudienceOptions.map(opt => ({ id: opt, label: opt }))}
+            accessor="id"
+            valueName="label"
+            selectedValues={pendingTarget}
+            onChange={setPendingTarget}
+          />
+
+          <FilterBox
+            name="Статус"
+            options={statusDropdownOptions.map(opt => ({ id: opt, label: opt }))}
+            accessor="id"
+            valueName="label"
+            selectedValues={pendingStatus}
+            onChange={setPendingStatus}
+          />
         </div>
 
         <button
           onClick={handleApplyFilters}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm"
         >
           Застосувати фільтри
         </button>
@@ -581,15 +646,22 @@ export default function PeriodsPage() {
       <main className="sm:w-4/5 w-full">
         <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Періоди вибірних дисциплін</h1>
-          <button
-            onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <span className="text-xl leading-none">＋</span>
-            Створити період
-          </button>
+          { 
+            buttonPeriodClass ? 
+            <>
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <span className="text-xl leading-none">＋</span>
+                Створити період
+              </button>
+            </>
+            :
+            <>
+            </>
+          }
         </div>
-
         <div className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-sm">
@@ -621,7 +693,7 @@ export default function PeriodsPage() {
                       >
                         <div className="min-w-0">
                           <div className="font-medium text-gray-900">
-                            Для курсу: {p.forCourse} · Тип періоду: {p.targetAudience}
+                            Для курсу: {p.forCourse} · {fromEduLevel(p.degreeLevelId)} · Тип: {p.targetAudience}
                           </div>
                           <div className="text-sm text-gray-500">Остання зміна: {p.updatedAtLabel}</div>
                         </div>
@@ -730,5 +802,3 @@ export default function PeriodsPage() {
     </div>
   )
 }
-
-

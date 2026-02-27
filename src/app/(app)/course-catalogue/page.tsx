@@ -587,12 +587,10 @@ const CourseCataloguePage = () => {
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-md overflow-hidden">
           {loading ? (
             <div className="p-8 text-gray-600 text-sm">Завантаження...</div>
           ) : (
             <>
-              <div className="p-3 sm:p-4 lg:p-5">
                 <DataTable
                   columns={columns}
                   data={students}
@@ -600,7 +598,6 @@ const CourseCataloguePage = () => {
                   onEdit={handleEdit}
                   showDeleteAction={false}
                 />
-              </div>
               <div className="border-t border-slate-100 bg-slate-50/60 px-3 sm:px-4 lg:px-5 py-3">
                 <Pagination
                   totalPages={totalPages}
@@ -613,12 +610,11 @@ const CourseCataloguePage = () => {
               </div>
             </>
           )}
-        </div>
       </main>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} classSize='max-w-2xl'>
         {modalStudent && (
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -656,7 +652,7 @@ const CourseCataloguePage = () => {
                 return (
                   <div
                     key={choice.bindId}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 ${approved ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'
+                    className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 gap-3 ${approved ? 'bg-emerald-50 border-emerald-200' : 'bg-red-200 border-gray-200'
                       } transition-colors duration-150`}
                   >
                     <div className="flex items-center gap-3">

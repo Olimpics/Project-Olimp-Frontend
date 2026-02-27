@@ -681,7 +681,7 @@ const DisciplineCataloguePage = () => {
                     return (
                       <label
                         key={opt.value}
-                        className={`flex items-center justify-between rounded-lg border px-3 py-2 cursor-pointer text-sm ${
+                        className={`flex items-center justify-between rounded-lg border px-3 py-2 cursor-pointer text-base ${
                           isSelected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
                         }`}
                       >
