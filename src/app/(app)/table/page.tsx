@@ -8,6 +8,23 @@ import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 
+type AdminDiscipline = {
+  idAddDisciplines: number
+  nameAddDisciplines: string
+  teachers: string | null
+  departmentName: string | null
+  credits: number | null
+  normative: number | null
+  maxCountPeople: number | null
+  currentCount: number
+  status: string
+  isForceChange: number
+  degreeLevelId: number | null
+  isFaculty: number
+  facultyId: number
+  facultyAbbreviation: string | null
+}
+
 type StudentSelectedDiscipline = {
   idBindAddDisciplines: number
   idAddDisciplines: number
@@ -66,21 +83,47 @@ type StudentRow = {
   confirmationLabel: string
 }
 
+type StatusCode = 1 | 2 | 3 | 4
+
+const statusToCode = (status: string | null | undefined): StatusCode | null => {
+  if (!status) return null
+  const normalized = status.trim().toLowerCase()
+
+  if (['not acquired', 'не обрана', 'не обрано', 'не набрана'].includes(normalized)) {
+    return 1
+  }
+
+  if (['smartly acquired', 'умовно обрана', 'умовно обрано'].includes(normalized)) {
+    return 2
+  }
+
+
+  if (['accepted', 'обрана', 'обрано'].includes(normalized)) {
+    return 3
+  }
+
+  if (
+    ['collected', 'набрана', 'набрано', 'закрита', 'набрана/закрита', 'набрана / закрита'].includes(normalized)
+  ) {
+    return 4
+  }
+
+  return null
+}
+
 interface Column<T> {
   header: string
   accessor: keyof T
+  render?: (row: T) => React.ReactNode
 }
 
 const sortingOptions = [
-  { label: 'ПІБ (А-Я)', value: 0 },
-  { label: 'ПІБ (Я-А)', value: 1 },
-  { label: 'Факультет (↑)', value: 2 },
-  { label: 'Факультет (↓)', value: 3 },
-  { label: 'Група (↑)', value: 4 },
-  { label: 'Група (↓)', value: 5 },
-  { label: 'Курс (↑)', value: 6 },
-  { label: 'Курс (↓)', value: 7 },
+  { label: 'Назва (А-Я)', value: 0 },
+  { label: 'Назва (Я-А)', value: 1 },
+  { label: 'Набір (від меншого до більшого)', value: 2 },
+  { label: 'Набір (від більшого до меншого)', value: 3 },
 ]
+
 
 const courses: Course[] = [
   { courseNumber: 1 },
@@ -147,6 +190,9 @@ const Pagination: React.FC<{
 }
 
 const CourseTableCataloguePage = () => {
+  const [disciplines, setDisciplines] = useState<AdminDiscipline[]>([])
+  const [totalDisciplinesPages, setTotalDisciplinesPages] = useState(1)
+  const [currentDisciplinesPage, setCurrentDisciplinesPage] = useState(1)
   const [students, setStudents] = useState<StudentRow[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [degrees, setDegrees] = useState<EduDegree[]>([])
@@ -161,6 +207,10 @@ const CourseTableCataloguePage = () => {
   const [selectionFilter, setSelectionFilter] = useState<'all' | '0' | '1'>('all')
   const [confirmationFilter, setConfirmationFilter] = useState<'all' | '0' | '1'>('all')
   const [isNewFilter, setIsNewFilter] = useState<'0' | '1'>('1')
+  const [editingDiscipline, setEditingDiscipline] = useState<AdminDiscipline | null>(null)
+  const [selectedStatus, setSelectedStatus] = useState<number | null>(null)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [modalError, setModalError] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<number>(0)
 
   const [totalPages, setTotalPages] = useState(0)
@@ -169,8 +219,6 @@ const CourseTableCataloguePage = () => {
   const [error, setError] = useState<string | null>(null)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalSaving, setModalSaving] = useState(false)
-  const [modalError, setModalError] = useState<string | null>(null)
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false)
   const [declineConfirmLockUntil, setDeclineConfirmLockUntil] = useState(0)
 
@@ -182,6 +230,104 @@ const CourseTableCataloguePage = () => {
 
   const [modalStudent, setModalStudent] = useState<StudentRow | null>(null)
   const [modalChoices, setModalChoices] = useState<LocalChoice[]>([])
+
+  const statusFilterOptions = [
+    { label: 'Усі статуси', value: 0 },
+    { label: 'Не обрана', value: 1 },
+    { label: 'Умовно обрана', value: 2 },
+    { label: 'Обрана', value: 3 },
+    { label: 'Набрана', value: 4 },
+  ]
+
+  const [isFacultyFilter, setIsFacultyFilter] = useState<'all' | '1' | '0'>('all')
+  const [statusFilter, setStatusFilter] = useState<number>(0)
+
+  useEffect(() => {
+    const params: Record<string, string> = {}
+
+    if (pendingFaculties.length > 0) params['faculties'] = pendingFaculties.join(',')
+    if (pendingDegrees.length > 0) params['degreeLevelIds'] = pendingDegrees.join(',')
+    if (pendingCourses.length > 0) params['courses'] = pendingCourses.join(',')
+    if (pendingGroups.length > 0) params['groups'] = pendingGroups.join(',')
+    if (isFacultyFilter !== 'all') params['isFaculty'] = isFacultyFilter
+    if (statusFilter > 0) params['statusFilter'] = String(statusFilter)
+    if (searchTerm.trim()) params['search'] = searchTerm.trim()
+    params['sortOrder'] = String(sortOrder)
+
+    fetchDisciplines(1, params)
+    setCurrentDisciplinesPage(1)
+  }, [
+    sortOrder,
+    pendingFaculties,
+    pendingDegrees,
+    pendingCourses,
+    pendingGroups,
+    isFacultyFilter,
+    statusFilter
+  ])
+
+  const fetchDisciplines = useCallback(
+    async (page: number = 1, filters: Record<string, string> = {}) => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const params = new URLSearchParams({ page: String(page), pageSize: '15' })
+
+        Object.entries(filters).forEach(([key, value]) => {
+          params.set(key, value)
+        })
+
+        const res = await fetch(`https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        if (!res.ok) throw new Error('Не вдалося завантажити дисципліни')
+
+        const data = await res.json()
+
+        setDisciplines(data.disciplines || [])
+        setTotalDisciplinesPages(data.totalPages || 1)
+        setCurrentDisciplinesPage(data.currentPage || page)
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Сталася помилка при завантаженні дисциплін')
+        setDisciplines([])
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  useEffect(() => {
+    fetchDisciplines(1)
+  }, [fetchDisciplines])
+
+  const getProgressInfo = (d: AdminDiscipline) => {
+    const current = d.currentCount
+    const normative = d.normative ?? undefined
+    const max = d.maxCountPeople ?? undefined
+
+    let denominator: number | undefined
+    let mode: 'Norm' | 'Max' | null = null
+
+    if (normative && normative > 0 && current < normative) {
+      denominator = normative
+      mode = 'Norm'
+    } else if (max && max > 0) {
+      denominator = max
+      mode = 'Max'
+    } else if (normative && normative > 0) {
+      denominator = normative
+      mode = 'Norm'
+    }
+
+    const percent = denominator ? Math.min(100, (current / denominator) * 100) : 0
+    const rangeLabel = denominator ? `${current} / ${denominator}` : `${current}`
+
+    return {
+      percent,
+      rangeLabel,
+      mode,
+    }
+  }
 
   const fetchStudents = useCallback(
     async (page: number = currentPage) => {
@@ -218,6 +364,14 @@ const CourseTableCataloguePage = () => {
           params.set('confirmationStatus', confirmationFilter)
         }
 
+        if (isFacultyFilter !== 'all') {
+          params.set('isFaculty', isFacultyFilter)
+        }
+
+        if (statusFilter > 0) {
+          params.set('statusFilter', String(statusFilter))
+        }
+
         params.set('sortOrder', String(sortOrder))
         params.set('isNew', isNewFilter)
 
@@ -229,7 +383,7 @@ const CourseTableCataloguePage = () => {
         }
 
         const res = await fetch(
-          `https://localhost:7011/api/DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
+          `https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
         )
         if (!res.ok) {
           throw new Error('Не вдалося завантажити дані')
@@ -291,8 +445,27 @@ const CourseTableCataloguePage = () => {
       searchTerm,
       selectionFilter,
       sortOrder,
+      isFacultyFilter,
+      statusFilter,
     ]
   )
+
+  const getStatusConfig = (status: string | StatusCode | null) => {
+    const code = typeof status === 'string' ? statusToCode(status) : status;
+
+    switch (code) {
+      case 2: // Умовно обрана
+        return { badgeClass: 'bg-amber-50 text-amber-700 border-amber-200', barClass: 'bg-amber-500' }
+      case 3: // Обрана
+        return { badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', barClass: 'bg-emerald-500' }
+      case 4: // Набрана
+        return { badgeClass: 'bg-purple-50 text-purple-700 border-purple-200', barClass: 'bg-purple-500' }
+      case 1: // Не обрана
+        return { badgeClass: 'bg-red-50 text-red-700 border-red-200', barClass: 'bg-red-500' }
+      default:
+        return { badgeClass: 'bg-gray-50 text-gray-700 border-gray-200', barClass: 'bg-gray-400' }
+    }
+  }
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -324,58 +497,145 @@ const CourseTableCataloguePage = () => {
   }, [])
 
   const handleApplyFilters = () => {
-    setCurrentPage(1)
-    fetchStudents(1)
+    setCurrentDisciplinesPage(1)
+
+    const params: Record<string, string> = {}
+
+    if (pendingFaculties.length > 0) params['faculties'] = pendingFaculties.join(',')
+    if (pendingDegrees.length > 0) params['degreeLevelIds'] = pendingDegrees.join(',')
+    if (pendingCourses.length > 0) params['courses'] = pendingCourses.join(',')
+    if (pendingGroups.length > 0) params['groups'] = pendingGroups.join(',')
+    if (isFacultyFilter !== 'all') params['isFaculty'] = isFacultyFilter
+    if (statusFilter > 0) params['statusFilter'] = String(statusFilter)
+    if (searchTerm.trim()) params['search'] = searchTerm.trim()
+
+    fetchDisciplines(1, params)
   }
 
-  const columns: Column<StudentRow>[] = useMemo(
+  const columns: Column<AdminDiscipline>[] = useMemo(
     () => [
-      { header: 'ПІБ студента', accessor: 'fullName' },
-      { header: 'Факультет', accessor: 'faculty' },
-      { header: 'Рівень освіти', accessor: 'degreeLevelName' },
-      { header: 'Курс', accessor: 'year' },
-      { header: 'Група', accessor: 'group' },
       {
-        header: 'Обрані дисципліни',
-        accessor: 'disciplinesShort',
-        render: (row: StudentRow) => {
-          const first = row.disciplinesShort
-          const rest = row.disciplinesAll.slice(1)
+        header: 'Назва дисципліни',
+        accessor: 'nameAddDisciplines',
+      },
+      /*{
+        header: 'Викладачі',
+        accessor: 'teachers',
+        render: (row) => row.teachers ?? '—',
+      },*/
+      {
+        header: 'Факультет',
+        accessor: 'facultyAbbreviation',
+        render: (row) => row.facultyAbbreviation ?? '—',
+      },
+      {
+        header: 'Тип дисципліни',
+        accessor: 'isFaculty',
+        render: (row) => row.isFaculty ? 'Факультетська': 'Університетська',
+      },
+      {
+        header: 'Статус',
+        accessor: 'status',
+        render: (row) => {
+          // Map row.status string to StatusCode using your existing function
+          const code = statusToCode(row.status);
 
-          if (row.disciplinesAll.length <= 1) {
-            return first
+          // Find the matching status label from statusFilterOptions
+          const statusOption = statusFilterOptions.find(opt => opt.value === code);
+
+          const displayLabel = statusOption?.label ?? 'Невідомо';
+          
+          // Get badge colors
+          let badgeClass = 'bg-gray-50 text-gray-700 border-gray-200';
+          let barClass = 'bg-gray-400';
+
+          switch (code) {
+            case 1: // Не обрана
+              badgeClass = 'bg-red-50 text-red-700 border-red-200';
+              barClass = 'bg-red-500';
+              break;
+            case 2: // Умовно обрана
+              badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+              barClass = 'bg-amber-500';
+              break;
+            case 3: // Обрана
+              badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+              barClass = 'bg-emerald-500';
+              break;
+            case 4: // Набрана
+              badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
+              barClass = 'bg-purple-500';
+              break;
           }
 
-          const moreCount = row.disciplinesAll.length - 1
-
-         return (
-  <span className="inline-flex items-center gap-2">
-    <span>{first}</span>
-    <MoreModalBadge rest={rest} moreCount={moreCount} />
-  </span>
-);
+          return (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+              {displayLabel}
+            </span>
+          );
         },
       },
-      { header: 'Статус набору', accessor: 'selectionLabel' },
-      { header: 'Підтвердження', accessor: 'confirmationLabel' },
+      {
+        header: 'Прогрес набору',
+        accessor: 'currentCount',
+        render: (row) => {
+          const { percent, rangeLabel } = getProgressInfo(row);
+          const statusConfig = getStatusConfig(row.status);
+
+          return (
+            <div className="w-40 flex items-center gap-2">
+              <div className="w-28 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-2 transition-all duration-300 ${statusConfig.barClass}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-600 mb-1 font-bold">
+                <span>{rangeLabel}</span>
+              </div>
+            </div>
+          );
+        },
+      },
     ],
     []
-  )
+  );
 
-  const handleEdit = (row: StudentRow) => {
-    const localChoices: LocalChoice[] =
-      row.rawChoices.length === 0
-        ? []
-        : row.rawChoices.map((d) => ({
-          bindId: d.idBindAddDisciplines,
-          label: `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`,
-          isConfirm: 1,
-        }))
-
-    setModalStudent(row)
-    setModalChoices(localChoices)
+  const handleEdit = (row: AdminDiscipline) => {
+    setEditingDiscipline(row)
+    setSelectedStatus(statusToCode(row.status))
     setModalError(null)
     setIsModalOpen(true)
+  }
+
+  const handleSaveStatus = async () => {
+    if (!editingDiscipline || !selectedStatus) return
+
+    try {
+      setModalSaving(true)
+      setModalError(null)
+
+      const res = await fetch(
+        `https://localhost:7011/api/DisciplineTabAdmin/UpdateDisciplineStatus`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            disciplineId: editingDiscipline.idAddDisciplines,
+            status: selectedStatus,
+          }),
+        }
+      )
+
+      if (!res.ok) throw new Error('Не вдалося зберегти статус')
+
+      setIsModalOpen(false)
+      await fetchDisciplines(currentDisciplinesPage)
+    } catch (e: unknown) {
+      setModalError(e instanceof Error ? e.message : 'Помилка при збереженні')
+    } finally {
+      setModalSaving(false)
+    }
   }
 
   const performSave = useCallback(async () => {
@@ -439,14 +699,17 @@ const CourseTableCataloguePage = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row gap-5">
       <aside className="sm:w-1/5 w-full">
         <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 mb-4 space-y-4 p-4 sm:p-5 transition-shadow duration-200">
+          {/* Faculty Filter */}
           <FilterBox
             name="Факультет"
             options={faculties}
             accessor="idFaculty"
             valueName="abbreviation"
             selectedValues={pendingFaculties}
-            onChange={setPendingFaculties}
+            onChange={setPendingFaculties} // triggers table fetch via useEffect
           />
+
+          {/* Degree Filter */}
           <FilterBox
             name="Рівень освіти"
             options={degrees}
@@ -455,69 +718,43 @@ const CourseTableCataloguePage = () => {
             selectedValues={pendingDegrees}
             onChange={setPendingDegrees}
           />
-          <FilterBox
-            name="Курс"
-            options={courses}
-            accessor="courseNumber"
-            selectedValues={pendingCourses}
-            onChange={setPendingCourses}
-          />
-          <FilterBox
-            name="Група"
-            options={groups}
-            accessor="id"
-            valueName="code"
-            selectedValues={pendingGroups}
-            onChange={setPendingGroups}
-          />
 
+          {/* Type of Discipline */}
           <div className="pt-2 border-t border-gray-200 space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Статус набору (дисципліни)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Тип дисципліни</label>
               <select
-                value={selectionFilter}
-                onChange={(e) => setSelectionFilter(e.target.value as 'all' | '0' | '1')}
+                value={isFacultyFilter}
+                onChange={(e) => setIsFacultyFilter(e.target.value as 'all' | '1' | '0')}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 <option value="all">Усі</option>
-                <option value="1">Набрано</option>
-                <option value="0">Не набрано</option>
+                <option value="1">Факультетські</option>
+                <option value="0">Університетські</option>
               </select>
             </div>
 
+            {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Статус підтвердження
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Статус нормативу</label>
               <select
-                value={confirmationFilter}
-                onChange={(e) => setConfirmationFilter(e.target.value as 'all' | '0' | '1')}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(Number(e.target.value))}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
-                <option value="all">Усі</option>
-                <option value="1">Підтверджено</option>
-                <option value="0">Не підтверджено</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Показувати тільки нові</label>
-              <select
-                value={isNewFilter}
-                onChange={(e) => setIsNewFilter(e.target.value as '0' | '1')}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              >
-                <option value="1">Так, тільки з останнього періоду</option>
-                <option value="0">Усі вибори за весь час</option>
+                {statusFilterOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
+        {/* Optional Apply Filters button */}
         <button
-          onClick={handleApplyFilters}
+          onClick={handleApplyFilters} // <- triggers fetchDisciplines
           className="w-full mt-1 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
         >
           Застосувати фільтри
@@ -532,7 +769,7 @@ const CourseTableCataloguePage = () => {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/course-catalogue"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
               >
                 Студенти
               </Link>
@@ -542,7 +779,7 @@ const CourseTableCataloguePage = () => {
               >
                 Дисципліни
               </Link>
-               <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
+              <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
                 Таблиця
               </span>
             </div>
@@ -570,15 +807,14 @@ const CourseTableCataloguePage = () => {
                   const val = Number(e.target.value)
                   setSortOrder(val)
                   setCurrentPage(1)
-                  fetchStudents(1)
                 }}
                 className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
-                {sortingOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+                  {sortingOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -594,20 +830,21 @@ const CourseTableCataloguePage = () => {
             <div className="p-8 text-gray-600 text-sm">Завантаження...</div>
           ) : (
             <>
-                <DataTable
-                  columns={columns}
-                  data={students}
-                  isActionEnabled
-                  onEdit={handleEdit}
-                  showDeleteAction={false}
-                />
+              <DataTable
+                columns={columns}
+                data={disciplines}
+                isActionEnabled
+                onEdit={handleEdit}
+                showDeleteAction={false}
+              />
+
               <div className="border-t border-slate-100 bg-slate-50/60 px-3 sm:px-4 lg:px-5 py-3">
                 <Pagination
-                  totalPages={totalPages}
-                  currentPage={currentPage}
+                  totalPages={totalDisciplinesPages}
+                  currentPage={currentDisciplinesPage}
                   onPageChange={(page) => {
-                    setCurrentPage(page)
-                    fetchStudents(page)
+                    setCurrentDisciplinesPage(page)
+                    fetchDisciplines(page)
                   }}
                 />
               </div>
@@ -615,152 +852,104 @@ const CourseTableCataloguePage = () => {
           )}
       </main>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} classSize='max-w-2xl'>
-        {modalStudent && (
-          <div className="max-w-3xl">
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
-                  Перегляд вибору дисциплін
-                </h2>
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700 shadow-sm">
-                    {modalStudent.fullName
-                      .split(' ')
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((p) => p[0])
-                      .join('')}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{modalStudent.fullName}</div>
-                    <div className="text-sm text-gray-600">
-                      {modalStudent.group} • {modalStudent.degreeLevelName}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button
-                className="rounded-full p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
-                onClick={() => setIsModalOpen(false)}
-                aria-label="Закрити"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-              {modalChoices.map((choice, index) => {
-                const approved = choice.isConfirm === 1
-                return (
-                  <div
-                    key={choice.bindId}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 gap-3 ${approved ? 'bg-emerald-50 border-emerald-200' : 'bg-red-200 border-gray-200'
-                      } transition-colors duration-150`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-7 w-7 rounded-full border border-gray-300 flex items-center justify-center text-xs font-medium text-gray-600 bg-white">
-                        {index + 1}
-                      </div>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                {editingDiscipline && (
+                  <div className="max-w-2xl">
+                    <div className="flex items-start justify-between gap-4 mb-5">
                       <div>
-                        <div className="font-medium text-gray-900 text-sm">{choice.label}</div>
+                        <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
+                          Редагування статусу
+                        </h2>
+                        <div className="mt-2">
+                          <div className="font-semibold text-gray-900">
+                            {editingDiscipline.nameAddDisciplines}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {editingDiscipline.facultyAbbreviation || 'Без факультету'}
+                            {editingDiscipline.departmentName
+                              ? ` • ${editingDiscipline.departmentName}`
+                              : ''}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
                       <button
-                        type="button"
-                        onClick={() =>
-                          setModalChoices((prev) =>
-                            prev.map((c) =>
-                              c.bindId === choice.bindId ? { ...c, isConfirm: 1 } : c
-                            )
-                          )
-                        }
-                        className={`h-9 w-9 rounded-full flex items-center justify-center border text-white transition-colors duration-150 ${approved
-                            ? 'bg-emerald-500 border-emerald-500'
-                            : 'bg-emerald-100 border-emerald-200 text-emerald-600'
-                          }`}
-                        aria-label="Схвалити"
-                      >
-                        ✓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setModalChoices((prev) =>
-                            prev.map((c) =>
-                              c.bindId === choice.bindId ? { ...c, isConfirm: 0 } : c
-                            )
-                          )
-                        }
-                        className={`h-9 w-9 rounded-full flex items-center justify-center border transition-colors duration-150 ${!approved
-                            ? 'bg-red-500 border-red-500 text-white'
-                            : 'bg-gray-100 border-gray-300 text-gray-500'
-                          }`}
-                        aria-label="Відхилити"
+                        className="rounded-full p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150"
+                        onClick={() => setIsModalOpen(false)}
+                        aria-label="Закрити"
                       >
                         ✕
                       </button>
                     </div>
+      
+                    <div className="space-y-3">
+                      {statusFilterOptions
+                        .filter((opt) => opt.value !== 0)
+                        .map((opt) => {
+                          const code = opt.value as StatusCode
+                          const isSelected = selectedStatus === code
+
+                          return (
+                            <label
+                              key={opt.value}
+                              className={`flex items-center justify-between rounded-lg border px-3 py-2 cursor-pointer text-base ${
+                                isSelected
+                                  ? 'border-blue-600 bg-blue-50'
+                                  : 'border-gray-200 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  name="status"
+                                  value={opt.value}
+                                  checked={isSelected}
+                                  onChange={() => setSelectedStatus(code)}
+                                  className="h-4 w-4 text-blue-600"
+                                />
+                                <span>{opt.label}</span>
+                              </div>
+
+                              <span className="ml-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium bg-slate-100">
+                                {opt.value === 1
+                                  ? 'нижче 80% норм.'
+                                  : opt.value === 2
+                                  ? '80–100% норм.'
+                                  : opt.value === 3
+                                  ? '100%+ норм.'
+                                  : 'максимум досягнуто'}
+                              </span>
+                            </label>
+                          )
+                        })}
+                    </div>
+      
+                    {modalError && (
+                      <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                        {modalError}
+                      </div>
+                    )}
+      
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                        disabled={modalSaving}
+                      >
+                        Скасувати
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveStatus}
+                        disabled={modalSaving || selectedStatus === null}
+                        className="px-5 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {modalSaving ? 'Збереження…' : 'Зберегти статус'}
+                      </button>
+                    </div>
                   </div>
-                )
-              })}
-
-              {modalChoices.length === 0 && (
-                <div className="text-sm text-gray-500">
-                  У цього студента ще немає вибраних дисциплін.
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-700">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                  Схвалено:{' '}
-                  {
-                    modalChoices.filter((c) => c.isConfirm === 1)
-                      .length
-                  }
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-                  Відхилено:{' '}
-                  {
-                    modalChoices.filter((c) => c.isConfirm === 0)
-                      .length
-                  }
-                </span>
-              </div>
-            </div>
-
-            {modalError && (
-              <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                {modalError}
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-colors duration-150"
-                disabled={modalSaving}
-              >
-                Скасувати
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveModal}
-                disabled={modalSaving || modalChoices.length === 0}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-sm hover:bg-blue-700 hover:shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
-              >
-                {modalSaving ? 'Збереження…' : 'Підтвердити зміни'}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+                )}
+              </Modal>
 
       {showDeclineConfirm && (
         <DeclineConfirmModal
@@ -926,4 +1115,3 @@ function MoreModalBadge({
   );
 }
 export default CourseTableCataloguePage
-

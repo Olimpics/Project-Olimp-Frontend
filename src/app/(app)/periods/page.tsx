@@ -232,6 +232,7 @@ function PeriodModal({
   onClose,
   onChangeDraft,
   onSave,
+  error,
 }: {
   isOpen: boolean
   mode: PeriodModalMode
@@ -239,6 +240,7 @@ function PeriodModal({
   onClose: () => void
   onChangeDraft: (next: PeriodModalDraft) => void
   onSave: () => void
+  error?: string
 }) {
   const title = mode === 'create' ? 'Створення періоду' : 'Редагування періоду'
   const isEdit = mode === 'edit'
@@ -268,6 +270,12 @@ function PeriodModal({
             </p>
           )}
         </div>
+      )}
+
+      {error && (
+        <p className="text-red-700 text-sm bg-red-50 border border-red-200 rounded-md p-2">
+          {error}
+        </p>
       )}
 
       <div className="mt-4 space-y-4">
@@ -444,6 +452,13 @@ export default function PeriodsPage() {
     status: 'Відкрито',
   })
 
+  const handleApplyFilters = () => {
+    setForCourse(pendingForCourse)
+    setEduLevelFilter(pendingEduLevel)
+    setTargetFilter(pendingTarget)
+    setStatusFilter(pendingStatus)
+  }
+
   const filteredPeriods = useMemo(() => {
     return periods.filter((p) => {
       if (forCourse.length > 0 && !forCourse.includes(p.forCourse)) return false
@@ -466,13 +481,6 @@ export default function PeriodsPage() {
       (a, b) => order.indexOf(a[0] as ForCourse) - order.indexOf(b[0] as ForCourse)
     )
   }, [filteredPeriods])
-
-  const handleApplyFilters = () => {
-    setForCourse(pendingForCourse)
-    setTargetFilter(pendingTarget)
-    setStatusFilter(pendingStatus)
-    setEduLevelFilter(pendingEduLevel)
-  }
 
   const openCreate = () => {
     setError(null)
@@ -506,7 +514,20 @@ export default function PeriodsPage() {
 
   const handleSave = async () => {
     if (!draft.startDate || !draft.endDate) return
-    if (draft.endDate < draft.startDate) return
+
+    const parseLocalDate = (dateStr: string) => {
+      const [y, m, d] = dateStr.split('-').map(Number)
+      return new Date(y, m - 1, d).getTime() // отримуємо мс з локального часу
+    }
+
+    const startTime = parseLocalDate(draft.startDate)
+    const endTime = parseLocalDate(draft.endDate)
+    const minEndTime = startTime + 3 * 24 * 60 * 60 * 1000 // додаємо 3 дні у мс
+
+    if (endTime < minEndTime) {
+      setError('Дата завершення має бути не менше ніж через 3 дні після дати початку')
+      return
+    }
 
     const facultyId = getFacultyId()
     const startISO = `${draft.startDate}T00:00:00.000Z`
@@ -771,6 +792,7 @@ export default function PeriodsPage() {
           onClose={() => setIsModalOpen(false)}
           onChangeDraft={setDraft}
           onSave={handleSave}
+          error={error} 
         />
 
         {closeConfirmPeriod && (

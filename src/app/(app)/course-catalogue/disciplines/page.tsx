@@ -6,8 +6,6 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
-import {CourseTableCataloguePage} from '@/app/(app)/table/page'
-import { StudentDisciplinesTable, StudentRow } from './pageTable'
 
 type AdminDiscipline = {
   idAddDisciplines: number
@@ -432,37 +430,21 @@ const DisciplineCataloguePage = () => {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setViewMode('students')}
-              className={`px-4 py-2 text-sm font-semibold border-b-4 transition-colors duration-200 ${
-                viewMode === 'students'
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
-              }`}
-            >
-              Студенти
-            </button>
-
-            <button
-              onClick={() => setViewMode('disciplines')}
-              className={`px-4 py-2 text-sm font-semibold border-b-4 transition-colors duration-200 ${
-                viewMode === 'disciplines'
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
-              }`}
-            >
-              Дисципліни
-            </button>
-             <button
-              onClick={() => setViewMode('disciplines')}
-              className={`px-4 py-2 text-sm font-semibold border-b-4 transition-colors duration-200 ${
-                viewMode === 'disciplines'
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
-              }`}
-            >
-              Таблиця
-            </button>
+              <Link
+                href="/course-catalogue"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
+              >
+                Студенти
+              </Link>
+              <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
+                Дисципліни
+              </span>
+              <Link
+                href="/table"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
+              >
+                Таблиця
+              </Link>
           </div>
 
             <div className="flex flex-row-reverse sm:flex-row gap-2 w-1/2">
@@ -496,8 +478,8 @@ const DisciplineCataloguePage = () => {
                     {opt.label}
                   </option>
                 ))}
-              </select>
-            </div>
+            </select>
+              </div>
           </div>
         </div>
 
