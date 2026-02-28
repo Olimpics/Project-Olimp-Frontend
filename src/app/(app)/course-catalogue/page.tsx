@@ -929,4 +929,3 @@ function MoreModalBadge({
   );
 }
 export default CourseCataloguePage
-
