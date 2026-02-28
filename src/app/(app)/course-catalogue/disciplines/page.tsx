@@ -6,7 +6,8 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
-//import { StudentDisciplinesTable, StudentRow } from './pageTable'
+import {CourseTableCataloguePage} from '@/app/(app)/table/page'
+import { StudentDisciplinesTable, StudentRow } from './pageTable'
 
 type AdminDiscipline = {
   idAddDisciplines: number
