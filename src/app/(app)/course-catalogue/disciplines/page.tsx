@@ -6,6 +6,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+//import { StudentDisciplinesTable, StudentRow } from './pageTable'
 
 type AdminDiscipline = {
   idAddDisciplines: number
@@ -61,7 +62,7 @@ const getFacultyIdFromCookie = (): number => {
   }
 }
 
-const Pagination: React.FC<{
+export const Pagination: React.FC<{
   totalPages: number
   currentPage: number
   onPageChange: (page: number) => void
@@ -174,6 +175,8 @@ const getStatusConfig = (code: StatusCode | string | null) => {
 
 const DisciplineCataloguePage = () => {
   const [disciplines, setDisciplines] = useState<AdminDiscipline[]>([])
+  const [studentRefreshTrigger, setStudentRefreshTrigger] = useState(0)
+  const [viewMode, setViewMode] = useState<'disciplines' | 'students'>('disciplines')
 
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [degrees, setDegrees] = useState<EduDegree[]>([])
@@ -428,16 +431,28 @@ const DisciplineCataloguePage = () => {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/course-catalogue"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
-                Студенти
-              </Link>
-              <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
-                Дисципліни
-              </span>
-            </div>
+            <button
+              onClick={() => setViewMode('students')}
+              className={`px-4 py-2 text-sm font-semibold border-b-4 transition-colors duration-200 ${
+                viewMode === 'students'
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
+              }`}
+            >
+              Студенти
+            </button>
+
+            <button
+              onClick={() => setViewMode('disciplines')}
+              className={`px-4 py-2 text-sm font-semibold border-b-4 transition-colors duration-200 ${
+                viewMode === 'disciplines'
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300'
+              }`}
+            >
+              Дисципліни
+            </button>
+          </div>
 
             <div className="flex flex-row-reverse sm:flex-row gap-2 w-1/2">
               <div className="flex-1 flex gap-2">
@@ -502,7 +517,7 @@ const DisciplineCataloguePage = () => {
                       className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white/95 shadow-sm hover:shadow-lg p-4 sm:p-5 transition-all duration-200 hover:-translate-y-0.5"
                     >
                       <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-3 h-40">
                           <div>
                             <div className="text-xs uppercase tracking-wide text-gray-500">
                               {d.facultyAbbreviation || 'Без факультету'}
@@ -519,7 +534,7 @@ const DisciplineCataloguePage = () => {
                               )}
                             </div>
                             </div>
-                            <h2 className="mt-1 text-base sm:text-lg font-semibold text-gray-900">
+                            <h2 className="mt-6 text-base sm:text-lg font-semibold text-gray-900">
                               {d.nameAddDisciplines}
                             </h2>
                             {d.departmentName && (
@@ -528,7 +543,7 @@ const DisciplineCataloguePage = () => {
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1 w-full">
+                          <div className="flex flex-col items-end gap-1 w-1/4">
                             <span
                               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
                             >
@@ -594,6 +609,22 @@ const DisciplineCataloguePage = () => {
             </>
           )}
         </div>
+
+        {/*<StudentDisciplinesTable
+          searchTerm=""
+          faculties={[]}
+          degrees={[]}
+          courses={[]}
+          groups={[]}
+          selectionFilter="all"
+          confirmationFilter="all"
+          isNewFilter="0"
+          sortOrder={0}
+          refreshTrigger={studentRefreshTrigger}
+          onEdit={(row: StudentRow) => {
+            console.log('Edit student:', row)
+          }}
+        />*/}
 
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           {editingDiscipline && (
