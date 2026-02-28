@@ -46,7 +46,7 @@ const statusFilterOptions = [
   { label: 'Усі статуси', value: 0 },
   { label: 'Не обрана', value: 1 },
   { label: 'Умовно обрана', value: 2 },
-  { label: 'Обрана', value: 3 },
+  { label: 'Обрано', value: 3 },
   { label: 'Набрана', value: 4 },
 ]
 
@@ -114,63 +114,41 @@ const statusToCode = (status: string | null | undefined): StatusCode | null => {
   if (!status) return null
   const normalized = status.trim().toLowerCase()
 
-  // 1 = Not Acquired / Не обрана
-  if (
-    normalized === 'not acquired' ||
-    normalized === 'не обрана' ||
-    normalized === 'не обрано' ||
-    normalized === 'не набрана'
-  ) {
+  if (['not acquired', 'не обрана', 'не обрано', 'не набрана'].includes(normalized)) {
     return 1
   }
 
-  // 2 = Smartly Acquired / Умовно обрана
-  if (
-    normalized === 'smartly acquired' ||
-    normalized === 'умовно обрана' ||
-    normalized === 'умовно обрано'
-  ) {
+  if (['smartly acquired', 'умовно обрана', 'умовно обрано'].includes(normalized)) {
     return 2
   }
 
-  // 3 = Accepted / Набрана (норматив виконано)
-  if (
-    normalized === 'accepted' ||
-    normalized === 'обрана' ||
-    normalized === 'набрано' ||
-    normalized === 'набрана'
-  ) {
+
+  if (['accepted', 'обрана', 'обрано'].includes(normalized)) {
     return 3
   }
 
-  // 4 = Collected / Набрана / закрита (максимум)
   if (
-    normalized === 'collected' ||
-    normalized === 'набрана/закрита' ||
-    normalized === 'набрана / закрита' ||
-    normalized === 'закрита'
+    ['collected', 'набрана', 'набрано', 'закрита', 'набрана/закрита', 'набрана / закрита'].includes(normalized)
   ) {
     return 4
   }
 
   return null
 }
-
-const codeToStatusLabel = (code: StatusCode): string => {
-  switch (code) {
-    case 1:
-      return 'Не обрана'
-    case 2:
-      return 'Умовно '
-    case 3:
-      return 'Обрана'
-    case 4:
-      return 'Набрана'
+const codeToStatusLabel = (code: StatusCode | string | null): string => {
+  const numericCode = Number(code);
+  switch (numericCode) {
+    case 1: return 'Не обрана';
+    case 2: return 'Умовно';
+    case 3: return 'Обрана';
+    case 4: return 'Набрана';
+    default: return 'Без статусу'; 
   }
 }
 
-const getStatusConfig = (code: StatusCode | null) => {
-  switch (code) {
+const getStatusConfig = (code: StatusCode | string | null) => {
+  const numericCode = Number(code); 
+  switch (numericCode) {
     case 2:
       return {
         badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -221,7 +199,7 @@ const DisciplineCataloguePage = () => {
   const [selectedStatus, setSelectedStatus] = useState<StatusCode | null>(null)
 
   const fetchDisciplines = useCallback(
-    async (page: number = currentPage) => {
+    async (page: number) => {
       setLoading(true)
       setError(null)
 
@@ -229,85 +207,61 @@ const DisciplineCataloguePage = () => {
         const params = new URLSearchParams()
         params.set('page', String(page))
         params.set('pageSize', '15')
+        params.set('sortOrder', String(sortOrder)) 
 
-        const trimmedSearch = searchTerm.trim()
-        if (trimmedSearch) {
-          params.set('search', trimmedSearch)
-        }
-
+        if (searchTerm.trim()) params.set('search', searchTerm.trim())
+        
         if (pendingFaculties.length > 0) {
           params.set('faculties', pendingFaculties.join(','))
         } else {
-          const facultyId = getFacultyIdFromCookie()
-          if (facultyId > 0) {
-            params.set('faculties', String(faculties))
-          }
+          /*const facultyId = getFacultyIdFromCookie()
+          if (facultyId > 0) params.set('faculties', String(facultyId))*/
         }
 
-        if (pendingDegrees.length > 0) {
-          params.set('degreeLevelIds', pendingDegrees.join(','))
-        }
+        if (pendingDegrees.length > 0) params.set('degreeLevelIds', pendingDegrees.join(','))
+        if (isFacultyFilter !== 'all') params.set('isFaculty', isFacultyFilter)
+        if (statusFilter > 0) params.set('statusFilter', String(statusFilter))
 
-        if (isFacultyFilter !== 'all') {
-          params.set('isFaculty', isFacultyFilter)
-        }
-
-        if (statusFilter > 0) {
-          params.set('statusFilter', String(statusFilter))
-        }
-
-        params.set('sortOrder', String(sortOrder))
-
-        const res = await fetch(
-          `https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
-        )
-        if (!res.ok) {
-          throw new Error('Не вдалося завантажити дисципліни')
-        }
+        const res = await fetch(`https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        
+        if (!res.ok) throw new Error('Не вдалося завантажити дані')
 
         const data = await res.json()
-        const list: AdminDiscipline[] = data.disciplines || []
-
-        setDisciplines(list)
+        setDisciplines(data.disciplines || [])
         setTotalPages(data.totalPages || 1)
-        setCurrentPage(data.currentPage || page)
-      } catch (e: unknown) {
-        setError(
-          e instanceof Error ? e.message : 'Сталася помилка під час завантаження дисциплін'
-        )
-        setDisciplines([])
+        setCurrentPage(page) 
+      } catch (e: any) {
+        setError(e.message)
       } finally {
         setLoading(false)
       }
     },
-    [currentPage, isFacultyFilter, pendingDegrees, pendingFaculties, searchTerm, sortOrder, statusFilter]
+    [isFacultyFilter, pendingDegrees, pendingFaculties, searchTerm, sortOrder, statusFilter]
   )
 
   useEffect(() => {
-    const fetchFilters = async () => {
-      try {
-        const [facRes, degRes] = await Promise.all([
-          fetch('https://localhost:7011/api/Faculty'),
-          fetch('https://localhost:7011/api/EducationalDegree'),
-        ])
-
-        const [facData, degData] = await Promise.all([facRes.json(), degRes.json()])
-
-        setFaculties(facData)
-        setDegrees(degData)
-
-        await fetchDisciplines(1)
-      } catch (e: unknown) {
-        setError('Не вдалося завантажити фільтри')
-      }
+    const init = async () => {
+      const [fRes, dRes] = await Promise.all([
+        fetch('https://localhost:7011/api/Faculty'),
+        fetch('https://localhost:7011/api/EducationalDegree')
+      ])
+      setFaculties(await fRes.json())
+      setDegrees(await dRes.json())
+      
+      fetchDisciplines(1)
     }
+    console.log("USE EFFECT ", disciplines)
+    init()
+  }, []) 
 
-    fetchFilters()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useEffect(() => {
+    if (disciplines.length > 0) {
+        fetchDisciplines(1)
+    }
+    console.log("USE EFFECT WITH SORT ORDER ", disciplines)
+  }, [sortOrder])
 
   const handleApplyFilters = () => {
-    setCurrentPage(1)
     fetchDisciplines(1)
   }
 
@@ -485,7 +439,7 @@ const DisciplineCataloguePage = () => {
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex flex-row-reverse sm:flex-row gap-2 w-1/2">
               <div className="flex-1 flex gap-2">
                 <input
                   type="text"
@@ -508,7 +462,6 @@ const DisciplineCataloguePage = () => {
                 const val = Number(e.target.value)
                 setSortOrder(val)
                 setCurrentPage(1)
-                fetchDisciplines(1)
               }}
               className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             >
@@ -528,7 +481,7 @@ const DisciplineCataloguePage = () => {
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-md p-4 sm:p-5">
+        <div className="">
           {loading ? (
             <div className="p-4 text-gray-600">Завантаження...</div>
           ) : disciplines.length === 0 ? (
@@ -553,6 +506,18 @@ const DisciplineCataloguePage = () => {
                           <div>
                             <div className="text-xs uppercase tracking-wide text-gray-500">
                               {d.facultyAbbreviation || 'Без факультету'}
+                              <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                              {d.teachers && (
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5">
+                                  {d.teachers}
+                                </span>
+                              )}
+                              {d.isFaculty != null && (
+                                <span className="inline-flex items-center rounded-full py-0.5">
+                                  {d.isFaculty ? "Факультетська" : "Університетська"}
+                                </span>
+                              )}
+                            </div>
                             </div>
                             <h2 className="mt-1 text-base sm:text-lg font-semibold text-gray-900">
                               {d.nameAddDisciplines}
@@ -563,7 +528,7 @@ const DisciplineCataloguePage = () => {
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-col items-end gap-1 w-full">
                             <span
                               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
                             >
@@ -577,20 +542,8 @@ const DisciplineCataloguePage = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                          {d.teachers && (
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5">
-                              {d.teachers}
-                            </span>
-                          )}
-                          {d.credits != null && (
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5">
-                              {d.credits} кредити
-                            </span>
-                          )}
-                        </div>
 
-                        <div className="mt-1">
+                        <div className="mt-6">
                           <div className="flex justify-between text-xs text-gray-600 mb-1">
                             <span>Набір студентів</span>
                             <span className="font-medium">

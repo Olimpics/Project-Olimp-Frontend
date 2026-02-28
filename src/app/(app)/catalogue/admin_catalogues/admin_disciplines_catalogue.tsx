@@ -316,25 +316,29 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                             Пошук
                         </button>
                     </div>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        Експорт
-                    </button>
-                <FileUploadModal/>
-                    <select
-                        value={selectedSorting}
-                        onChange={(e) => {
-                            const newSort = Number(e.target.value)
-                            setSelectedSorting(newSort)
-                            setCurrentPage(1)
-                        }}
-                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {sortingOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className='flex gap-4'>
+                        <div className='flex gap-2'>
+                            <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 h-fit">
+                                Експорт
+                            </button>
+                            <FileUploadModal/>
+                        </div>
+                        <select
+                            value={selectedSorting}
+                            onChange={(e) => {
+                                const newSort = Number(e.target.value)
+                                setSelectedSorting(newSort)
+                                setCurrentPage(1)
+                            }}
+                            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {sortingOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">

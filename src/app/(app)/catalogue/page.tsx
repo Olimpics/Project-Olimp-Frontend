@@ -65,7 +65,7 @@ const Page = () => {
   return (
     <div>
       {roleId === '2' && (
-        <div className="flex justify-center mb-6 border-b border-gray-300">
+        <div className="flex justify-center mb-2">
           {[1, 2, 3, 4, 6, 7, 8].map((tab) => {
             const tabNames: Record<number, string> = {
               1: 'Дисципліни',

@@ -97,12 +97,14 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
                 {isActionEnabled && (
                   <td className="py-2 px-4 border-b relative">
                     <div
-                      className="w-4 h-4 bg-black cursor-pointer"
+                      className="w-4 h-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation()
                         toggleDropdown(rowIndex)
                       }}
-                    ></div>
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </div>
 
                     {openRowIndex === rowIndex && (
                       <div className="absolute z-10 mt-2 ml-[-130px] bg-white border border-gray-300 shadow-md rounded-md py-1 w-32">
