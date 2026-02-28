@@ -146,7 +146,7 @@ const Pagination: React.FC<{
   )
 }
 
-const CourseCataloguePage = () => {
+const CourseTableCataloguePage = () => {
   const [students, setStudents] = useState<StudentRow[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [degrees, setDegrees] = useState<EduDegree[]>([])
@@ -542,12 +542,9 @@ const CourseCataloguePage = () => {
               >
                 Дисципліни
               </Link>
-              <Link
-                href="/table"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
+               <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
                 Таблиця
-              </Link>
+              </span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -928,5 +925,5 @@ function MoreModalBadge({
     </>
   );
 }
-export default CourseCataloguePage
+export default CourseTableCataloguePage
 

@@ -6,6 +6,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import {CourseTableCataloguePage} from '@/app/(app)/table/page'
 
 type AdminDiscipline = {
   idAddDisciplines: number
@@ -437,6 +438,12 @@ const DisciplineCataloguePage = () => {
               <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
                 Дисципліни
               </span>
+            <Link
+                href="/table"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
+              >
+                Таблиця
+              </Link>
             </div>
 
             <div className="flex flex-row-reverse sm:flex-row gap-2 w-1/2">
