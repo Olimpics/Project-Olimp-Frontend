@@ -527,7 +527,7 @@ const DisciplineCataloguePage = () => {
                               )}
                             </div>
                             </div>
-                            <h2 className="mt-6 text-base sm:text-lg font-semibold text-gray-900">
+                            <h2 className="mt-6 text-base w-80 sm:text-lg font-semibold text-gray-900">
                               {d.nameAddDisciplines}
                             </h2>
                             {d.departmentName && (

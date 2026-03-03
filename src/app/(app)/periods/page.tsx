@@ -515,17 +515,17 @@ export default function PeriodsPage() {
   const handleSave = async () => {
     if (!draft.startDate || !draft.endDate) return
 
-    const parseLocalDate = (dateStr: string) => {
-      const [y, m, d] = dateStr.split('-').map(Number)
-      return new Date(y, m - 1, d).getTime() // отримуємо мс з локального часу
-    }
+    const todayTime = Date.now() 
 
-    const startTime = parseLocalDate(draft.startDate)
-    const endTime = parseLocalDate(draft.endDate)
-    const minEndTime = startTime + 3 * 24 * 60 * 60 * 1000 // додаємо 3 дні у мс
+    // кінець періоду користувачем
+    const [y, m, d] = draft.endDate.split('-').map(Number)
+    const endTime = new Date(y, m - 1, d).getTime()
+
+    // мінімальний кінець = сьогодні + 3 дні
+    const minEndTime = todayTime + 3 * 24 * 60 * 60 * 1000
 
     if (endTime < minEndTime) {
-      setError('Дата завершення має бути не менше ніж через 3 дні після дати початку')
+      setError('Дата завершення має бути не менше ніж через 3 дні від сьогоднішньої дати')
       return
     }
 
