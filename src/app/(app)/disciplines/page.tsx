@@ -131,11 +131,11 @@ const Page: React.FC = () => {
 
       try {
         const parsed = JSON.parse(raw)
-        setStudentId(parsed.idStudents)
+        setStudentId(parsed.id)
 
         const [oddData, evenData] = await Promise.all([
-          apiService.get<Discipline>(`DisciplineTab/GetDisciplinesBySemester?studentId=${parsed.id}&isEvenSemester=false`),
-          apiService.get<Discipline>(`DisciplineTab/GetDisciplinesBySemester?studentId=${parsed.id}&isEvenSemester=true`)
+          apiService.get<Discipline>(`DisciplineTabStudent/GetDisciplinesBySemester?StudentId=${parsed.id}&isEvenSemester=false`),
+          apiService.get<Discipline>(`DisciplineTabStudent/GetDisciplinesBySemester?StudentId=${parsed.id}&isEvenSemester=true`)
         ])
 
         const parseData = (data: any, isEven: boolean): Discipline[] =>
@@ -170,10 +170,10 @@ const Page: React.FC = () => {
 
     for (const discipline of selectedDisciplines) {
       try {
-        await apiService.post('DisciplineTab/AddDisciplineBind', {
+        await apiService.post('DisciplineTabStudent/AddDisciplineBind', {
           studentId: studentId,
           disciplineId: discipline.id_disp,
-          semester: discipline.semester_disp ? 0 : 1,
+          semestr: discipline.semester_disp ? 0 : 1,
         })
       } catch (error) {
         console.error(error)

@@ -169,7 +169,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             }
 
             const res = await fetch(
-                `https://localhost:7011/api/AddDiscipline/GetAllDisciplines?${query.toString()}`
+                `https://localhost:7011/api/DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
             )
             const data = await res.json()
 

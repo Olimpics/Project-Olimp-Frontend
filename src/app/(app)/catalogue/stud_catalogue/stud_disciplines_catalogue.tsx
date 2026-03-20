@@ -17,7 +17,7 @@ type Discipline = {
   maxCountPeople: number
   fullCount: string
   courseNumber: number
-  evenSemester: boolean
+  addSemestr: any
 }
 
 type Faculty = {
@@ -110,7 +110,6 @@ const GoToPageButton = () => {
 }
 
 export const StudentDisciplinesCatalogue = React.memo(() => {
-
   const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -173,14 +172,21 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
       }
 
       const res = await fetch(
-        `https://localhost:7011/api/DisciplineTab/GetAllDisciplinesWithAvailability?${query.toString()}`
+        `https://localhost:7011/api/DisciplineTabStudent/GetAllDisciplinesWithAvailability?${query.toString()}`
       )
       const data = await res.json()
 
-      const formatted = (data.disciplines || []).map((d: Discipline) => ({
+
+      const formatted = (data.items || []).map((d: Discipline) => ({
         ...d,
         studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
-      }))
+        isEvenSemesterParsed: new Map<any, string>([
+          [1, "Парний"],
+          [0, "Непарний"],
+          [null, "Для всіх"],
+          [undefined, "Для всіх"]
+        ]).get(d.isEven) ?? "Невідомо",
+        }))
       setDisciplines(formatted)
       setTotalPages(data.totalPages || 1)
     },
@@ -230,6 +236,7 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
     { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
     { header: 'Кількість студентів', accessor: 'studentCount' },
     { header: 'Рівень освіти', accessor: 'degreeLevelName' },
+    { header: 'Cеместр', accessor: 'isEvenSemesterParsed'}
   ]
 
   return (
@@ -266,23 +273,30 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
             onChange={setPendingCourses}
           />
           <FilterBox
-            name="Парний семестр"
+            name="Семестр"
             options={[
-              { label: 'Так', value: true },
-              { label: 'Ні', value: false },
+              { label: 'Парний', value: false },   
+              { label: 'Непарний', value: true }, 
+              { label: 'Для всіх', value: null },
             ]}
             accessor="label"
             selectedValues={
-              isEvenSemester === null
-                ? []
-                : [isEvenSemester ? 'Так' : 'Ні']
+              isEvenSemester === false ? ['Парний'] : 
+              isEvenSemester === true ? ['Непарний'] : 
+              ['Для всіх'] 
             }
             onChange={(selected) => {
-              if (selected.includes('Так'))
-                setIsEvenSemester(true)
-              else if (selected.includes('Ні'))
-                setIsEvenSemester(false)
-              else setIsEvenSemester(null)
+              const lastSelected = selected[selected.length - 1];
+
+              if (lastSelected === 'Для всіх') {
+                setIsEvenSemester(null);
+              } else if (lastSelected === 'Парний') {
+                setIsEvenSemester(false);
+              } else if (lastSelected === 'Непарний') {
+                setIsEvenSemester(true);
+              } else {
+                setIsEvenSemester(null);
+              }
             }}
           />
         </div>

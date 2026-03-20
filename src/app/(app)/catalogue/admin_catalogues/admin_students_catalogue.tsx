@@ -15,6 +15,8 @@ type Student = {
   groupName: string
   groupId: string
   course: number
+  isShortLabel: string
+  nameStudyForm: string
 }
 
 type Faculty = {
@@ -41,6 +43,11 @@ type Specialities = {
 type Groupes = {
   id: number
   code: string
+}
+
+type StudyForm = {
+  idStudyForm: number,
+  nameStudyForm: string
 }
 
 interface Column<T> {
@@ -109,12 +116,15 @@ export const AdminStudentCatalogue = () => {
   const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
   const [specialities, setSpecialities] = useState<Specialities[]>([])
   const [groupes, setGroupes] = useState<Groupes[]>([])
-  
+  const [studyForms, setStudyForms] = useState<StudyForm[]>([])
+
+  const [pendingStudyForms, setPendingStudyForms] = useState<string[]>([]) 
   const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
   const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
   const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
   const [pendingCourses, setPendingCourses] = useState<string[]>([])
   const [pendingGroupes, setPendingGroupes] = useState<string[]>([])
+  const [pendingIsShort, setPendingIsShort] = useState<number | null>(null);
 
   const [courses] = useState<Courses[]>([
     { courseNumber: 1 },
@@ -137,81 +147,94 @@ export const AdminStudentCatalogue = () => {
       page: page.toString(),
       pageSize: '17',
       search: searchTerm,
-      sortOrder: selectedSorting.toString()
-    })
+      sortOrder: selectedSorting.toString(),
+    });
 
-    // Standard filters
+    const studyFormIds = studyForms
+      .filter((sf) => pendingStudyForms.includes(sf.nameStudyForm))
+      .map((sf) => sf.idStudyForm);
+
+    if (studyFormIds.length > 0) {
+      studyFormIds.forEach(id => {
+        query.append('StudyFormIds', id.toString());
+      });
+    }
+
     if (pendingFaculties.length > 0) {
-      query.append('faculties', pendingFaculties.join(','))
+      query.append('faculties', pendingFaculties.join(','));
     }
 
     const degreeIds = eduDegrees
       .filter((d) => pendingDegrees.includes(d.nameEducationalDegreec))
-      .map((d) => d.idEducationalDegree)
+      .map((d) => d.idEducationalDegree);
 
     if (degreeIds.length > 0) {
-      query.append('degreeLevelIds', degreeIds.join(','))
+      query.append('degreeLevelIds', degreeIds.join(','));
     }
 
     if (pendingCourses.length > 0) {
-      query.append('courses', pendingCourses.join(','))
+      query.append('courses', pendingCourses.join(','));
     }
 
     if (pendingSpecialities.length > 0) {
-      query.append('speciality', pendingSpecialities.join(','))
+      query.append('speciality', pendingSpecialities.join(','));
     }
 
     if (groupGive) {
       try {
-        const groupRes = await fetch('https://localhost:7011/api/Filter/groups')
+        const groupRes = await fetch('https://localhost:7011/api/Filter/groups');
         if (groupRes.ok) {
-          const groupList: Groupes[] = await groupRes.json()
-          
-          const matchingGroup = groupList.find((g) => g.code === groupGive)
-          
+          const groupList = await groupRes.json();
+          const matchingGroup = groupList.find((g) => g.code === groupGive);
           if (matchingGroup) {
-            query.append('group', matchingGroup.id.toString())
-            
-            setPendingGroupes((prev) => {
-               if (!prev.includes(matchingGroup.code)) {
-                   return [...prev, matchingGroup.code]
-               }
-               return prev
-            })
+            query.append('group', matchingGroup.id.toString());
+            setPendingGroupes((prev) => 
+              prev.includes(matchingGroup.code) ? prev : [...prev, matchingGroup.code]
+            );
           }
         }
       } catch (error) {
-        console.error("Error resolving group by name:", error)
+        console.error("Error resolving group:", error);
       }
     } else if (pendingGroupes.length > 0) {
-      const selectedIds = groupes
+      const selectedGroupIds = groupes
         .filter((g) => pendingGroupes.includes(g.code))
-        .map((g) => g.id)
-
-      if (selectedIds.length > 0) {
-        query.append('group', selectedIds.join(','))
+        .map((g) => g.id);
+      if (selectedGroupIds.length > 0) {
+        query.append('group', selectedGroupIds.join(','));
       }
     }
-    // -------------------------
 
-    const res = await fetch(`https://localhost:7011/api/Student?${query.toString()}`)
-    const data = await res.json()
+    if (pendingIsShort !== null) {
+      query.append('isShort', pendingIsShort.toString());
+    }
 
-    setStudents(data.students || [])
-    setTotalPages(data.totalPages || 1)
+    try {
+      const res = await fetch(`https://localhost:7011/api/Student?${query.toString()}`);
+      const data = await res.json();
+
+      const displayStudents = data.items.map((student: any) => {
+        const matchingForm = studyForms.find(sf => sf.idStudyForm === student.idStudyForm);
+
+        return {
+          ...student,
+          nameStudyForm: matchingForm ? matchingForm.nameStudyForm : "Не вказано",
+          
+          isShortLabel: student.isShort === 1 ? "Так" : "Ні",
+        };
+      });
+
+      setStudents(displayStudents || []);
+      setTotalPages(data.totalPages || 1);
+    } catch (err) {
+      console.error("Fetch failed:", err);
+    }
   }, [
-    currentPage,
-    searchTerm,
-    pendingFaculties,
-    pendingDegrees,
-    pendingCourses,
-    pendingSpecialities,
-    selectedSorting,
-    eduDegrees,
-    pendingGroupes,
-    groupGive,
-    groupes
-  ])
+    currentPage, searchTerm, pendingFaculties, pendingDegrees, 
+    pendingCourses, pendingSpecialities, selectedSorting, 
+    eduDegrees, pendingGroupes, groupGive, pendingIsShort, 
+    groupes, pendingStudyForms, studyForms
+  ]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -219,6 +242,8 @@ export const AdminStudentCatalogue = () => {
       const eduData = await (await fetch('https://localhost:7011/api/EducationalDegree')).json()
       const specData = await (await fetch('https://localhost:7011/api/Filter/specialities')).json()
       const groupData = await (await fetch('https://localhost:7011/api/Filter/groups')).json()
+      const studyFormData = await (await fetch('https://localhost:7011/api/StudyForm')).json()
+    
 
       const formattedSpecs = specData.map((s: Specialities) => ({
         ...s,
@@ -229,6 +254,7 @@ export const AdminStudentCatalogue = () => {
       setEduDegrees(eduData)
       setSpecialities(formattedSpecs)
       setGroupes(groupData)
+      setStudyForms(studyFormData)
       
       // Trigger initial student load
       fetchFilteredData(1)
@@ -299,6 +325,8 @@ export const AdminStudentCatalogue = () => {
       accessor: 'groupName',
       href: (row) => `/catalogue?activeTab=2&groupId=${encodeURIComponent(row.groupName || row.groupId)}`,
     },
+    { header: 'Прискорений', accessor: 'isShortLabel'},
+    { header: 'Форма навчання', accessor: 'nameStudyForm'}
   ]
 
   return (
@@ -340,8 +368,39 @@ export const AdminStudentCatalogue = () => {
             options={groupes}
             accessor="code"
             selectedValues={pendingGroupes}
-            // Ensure this accepts string[] now
             onChange={(vals) => setPendingGroupes(vals as string[])}
+          />
+          <FilterBox
+            name="Прискорений"
+            options={[
+              { label: 'Так', value: 1 },
+              { label: 'Ні', value: 0 },
+              { label: 'Для всіх', value: null },
+            ]}
+            accessor="label"
+            selectedValues={
+              pendingIsShort === 1 ? ['Так'] : 
+              pendingIsShort === 0 ? ['Ні'] : 
+              ['Для всіх']
+            }
+            onChange={(selected) => {
+              const last = selected[selected.length - 1];
+              if (last === 'Так') setPendingIsShort(1);
+              else if (last === 'Ні') setPendingIsShort(0);
+              else setPendingIsShort(null);
+            }}
+          />
+          <FilterBox
+            name="Форма навчання"
+            options={studyForms.map(sf => ({
+              label: sf.nameStudyForm,
+              value: sf.idStudyForm
+            }))}
+            accessor="label"
+            selectedValues={pendingStudyForms}
+            onChange={(selected) => {
+              setPendingStudyForms(selected)
+            }}
           />
         </div>
         <button

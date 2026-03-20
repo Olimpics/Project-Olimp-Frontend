@@ -224,7 +224,7 @@ const DisciplineCataloguePage = () => {
         if (isFacultyFilter !== 'all') params.set('isFaculty', isFacultyFilter)
         if (statusFilter > 0) params.set('statusFilter', String(statusFilter))
 
-        const res = await fetch(`https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        const res = await fetch(`https://localhost:7011/api/DisciplineTabStudentAdmin/GetDisciplinesWithStatus?${params.toString()}`)
         
         if (!res.ok) throw new Error('Не вдалося завантажити дані')
 
@@ -285,7 +285,7 @@ const DisciplineCataloguePage = () => {
       setModalError(null)
 
       const res = await fetch(
-        'https://localhost:7011/api/DisciplineTabAdmin/UpdateDisciplineStatus',
+        'https://localhost:7011/api/DisciplineTabStudentAdmin/UpdateDisciplineStatus',
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
