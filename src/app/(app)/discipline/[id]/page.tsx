@@ -14,7 +14,7 @@ interface DisciplineDetails {
   maxCountPeople: number | null;
   minCourse: number | null;
   maxCourse: number | null;
-  addSemestr: number;
+  isEven: number;
   degreeLevelName: string;
   degreeLevelId: number;
   departmentId: number;
@@ -97,7 +97,7 @@ export default function ProductPage({ params }: Params) {
           maxCountPeople: data.maxCountPeople,
           minCourse: data.minCourse,
           maxCourse: data.maxCourse,
-          addSemestr: data.addSemestr.toString(),
+          isEven: data.isEven.toString(),
           degreeLevelName: data.degreeLevelName,
           degreeLevelId: 0,
           details: {
@@ -406,8 +406,8 @@ export default function ProductPage({ params }: Params) {
                   />
                   <EditInfoItem
                     label="Семестр"
-                    name="addSemestr"
-                    value={editData.addSemestr}
+                    name="isEven"
+                    value={editData.isEven}
                     onChange={handleInputChange}
                     type="number"
                   />
@@ -514,7 +514,7 @@ export default function ProductPage({ params }: Params) {
                   <InfoItem label="Викладач" value={discipline.teacher} />
                   <InfoItem label="Мова" value={discipline.language} />
                   <InfoItem label="Тип контролю" value={discipline.typeOfControll} />
-                  <InfoItem label="Семестр" value={discipline.addSemestr.toString()} />
+                  <InfoItem label="Семестр" value={discipline.isEven.toString()} />
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
