@@ -278,7 +278,7 @@ const CourseTableCataloguePage = () => {
           params.set(key, value)
         })
 
-        const res = await fetch(`https://localhost:7011/api/DisciplineTabStudentAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        const res = await fetch(`https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
         if (!res.ok) throw new Error('Не вдалося завантажити дисципліни')
 
         const data = await res.json()
@@ -383,7 +383,7 @@ const CourseTableCataloguePage = () => {
         }
 
         const res = await fetch(
-          `https://localhost:7011/api/DisciplineTabStudentAdmin/GetDisciplinesWithStatus?${params.toString()}`
+          `https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
         )
         if (!res.ok) {
           throw new Error('Не вдалося завантажити дані')
@@ -616,7 +616,7 @@ const CourseTableCataloguePage = () => {
       setModalError(null)
 
       const res = await fetch(
-        `https://localhost:7011/api/DisciplineTabStudentAdmin/UpdateDisciplineStatus`,
+        `https://localhost:7011/api/DisciplineTabAdmin/UpdateDisciplineStatus`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -650,7 +650,7 @@ const CourseTableCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('https://localhost:7011/api/DisciplineTabStudentAdmin/UpdateChoice', {
+      const res = await fetch('https://localhost:7011/api/DisciplineTabAdmin/UpdateChoice', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -229,7 +229,7 @@ const CourseCataloguePage = () => {
         }
 
         const res = await fetch(
-          `https://localhost:7011/api/DisciplineTabStudentAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
+          `https://localhost:7011/api/DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
         )
         if (!res.ok) {
           throw new Error('Не вдалося завантажити дані')
@@ -390,7 +390,7 @@ const CourseCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('https://localhost:7011/api/DisciplineTabStudentAdmin/UpdateChoice', {
+      const res = await fetch('https://localhost:7011/api/DisciplineTabAdmin/UpdateChoice', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
