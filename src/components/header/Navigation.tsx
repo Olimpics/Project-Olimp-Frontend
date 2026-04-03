@@ -75,7 +75,7 @@ export const Navigation: FunctionComponent = () => {
 
           try {
             const res = await fetch(
-              `https://localhost:7011/api/Notification/user/${uid}?isRead=false`
+              `http://212.3.125.183:7011/api/Notification/user/${uid}?isRead=false`
             )
             const data = await res.json()
 

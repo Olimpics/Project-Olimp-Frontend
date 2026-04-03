@@ -278,7 +278,7 @@ const CourseTableCataloguePage = () => {
           params.set(key, value)
         })
 
-        const res = await fetch(`https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        const res = await fetch(`http://212.3.125.183:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
         if (!res.ok) throw new Error('Не вдалося завантажити дисципліни')
 
         const data = await res.json()
@@ -383,7 +383,7 @@ const CourseTableCataloguePage = () => {
         }
 
         const res = await fetch(
-          `https://localhost:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
+          `http://212.3.125.183:7011/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
         )
         if (!res.ok) {
           throw new Error('Не вдалося завантажити дані')
@@ -471,9 +471,9 @@ const CourseTableCataloguePage = () => {
     const fetchFilters = async () => {
       try {
         const [facRes, degRes, groupRes] = await Promise.all([
-          fetch('https://localhost:7011/api/Faculty'),
-          fetch('https://localhost:7011/api/EducationalDegree'),
-          fetch('https://localhost:7011/api/Filter/groups'),
+          fetch('http://212.3.125.183:7011/api/Faculty'),
+          fetch('http://212.3.125.183:7011/api/EducationalDegree'),
+          fetch('http://212.3.125.183:7011/api/Filter/groups'),
         ])
 
         const [facData, degData, groupData] = await Promise.all([
@@ -616,7 +616,7 @@ const CourseTableCataloguePage = () => {
       setModalError(null)
 
       const res = await fetch(
-        `https://localhost:7011/api/DisciplineTabAdmin/UpdateDisciplineStatus`,
+        `http://212.3.125.183:7011/api/DisciplineTabAdmin/UpdateDisciplineStatus`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -650,7 +650,7 @@ const CourseTableCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('https://localhost:7011/api/DisciplineTabAdmin/UpdateChoice', {
+      const res = await fetch('http://212.3.125.183:7011/api/DisciplineTabAdmin/UpdateChoice', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

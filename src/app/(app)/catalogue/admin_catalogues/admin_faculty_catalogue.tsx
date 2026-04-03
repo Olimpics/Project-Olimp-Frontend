@@ -93,7 +93,7 @@ export const AdminFacultyCatalogue = () => {
         sortOrder: selectedSorting.toString()
       })
 
-      const res = await fetch(`https://localhost:7011/api/Faculty?${query.toString()}`)
+      const res = await fetch(`http://212.3.125.183:7011/api/Faculty?${query.toString()}`)
 
       if (!res.ok) {
         throw new Error('Failed to fetch faculties')
@@ -152,7 +152,7 @@ export const AdminFacultyCatalogue = () => {
     if (!selectedFaculty) return
 
     try {
-      const response = await fetch(`https://localhost:7011/api/Faculty/${selectedFaculty.idFaculty}`, {
+      const response = await fetch(`http://212.3.125.183:7011/api/Faculty/${selectedFaculty.idFaculty}`, {
         method: 'DELETE'
       })
 
@@ -171,7 +171,7 @@ export const AdminFacultyCatalogue = () => {
     if (!selectedFaculty) return
 
     try {
-      const response = await fetch(`https://localhost:7011/api/Faculty/${selectedFaculty.idFaculty}`, {
+      const response = await fetch(`http://212.3.125.183:7011/api/Faculty/${selectedFaculty.idFaculty}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -192,7 +192,7 @@ export const AdminFacultyCatalogue = () => {
 
   const addFaculty = async () => {
     try {
-      const response = await fetch('https://localhost:7011/api/Faculty', {
+      const response = await fetch('http://212.3.125.183:7011/api/Faculty', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
