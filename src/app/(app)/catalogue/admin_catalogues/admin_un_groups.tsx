@@ -145,7 +145,7 @@ export const AdminGroupsCatalogue = () => {
     }
 
     const res = await fetch(
-      `https://localhost:7011/api/Group?${query.toString()}`
+      `https://localhost:5154/api/Group?${query.toString()}`
     )
     const data = await res.json()
 
@@ -167,9 +167,9 @@ export const AdminGroupsCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('https://localhost:7011/api/Faculty')).json()
-      const deptData = await (await fetch('https://localhost:7011/api/Department?page=1&pageSize=50')).json()
-      const eduData = await (await fetch('https://localhost:7011/api/EducationalDegree')).json()
+      const facData = await (await fetch('https://localhost:5154/api/Faculty')).json()
+      const deptData = await (await fetch('https://localhost:5154/api/Department?page=1&pageSize=50')).json()
+      const eduData = await (await fetch('https://localhost:5154/api/EducationalDegree')).json()
 
       setFaculties(facData)
       setDepartments(deptData.items || [])
@@ -202,7 +202,7 @@ export const AdminGroupsCatalogue = () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`https://localhost:7011/api/Group/${selectedGroup.id}`, {
+      const response = await fetch(`https://localhost:5154/api/Group/${selectedGroup.id}`, {
         method: 'DELETE'
       })
 
@@ -221,7 +221,7 @@ export const AdminGroupsCatalogue = () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`https://localhost:7011/api/Group/${selectedGroup.id}`, {
+      const response = await fetch(`https://localhost:5154/api/Group/${selectedGroup.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
