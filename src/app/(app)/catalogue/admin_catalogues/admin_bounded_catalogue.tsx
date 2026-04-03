@@ -164,7 +164,7 @@ export const AdminBindLoansPage = () => {
 
       try {
         const [disciplinesRes, specialitiesRes] = await Promise.all([
-          fetchWithAuth('https://localhost:7011/api/Filter/add-disciplines'),
+          fetchWithAuth('https://localhost:7011/api/Filter/add-disciplines'), 
           fetchWithAuth('https://localhost:7011/api/Filter/specialities')
         ])
 
