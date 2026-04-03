@@ -120,7 +120,7 @@ const FileUploadModal = () => {
       formData.append("IsCreate", String(isChecked));
       formData.append("Limit", useLimit ? limit : "0"); // 0 означает "без лимита"
 
-      const response = await fetch('http://localhost:5154/api/Import', {
+      const response = await fetch('https://localhost:7011/api/Import', {
         method: 'POST',
         body: formData
       });

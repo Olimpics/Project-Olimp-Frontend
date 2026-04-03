@@ -112,7 +112,7 @@ export const AdminDepartmentCatalogue = () => {
         query.append("facultyIds", pendingFaculties.join(","))
       }
 
-      const res = await fetch(`http://localhost:5154/api/Department?${query.toString()}`)
+      const res = await fetch(`https://localhost:7011/api/Department?${query.toString()}`)
 
       console.log(res)
 
@@ -141,7 +141,7 @@ export const AdminDepartmentCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://localhost:5154/api/Faculty')).json()
+      const facData = await (await fetch('https://localhost:7011/api/Faculty')).json()
       setFaculties(facData)
       fetchDepartments(1)
     }
@@ -180,7 +180,7 @@ export const AdminDepartmentCatalogue = () => {
     if (!selectedDepartment) return
 
     try {
-      const response = await fetch(`http://localhost:5154/api/Department/${selectedDepartment.idDepartment}`, {
+      const response = await fetch(`https://localhost:7011/api/Department/${selectedDepartment.idDepartment}`, {
         method: 'DELETE'
       })
 
@@ -199,7 +199,7 @@ export const AdminDepartmentCatalogue = () => {
     if (!selectedDepartment) return
 
     try {
-      const response = await fetch(`http://localhost:5154/api/Department/${selectedDepartment.idDepartment}`, {
+      const response = await fetch(`https://localhost:7011/api/Department/${selectedDepartment.idDepartment}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -225,7 +225,7 @@ export const AdminDepartmentCatalogue = () => {
 
   const addDepartment = async () => {
     try {
-      const response = await fetch('http://localhost:5154/api/Department', {
+      const response = await fetch('https://localhost:7011/api/Department', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

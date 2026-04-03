@@ -97,7 +97,7 @@ export default function Page() {
                 // )
 
                 const response = await fetch(
-                    `http://localhost:5154/api/StudentPage/disciplines/by-semester/${prof.id}`
+                    `https://localhost:7011/api/StudentPage/disciplines/by-semester/${prof.id}`
                 )
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`)

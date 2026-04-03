@@ -73,7 +73,7 @@ export default function ProductPage({ params }: Params) {
   useEffect(() => {  
     const fetchDisciplineAndFaculty = async () => {
       try {
-        const response = await fetch(`http://localhost:5154/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}`);
+        const response = await fetch(`https://localhost:7011/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -241,7 +241,7 @@ export default function ProductPage({ params }: Params) {
         }
       }
 
-      const response = await fetch(`http://localhost:5154/api/DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, {
+      const response = await fetch(`https://localhost:7011/api/DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

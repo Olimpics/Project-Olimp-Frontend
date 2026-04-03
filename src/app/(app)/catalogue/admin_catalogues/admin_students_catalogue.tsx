@@ -182,7 +182,7 @@ export const AdminStudentCatalogue = () => {
 
     if (groupGive) {
       try {
-        const groupRes = await fetch('http://localhost:5154/api/Filter/groups');
+        const groupRes = await fetch('https://localhost:7011/api/Filter/groups');
         if (groupRes.ok) {
           const groupList = await groupRes.json();
           const matchingGroup = groupList.find((g) => g.code === groupGive);
@@ -210,7 +210,7 @@ export const AdminStudentCatalogue = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5154/api/Student?${query.toString()}`);
+      const res = await fetch(`https://localhost:7011/api/Student?${query.toString()}`);
       const data = await res.json();
 
       const displayStudents = data.items.map((student: any) => {
@@ -238,11 +238,11 @@ export const AdminStudentCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://localhost:5154/api/Faculty')).json()
-      const eduData = await (await fetch('http://localhost:5154/api/EducationalDegree')).json()
-      const specData = await (await fetch('http://localhost:5154/api/Filter/specialities')).json()
-      const groupData = await (await fetch('http://localhost:5154/api/Filter/groups')).json()
-      const studyFormData = await (await fetch('http://localhost:5154/api/StudyForm')).json()
+      const facData = await (await fetch('https://localhost:7011/api/Faculty')).json()
+      const eduData = await (await fetch('https://localhost:7011/api/EducationalDegree')).json()
+      const specData = await (await fetch('https://localhost:7011/api/Filter/specialities')).json()
+      const groupData = await (await fetch('https://localhost:7011/api/Filter/groups')).json()
+      const studyFormData = await (await fetch('https://localhost:7011/api/StudyForm')).json()
     
 
       const formattedSpecs = specData.map((s: Specialities) => ({
@@ -284,7 +284,7 @@ export const AdminStudentCatalogue = () => {
 
   const confirmDelete = async () => {
     if (!selectedStudent) return
-    const response = await fetch(`http://localhost:5154/api/Student/${selectedStudent.idStudents}`, {
+    const response = await fetch(`https://localhost:7011/api/Student/${selectedStudent.idStudents}`, {
       method: 'DELETE'
     })
 
@@ -298,7 +298,7 @@ export const AdminStudentCatalogue = () => {
 
   const saveChanges = async () => {
     if (!selectedStudent) return
-    const response = await fetch(`http://localhost:5154/api/Student/${selectedStudent.idStudents}`, {
+    const response = await fetch(`https://localhost:7011/api/Student/${selectedStudent.idStudents}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'

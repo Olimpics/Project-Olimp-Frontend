@@ -149,7 +149,7 @@ export const AdminEducationalProgramCatalogue = () => {
       }
 
       const res = await fetch(
-        `http://localhost:5154/api/EducationalProgram?${query.toString()}`,
+        `https://localhost:7011/api/EducationalProgram?${query.toString()}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -179,7 +179,7 @@ export const AdminEducationalProgramCatalogue = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const degreesData = await (await fetch('http://localhost:5154/api/EducationalDegree')).json()
+        const degreesData = await (await fetch('https://localhost:7011/api/EducationalDegree')).json()
         setDegrees(degreesData)
         fetchPrograms(1)
       } catch (error) {
@@ -232,7 +232,7 @@ export const AdminEducationalProgramCatalogue = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5154/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
+        `https://localhost:7011/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
         {
           method: 'DELETE',
           headers: {
@@ -257,7 +257,7 @@ export const AdminEducationalProgramCatalogue = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5154/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
+        `https://localhost:7011/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
         {
           method: 'PUT',
           headers: {
@@ -283,7 +283,7 @@ export const AdminEducationalProgramCatalogue = () => {
     if (!token) return
 
     try {
-      const response = await fetch('http://localhost:5154/api/EducationalProgram', {
+      const response = await fetch('https://localhost:7011/api/EducationalProgram', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

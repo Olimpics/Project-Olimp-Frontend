@@ -169,7 +169,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             }
 
             const res = await fetch(
-                `http://localhost:5154/api/DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
+                `https://localhost:7011/api/DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
             )
             const data = await res.json()
 
@@ -200,10 +200,10 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     useEffect(() => {
         const fetchInitialData = async () => {
             const facData = await (
-                await fetch('http://localhost:5154/api/Faculty')
+                await fetch('https://localhost:7011/api/Faculty')
             ).json()
             const eduData = await (
-                await fetch('http://localhost:5154/api/EducationalDegree')
+                await fetch('https://localhost:7011/api/EducationalDegree')
             ).json()
 
             setFaculties(facData)

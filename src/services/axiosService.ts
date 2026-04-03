@@ -1,6 +1,6 @@
   import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
-  const BASE_URL = 'http://localhost:5154/api/'
+  const BASE_URL = 'https://localhost:7011/api/'
 
   let authToken: string | null = null
 
