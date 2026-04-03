@@ -36,7 +36,7 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`http://212.3.125.183:7011/api/Notification/${id}/mark-as-read`, {
+      await fetch(`http://212.3.125.183:5154/api/Notification/${id}/mark-as-read`, {
         method: 'POST',
       });
       setLocalNotifications(prev => prev.filter(n => n.idNotification !== id));
@@ -49,7 +49,7 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
     try {
       await Promise.all(
         localNotifications.map(noti =>
-          fetch(`http://212.3.125.183:7011/api/Notification/${noti.idNotification}/mark-as-read`, {
+          fetch(`http://212.3.125.183:5154/api/Notification/${noti.idNotification}/mark-as-read`, {
             method: 'POST',
           })
         )
