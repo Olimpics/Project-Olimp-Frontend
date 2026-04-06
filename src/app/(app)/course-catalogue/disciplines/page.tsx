@@ -229,7 +229,7 @@ const DisciplineCataloguePage = () => {
         if (!res.ok) throw new Error('Не вдалося завантажити дані')
 
         const data = await res.json()
-        setDisciplines(data.disciplines || [])
+        setDisciplines(data.items || [])
         setTotalPages(data.totalPages || 1)
         setCurrentPage(page) 
       } catch (e: any) {

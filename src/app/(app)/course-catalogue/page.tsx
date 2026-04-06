@@ -235,7 +235,7 @@ const CourseCataloguePage = () => {
           throw new Error('Не вдалося завантажити дані')
         }
         const data = await res.json()
-        const list: StudentWithChoices[] = data.students || []
+        const list: StudentWithChoices[] = data.items || []
 
         const mapped: StudentRow[] = list.map((s) => {
           const allDisciplines =
