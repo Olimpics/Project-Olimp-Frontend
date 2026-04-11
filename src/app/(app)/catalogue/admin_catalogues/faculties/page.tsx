@@ -365,3 +365,5 @@ export const AdminFacultyCatalogue = () => {
     </div>
   )
 }
+
+export default AdminFacultyCatalogue

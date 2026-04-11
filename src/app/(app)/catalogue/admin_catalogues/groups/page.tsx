@@ -418,3 +418,5 @@ export const AdminGroupsCatalogue = () => {
     </div>
   )
 }
+
+export default AdminGroupsCatalogue

@@ -23,12 +23,22 @@ const headerLinks = [
 const headerLinksAdmin = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Каталоги', link: ROUTES.catalogue },
-  { name: 'Каталог курсів', link: ROUTES.courseCatalogue },
+  { name: 'Вибіркові дисципліни', link: ROUTES.courseCatalogue },
   { name: 'Періоди вибірних дисциплін', link: ROUTES.periods },
   { name: 'Рейтинги', link: '#' },
   { name: 'Аналітика', link: '##' },
   { name: 'Новини', link: '###' },
   { name: 'Logout', link: ROUTES.mainpage }
+]
+
+const headerLinksCatalogues = [
+  { name: 'Дисципліни', link: ROUTES.adminCatalogue },
+  { name: 'Студенти', link: ROUTES.adminStudentsCatalogue },
+  { name: 'Факультети', link: ROUTES.adminFacultyCatalogue },
+  { name: 'Кафедра', link: ROUTES.adminDepartmentsCatalogue },
+  { name: "Зв'язні групи", link: ROUTES.adminBoundedCatalogue },
+  { name: 'Навчальні програми', link: ROUTES.adminEduProgCatalogue },
+  { name: "Групи", link: ROUTES.adminUnGroups },
 ]
 
 const headerLinksUnlogin = [
@@ -41,15 +51,28 @@ interface Notification {
   message: string
 }
 
+interface Faculty {
+  idFaculty: number,
+  nameFaculty: string,
+  abbreviation: string
+}
+
 export const Navigation: FunctionComponent = () => {
   const pathname = usePathname()
   const router = useRouter()
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCataloguesOpen, setIsCataloguesOpen] = useState(false)
+  const [isRatingsOpen, setIsRatingsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userId, setUserId] = useState<number | null>(null)
   const [roleId, setRoleId] = useState<number | null>(null)
+  const [faculties, setFaculties] = useState<Faculty[] | null>(null)
+
+  const fetchFaculties = async () => {
+
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -79,8 +102,9 @@ export const Navigation: FunctionComponent = () => {
             )
             const data = await res.json()
 
-            if (Array.isArray(data)) {
-              setNotifications(data)
+
+            if (Array.isArray(data.items)) {
+              setNotifications(data.items)
             } else if (Array.isArray(data.notifications)) {
               setNotifications(data.notifications)
             } else {
@@ -106,6 +130,27 @@ export const Navigation: FunctionComponent = () => {
       }
     }
 
+    const fetchFaculties = async () => {
+      try {
+        const res = await fetch('http://212.3.125.183:5154/api/Faculty')
+        const data = await res.json()
+
+        if (Array.isArray(data)) {
+          setFaculties(data)
+        } else if (Array.isArray(data.faculties)) {
+          setFaculties(data.faculties)
+        } else {
+          console.warn('Unexpected faculty format', data)
+          setFaculties([])
+        }
+
+      } catch (err) {
+        console.error('Failed to fetch faculties:', err)
+        setFaculties([])
+      }
+    }
+
+    fetchFaculties()
     init()
 
     window.addEventListener('storage', init)
@@ -160,18 +205,124 @@ export const Navigation: FunctionComponent = () => {
               className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setIsMenuOpen(false)}
             />
-            <aside className="fixed top-0 right-0 h-full sm:w-80 w-full bg-white z-50 shadow-lg p-6 flex flex-col gap-4">
+            <aside className="fixed top-0 right-0 h-full sm:w-80 w-full bg-white z-50 shadow-lg p-6 flex flex-col gap-4 overflow-y-auto">
               {links.map((el) => {
                 const isLogout = el.name === 'Logout'
-                return isLogout ? (
-                  <button
-                    key={el.name}
-                    onClick={handleLogout}
-                    className="text-red-600 font-medium text-left text-xl"
-                  >
-                    {el.name}
-                  </button>
-                ) : (
+                const isCatalogues = el.name === 'Каталоги'
+                const isRatings = el.name === 'Рейтинги'
+
+                if (isLogout) {
+                  return (
+                    <button
+                      key={el.name}
+                      onClick={handleLogout}
+                      className="text-red-600 font-medium text-left text-xl"
+                    >
+                      {el.name}
+                    </button>
+                  )
+                }
+
+                if (isRatings && roleId !== null) {
+                  return (
+                    <div key={el.name} className="flex flex-col">
+                      <button
+                        onClick={() => setIsRatingsOpen(prev => !prev)}
+                        className="flex justify-between items-center text-gray-800 font-medium text-xl"
+                      >
+                        {el.name}
+                        <span
+                          className={clsx(
+                            'transition-transform',
+                            isRatingsOpen && 'rotate-180'
+                          )}
+                        >
+                          ▼
+                        </span>
+                      </button>
+
+                      {isRatingsOpen && (
+                        <div className="ml-4 mt-2 flex flex-col gap-2">
+                          {faculties?.map((faculty) => (
+                            <Link
+                              key={faculty.idFaculty}
+                              href={`/ratings/${faculty.idFaculty}`}
+                              onClick={() => {
+                                setIsMenuOpen(false)
+                                setIsRatingsOpen(false)
+                              }}
+                              className="text-gray-600 text-lg"
+                            >
+                              {faculty.nameFaculty} ({faculty.abbreviation})
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                if (isCatalogues) {
+                  if (roleId === 1) {
+                    return (
+                      <Link
+                        key={el.link}
+                        href={el.link}
+                        onClick={() => setIsMenuOpen(false)}
+                        className={clsx(
+                          'text-gray-800 font-medium text-xl',
+                          pathname === el.link && 'text-blue-500'
+                        )}
+                      >
+                        {el.name}
+                      </Link>
+                    )
+                  }
+
+                  if (roleId === 2) {
+                    return (
+                      <div key={el.name} className="flex flex-col">
+                        <button
+                          onClick={() => setIsCataloguesOpen(prev => !prev)}
+                          className="flex justify-between items-center text-gray-800 font-medium text-xl"
+                        >
+                          {el.name}
+                          <span
+                            className={clsx(
+                              'transition-transform',
+                              isCataloguesOpen && 'rotate-180'
+                            )}
+                          >
+                            ▼
+                          </span>
+                        </button>
+
+                        {isCataloguesOpen && (
+                          <div className="ml-4 mt-2 flex flex-col gap-2">
+                            {headerLinksCatalogues.map((sub) => (
+                              <Link
+                                key={sub.link}
+                                href={sub.link}
+                                onClick={() => {
+                                  setIsMenuOpen(false)
+                                  setIsCataloguesOpen(false)
+                                }}
+                                className={clsx(
+                                  'text-gray-600 text-lg',
+                                  pathname === sub.link && 'text-blue-500'
+                                )}
+                              >
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+                }
+
+                return (
                   <Link
                     key={el.link}
                     href={el.link}

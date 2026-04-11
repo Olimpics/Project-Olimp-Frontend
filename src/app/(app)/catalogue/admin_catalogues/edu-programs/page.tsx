@@ -717,3 +717,5 @@ export const AdminEducationalProgramCatalogue = () => {
     </div>
   )
 }
+
+export default AdminEducationalProgramCatalogue

@@ -265,7 +265,7 @@ export default function Page() {
                                             </thead>
                                             <tbody>
                                                 {main.length ? (
-                                                    main.map((d, i) => (
+                                                    main.map((d) => (
                                                         <tr
                                                             key={
                                                                 d.idBindMainDisciplines
