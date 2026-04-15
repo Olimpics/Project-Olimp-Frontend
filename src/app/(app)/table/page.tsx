@@ -283,7 +283,7 @@ const CourseTableCataloguePage = () => {
 
         const data = await res.json()
 
-        setDisciplines(data.disciplines || [])
+        setDisciplines(data.items || [])
         setTotalDisciplinesPages(data.totalPages || 1)
         setCurrentDisciplinesPage(data.currentPage || page)
       } catch (e: unknown) {
@@ -389,7 +389,7 @@ const CourseTableCataloguePage = () => {
           throw new Error('Не вдалося завантажити дані')
         }
         const data = await res.json()
-        const list: StudentWithChoices[] = data.students || []
+        const list: StudentWithChoices[] = data.items || []
 
         const mapped: StudentRow[] = list.map((s) => {
           const allDisciplines =

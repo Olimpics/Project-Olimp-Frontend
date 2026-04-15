@@ -456,3 +456,5 @@ console.log(`bindLoans`,bindLoans)
     </div>
   )
 }
+
+export default AdminBindLoansPage

@@ -13,6 +13,8 @@ interface DisciplineDto {
     loans: number
     formControll?: string
     semestr: number
+    teachers: string
+    educationalProgramName: string
 }
 interface AdditionalDto {
     idBindAddDisciplines: number
@@ -28,8 +30,8 @@ interface PlanResponse {
     studentId: number
     studentName: string
     degreeName: string
-    mainDisciplinesBySemester: Record<string, DisciplineDto[]>
-    additionalDisciplinesBySemester: Record<string, AdditionalDto[]>
+    mainDisciplines: Record<string, DisciplineDto[]>
+    additionalDisciplines: Record<string, AdditionalDto[]>
 }
 interface EventItem {
     id: number
@@ -103,13 +105,15 @@ export default function Page() {
                     throw new Error(`HTTP error! status: ${response.status}`)
                 }
                 const data: PlanResponse = await response.json()
+
+                // хуйню мапіт
                 const main = Object.fromEntries(
-                    Object.entries(data.mainDisciplinesBySemester).map(
+                    Object.entries(data.mainDisciplines).map(
                         ([k, v]) => [Number(k), v]
                     )
                 ) as Record<number, DisciplineDto[]>
                 const add = Object.fromEntries(
-                    Object.entries(data.additionalDisciplinesBySemester).map(
+                    Object.entries(data.additionalDisciplines).map(
                         ([k, v]) => [Number(k), v]
                     )
                 ) as Record<number, AdditionalDto[]>
@@ -261,7 +265,7 @@ export default function Page() {
                                             </thead>
                                             <tbody>
                                                 {main.length ? (
-                                                    main.map((d, i) => (
+                                                    main.map((d) => (
                                                         <tr
                                                             key={
                                                                 d.idBindMainDisciplines

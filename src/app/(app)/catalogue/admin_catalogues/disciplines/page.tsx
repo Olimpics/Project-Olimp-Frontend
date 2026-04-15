@@ -576,3 +576,5 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
         </div>
     )
 })
+
+export default AdminDisciplinesCatalogue

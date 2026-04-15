@@ -235,7 +235,7 @@ const CourseCataloguePage = () => {
           throw new Error('Не вдалося завантажити дані')
         }
         const data = await res.json()
-        const list: StudentWithChoices[] = data.students || []
+        const list: StudentWithChoices[] = data.items || []
 
         const mapped: StudentRow[] = list.map((s) => {
           const allDisciplines =
@@ -526,7 +526,7 @@ const CourseCataloguePage = () => {
 
       <main className="sm:w-4/5 w-full">
         <div className="mb-5 flex flex-col gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Каталог курсів</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Вибіркові дисципліни</h1>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
@@ -537,16 +537,16 @@ const CourseCataloguePage = () => {
                 Студенти
               </Link>
               <Link
-                href="/course-catalogue/disciplines"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
-                Дисципліни
-              </Link>
-              <Link
                 href="/table"
                 className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
               >
                 Таблиця
+              </Link>
+              <Link
+                href="/course-catalogue/disciplines"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
+              >
+                Дисципліни
               </Link>
             </div>
 
@@ -557,7 +557,7 @@ const CourseCataloguePage = () => {
                   placeholder="Пошук студента, факультету або групи..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-96 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 />
                 <button
                   onClick={handleApplyFilters}

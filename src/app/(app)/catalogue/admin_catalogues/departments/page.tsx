@@ -481,3 +481,5 @@ export const AdminDepartmentCatalogue = () => {
     </div>
   )
 }
+
+export default AdminDepartmentCatalogue

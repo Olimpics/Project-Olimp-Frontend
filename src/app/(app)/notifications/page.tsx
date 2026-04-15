@@ -63,7 +63,7 @@ export default function NotificationPage() {
       const res = await fetch(`http://212.3.125.183:5154/api/Notification/user/${student.userId}?${query.toString()}`)
       const data = await res.json()
 
-      const updated = data.notifications.map((n: Notification) => {
+      const updated = data.items.map((n: Notification) => {
         const date = new Date(n.createdAt)
         const formattedDate = date.toLocaleString("uk-UA", {
           day: "2-digit",

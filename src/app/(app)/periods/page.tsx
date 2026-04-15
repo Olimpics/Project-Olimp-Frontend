@@ -7,7 +7,7 @@ import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { FilterBox } from '@/components/ui/FilterBox'
 
-const DEPARTMENT_ID = 21
+const DEPARTMENT_ID = 1
 
 type TargetAudience = 'Для всіх' | 'Перевибір'
 type PeriodStatus = 'Відкрито' | 'Закрито'
