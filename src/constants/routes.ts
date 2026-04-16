@@ -16,4 +16,5 @@ export const ROUTES = {
   adminEduProgCatalogue: '/catalogue/admin_catalogues/edu-programs',
   adminStudentsCatalogue: '/catalogue/admin_catalogues/students',
   adminUnGroups: '/catalogue/admin_catalogues/groups',
+  adminGroupDetails: (id: string | number) => `/catalogue/admin_catalogues/groups/${id}`,
 }

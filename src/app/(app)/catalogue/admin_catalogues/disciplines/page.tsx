@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import React from 'react'
+import clsx from 'clsx'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { getCookie } from '@/services/cookie-servies'
@@ -127,6 +128,42 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     const [modalType, setModalType] = useState<'edit' | 'delete' | null>(null)
     const [selectedDiscipline, setSelectedDiscipline] =
         useState<Discipline>(null)
+
+    const [isAddMainModalOpen, setIsAddMainModalOpen] = useState(false)
+    const [isCopyPastModalOpen, setIsCopyPastModalOpen] = useState(false)
+    const [catalogYears, setCatalogYears] = useState<{ idCatalogYear: number; nameCatalog: string }[]>([])
+    const [selectedCatalogId, setSelectedCatalogId] = useState<number | ''>('')
+    const [pastDisciplines, setPastDisciplines] = useState<{ id: number; code: string; name: string }[]>([])
+    const [pastSearchTerm, setPastSearchTerm] = useState('')
+    const [selectedPastDisciplineId, setSelectedPastDisciplineId] = useState<number | ''>('')
+
+    const fetchCatalogs = async () => {
+        try {
+            const res = await fetch('http://212.3.125.183:5154/api/Parameters/CatalogYears')
+            const data = await res.json()
+            setCatalogYears(data)
+        } catch (error) {
+            console.error('Failed to fetch catalogs', error)
+        }
+    }
+
+    const fetchPastDisciplines = useCallback(async (catalogId: number, search: string = '') => {
+        try {
+            const res = await fetch(`http://212.3.125.183:5154/api/Filter/add-disciplines-paged?CatalogYearId=${catalogId}&search=${encodeURIComponent(search)}`)
+            const data = await res.json()
+            setPastDisciplines(data.items || [])
+        } catch (error) {
+            console.error('Failed to fetch past disciplines', error)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (selectedCatalogId !== '') {
+            fetchPastDisciplines(Number(selectedCatalogId), pastSearchTerm)
+        } else {
+            setPastDisciplines([])
+        }
+    }, [selectedCatalogId, pastSearchTerm, fetchPastDisciplines])
     const fetchFilteredData = useCallback(
         async (page: number = currentPage) => {
             const studentRaw = getCookie(USER_PROFLE)
@@ -318,6 +355,14 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     </div>
                     <div className='flex gap-4'>
                         <div className='flex gap-2'>
+                            <button 
+                                onClick={() => {
+                                    setIsAddMainModalOpen(true)
+                                }}
+                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 h-fit"
+                            >
+                                Додати
+                            </button>
                             <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 h-fit">
                                 Експорт
                             </button>
@@ -573,6 +618,144 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     </div>
                 )}
             </Modal>{' '}
+            
+            <Modal isOpen={isAddMainModalOpen} onClose={() => setIsAddMainModalOpen(false)} classSize="max-w-sm">
+                <div className="p-4 flex flex-col gap-3 text-center">
+                    <button 
+                        onClick={() => {
+                            console.log("Create a new one clicked")
+                            setIsAddMainModalOpen(false)
+                        }}
+                        className="w-full py-3 bg-blue-600 text-white rounded-md text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                        Створити нову
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setIsAddMainModalOpen(false)
+                            setIsCopyPastModalOpen(true)
+                            fetchCatalogs()
+                        }}
+                        className="w-full py-3 bg-white border border-gray-300 text-gray-800 rounded-md text-base font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                        Копіювати минулу
+                    </button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isCopyPastModalOpen} onClose={() => setIsCopyPastModalOpen(false)} classSize="max-w-xl">
+                <div className="p-5">
+                    <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-3">Копіювати з минулого каталогу</h2>
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                Виберіть каталог
+                            </label>
+                            <select 
+                                value={selectedCatalogId}
+                                onChange={(e) => {
+                                    setSelectedCatalogId(e.target.value ? Number(e.target.value) : '')
+                                    setSelectedPastDisciplineId('')
+                                }}
+                                className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 transition-all"
+                            >
+                                <option value="">Оберіть рік...</option>
+                                {catalogYears.map(cat => (
+                                    <option key={cat.idCatalogYear} value={cat.idCatalogYear}>
+                                        {cat.nameCatalog}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {selectedCatalogId !== '' && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Пошук за назвою або кодом
+                                    </label>
+                                    <div className="relative">
+                                        <input 
+                                            type="text"
+                                            placeholder="Введіть назву або код для пошуку..."
+                                            value={pastSearchTerm}
+                                            onChange={(e) => setPastSearchTerm(e.target.value)}
+                                            className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none pl-9 transition-all"
+                                        />
+                                        <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md bg-white">
+                                    {pastDisciplines.length > 0 ? (
+                                        <div className="divide-y divide-gray-100">
+                                            {pastDisciplines.map(disc => (
+                                                <div 
+                                                    key={disc.id}
+                                                    onClick={() => setSelectedPastDisciplineId(disc.id)}
+                                                    className={clsx(
+                                                        "p-3 cursor-pointer hover:bg-blue-50 transition-colors flex justify-between items-center group text-sm",
+                                                        selectedPastDisciplineId === disc.id ? "bg-blue-50 border-l-4 border-blue-600" : "border-l-4 border-transparent"
+                                                    )}
+                                                >
+                                                    <div>
+                                                        <div className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{disc.name}</div>
+                                                        <div className="text-xs font-medium text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-0.5">{disc.code}</div>
+                                                    </div>
+                                                    <div className={clsx(
+                                                        "w-5 h-5 rounded-full border flex items-center justify-center transition-all",
+                                                        selectedPastDisciplineId === disc.id ? "bg-blue-600 border-blue-600" : "border-gray-300"
+                                                    )}>
+                                                        {selectedPastDisciplineId === disc.id && (
+                                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 text-center text-gray-500 text-sm flex flex-col items-center gap-2">
+                                            {pastSearchTerm ? "Нічого не знайдено" : "Введіть назву для пошуку"}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-2 border-t pt-4">
+                        <button 
+                            onClick={() => {
+                                setIsCopyPastModalOpen(false)
+                                setIsAddMainModalOpen(true)
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            Назад
+                        </button>
+                        <button 
+                            disabled={!selectedPastDisciplineId}
+                            onClick={() => {
+                                console.log("Copying discipline ID:", selectedPastDisciplineId)
+                                setIsCopyPastModalOpen(false)
+                            }}
+                            className={clsx(
+                                "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                                selectedPastDisciplineId 
+                                    ? "bg-blue-600 text-white hover:bg-blue-700" 
+                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            )}
+                        >
+                            Копіювати
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 })

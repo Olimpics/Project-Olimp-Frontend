@@ -4,6 +4,8 @@ import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
+import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/constants'
 
 type Group = {
   id: number
@@ -217,6 +219,12 @@ export const AdminGroupsCatalogue = () => {
     }
   }
 
+  const router = useRouter()
+      useEffect(() => {
+          fetchFilteredData(1)
+      }, [selectedSorting])
+  
+
   const saveChanges = async () => {
     if (!selectedGroup) return
 
@@ -333,6 +341,7 @@ export const AdminGroupsCatalogue = () => {
           <DataTable
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onClick={(group) => router.push(ROUTES.adminGroupDetails(group.id))}
             isActionEnabled={true}
             columns={columns}
             data={groups}
