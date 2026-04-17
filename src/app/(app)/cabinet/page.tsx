@@ -29,9 +29,8 @@ interface AdditionalDto {
 interface PlanResponse {
     studentId: number
     studentName: string
-    degreeName: string
-    mainDisciplines: Record<string, DisciplineDto[]>
-    additionalDisciplines: Record<string, AdditionalDto[]>
+    mainDisciplines: DisciplineDto[]
+    additionalDisciplines: AdditionalDto[]
 }
 interface EventItem {
     id: number
@@ -65,6 +64,7 @@ export default function Page() {
     const [specialty, setSpecialty] = useState('')
     const [course, setCourse] = useState<number | null>(null)
     const [degreeLevel, setDegreeLevel] = useState('')
+    const [educationalProgram, setEducationalProgram] = useState('')
 
     // static schedule
     const defaultSchedule: Record<string, { time: string; subject: string }[]> =
@@ -94,10 +94,6 @@ export default function Page() {
         // fetch data from server
         const fetchPlan = async () => {
             try {
-                // const { data } = await apiService.get<PlanResponse>(
-                //     `/StudentPage/disciplines/by-semester/${prof.id}`
-                // )
-
                 const response = await fetch(
                     `http://212.3.125.183:5154/api/StudentPage/educational-program/${prof.id}`
                 )
@@ -106,25 +102,35 @@ export default function Page() {
                 }
                 const data: PlanResponse = await response.json()
 
-                // хуйню мапіт
-                const main = Object.fromEntries(
-                    Object.entries(data.mainDisciplines).map(
-                        ([k, v]) => [Number(k), v]
-                    )
-                ) as Record<number, DisciplineDto[]>
-                const add = Object.fromEntries(
-                    Object.entries(data.additionalDisciplines).map(
-                        ([k, v]) => [Number(k), v]
-                    )
-                ) as Record<number, AdditionalDto[]>
-                setMainBySem(main)
-                setAddBySem(add)
+                if (data.mainDisciplines && data.mainDisciplines.length > 0) {
+                    setEducationalProgram(data.mainDisciplines[0].educationalProgramName)
+                }
+
+                // Group main disciplines by semester
+                const mainGrouped: Record<number, DisciplineDto[]> = {}
+                data.mainDisciplines.forEach((d) => {
+                    if (!mainGrouped[d.semestr]) {
+                        mainGrouped[d.semestr] = []
+                    }
+                    mainGrouped[d.semestr].push(d)
+                })
+
+                // Group additional disciplines by semester
+                const addGrouped: Record<number, AdditionalDto[]> = {}
+                data.additionalDisciplines.forEach((d) => {
+                    if (!addGrouped[d.semestr]) {
+                        addGrouped[d.semestr] = []
+                    }
+                    addGrouped[d.semestr].push(d)
+                })
+
+                setMainBySem(mainGrouped)
+                setAddBySem(addGrouped)
             } catch (err: any) {
                 console.error(
                     'Error fetching plan:',
                     err.response?.status || err.message
                 )
-            } finally {
             }
         }
         fetchPlan()
@@ -143,6 +149,9 @@ export default function Page() {
                 </p>
                 <p className="text-sm text-gray-700">
                     Спеціальність: {specialty || '---'}
+                </p>
+                <p className="text-sm text-gray-700">
+                    Освітня програма: {educationalProgram || '---'}
                 </p>
                 <p className="text-sm text-gray-700">Курс: {course ?? '-'}</p>
                 <p className="text-sm text-gray-700">
