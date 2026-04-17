@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import DataTable from '@/components/ui/DataTable'
+import { apiService } from '@/services/axiosService'
 
 interface GroupDetails {
   idGroup: number
@@ -26,47 +27,66 @@ interface GroupDetails {
   isAccelerated: boolean
 }
 
-// Placeholder for students data
 interface Student {
-  id: number
-  fullName: string
-  studentCard: string
-  email: string
+  idStudent: number
+  userId: number
+  nameStudent: string
+  emailStudent: string
+  eductionalStatus: string
 }
 
 const GroupDetailsPage = () => {
   const { id } = useParams()
   const [group, setGroup] = useState<GroupDetails | null>(null)
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Загальна інформація')
 
-  // Mock data fetching
   useEffect(() => {
-    // In a real scenario, we would use apiService.get(`Group/${id}`)
-    const mockData: GroupDetails = {
-      idGroup: Number(id),
-      groupCode: 'КН-31',
-      numberOfStudents: 25,
-      adminId: 1,
-      degreeId: 1,
-      course: 3,
-      facultyId: 101,
-      facultyName: 'Факультет комп’ютерних наук та технологій',
-      departmentId: 201,
-      departmentName: 'Кафедра програмної інженерії',
-      idEducationalProgram: 301,
-      educationalProgramName: 'Інженерія програмного забезпечення',
-      idSpeciality: 121,
-      specialityName: 'Інженерія програмного забезпечення',
-      admissionYear: 2022,
-      idStudyForm: 1,
-      idSpecialization: 401,
-      specializationName: 'Розробка та тестування ПЗ',
-      isAccelerated: false,
+    const fetchData = async () => {
+      if (!id) return
+      setLoading(true)
+      try {
+        // Fetch group details (using mock for now as per current structure, but could be API)
+        // In a real scenario, we would use: const groupData = await apiService.get<GroupDetails>(`Group/${id}`)
+        const mockData: GroupDetails = {
+          idGroup: Number(id),
+          groupCode: 'КН-31',
+          numberOfStudents: 25,
+          adminId: 1,
+          degreeId: 1,
+          course: 3,
+          facultyId: 101,
+          facultyName: 'Факультет комп’ютерних наук та технологій',
+          departmentId: 201,
+          departmentName: 'Кафедра програмної інженерії',
+          idEducationalProgram: 301,
+          educationalProgramName: 'Інженерія програмного забезпечення',
+          idSpeciality: 121,
+          specialityName: 'Інженерія програмного забезпечення',
+          admissionYear: 2022,
+          idStudyForm: 1,
+          idSpecialization: 401,
+          specializationName: 'Розробка та тестування ПЗ',
+          isAccelerated: false,
+        }
+        setGroup(mockData)
+
+        // Fetch students from the specified API
+        const studentsData = await apiService.get<Student[]>(`Group/${id}/students`)
+        setStudents(studentsData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-    setGroup(mockData)
+
+    fetchData()
   }, [id])
 
-  if (!group) return <div className="p-8">Завантаження...</div>
+  if (loading && !group) return <div className="p-8 text-center text-gray-500">Завантаження...</div>
+  if (!group) return <div className="p-8 text-center text-red-500">Групу не знайдено</div>
 
   const studyFormMap = (id: number) => {
     switch (id) {
@@ -95,24 +115,15 @@ const GroupDetailsPage = () => {
     { label: 'Скорочений термін навчання', value: group.isAccelerated ? 'Так' : 'Ні' },
   ]
 
-  // Mock students for the table
-  const mockStudents: Student[] = [
-    { id: 1, fullName: 'Іваненко Іван Іванович', studentCard: 'KB 12345678', email: 'ivanov@example.com' },
-    { id: 2, fullName: 'Петренко Петро Петрович', studentCard: 'KB 87654321', email: 'petrenko@example.com' },
-  ]
-
   const studentColumns = [
-    { header: '№', accessor: 'id' as const, render: (_: any, index: number) => index + 1 },
-    { header: 'ПІБ', accessor: 'fullName' as const },
-    { header: 'Номер квитка', accessor: 'studentCard' as const },
-    { header: 'Email', accessor: 'email' as const },
+    { header: '№', accessor: 'idStudent' as const, render: (_: any, index: number) => index + 1 },
+    { header: 'ПІБ', accessor: 'nameStudent' as const },
+    { header: 'Email', accessor: 'emailStudent' as const },
+    { header: 'Статус', accessor: 'eductionalStatus' as const },
   ]
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] font-sans flex flex-col">
-      {/* 1. Top Header */}
-  
-      {/* 2. Sub-header & Navigation Tabs */}
       <div className="w-full bg-white border-b border-gray-200 px-6 pt-6 z-0">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-end">
           <div className="mb-4 md:mb-6">
@@ -120,7 +131,7 @@ const GroupDetailsPage = () => {
               Група {group.groupCode}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Куратор: [Curator Name placeholder]
+              Кількість студентів: {students.length}
             </p>
           </div>
           
@@ -142,38 +153,45 @@ const GroupDetailsPage = () => {
         </div>
       </div>
 
-      {/* 3. Main Content Area */}
       <main className="flex-grow p-6 md:p-8 max-w-[1440px] mx-auto w-full">
         <div className="space-y-6">
-          {/* 4. Top Information Card */}
-          <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-y-10">
-              {infoGridItems.map((item, idx) => (
-                <div key={idx} className="flex flex-col">
-                  <span className="text-xs md:text-sm text-gray-400 mb-1">
-                    {item.label}
-                  </span>
-                  <span className="text-sm md:text-base text-gray-800 font-normal">
-                    {item.value}
-                  </span>
+          {activeTab === 'Загальна інформація' && (
+            <>
+              <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-y-10">
+                  {infoGridItems.map((item, idx) => (
+                    <div key={idx} className="flex flex-col">
+                      <span className="text-xs md:text-sm text-gray-400 mb-1">
+                        {item.label}
+                      </span>
+                      <span className="text-sm md:text-base text-gray-800 font-normal">
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
+              </section>
 
-          {/* 5. Bottom Data Table Card */}
-          <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-                <h3 className="text-base font-bold text-gray-900">Список студентів</h3>
+              <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                    <h3 className="text-base font-bold text-gray-900">Список студентів</h3>
+                </div>
+                <div className="p-0">
+                    <DataTable 
+                        columns={studentColumns as any} 
+                        data={students} 
+                        isActionEnabled={false}
+                        emptyMessage={loading ? 'Завантаження списку...' : 'Студентів не знайдено'}
+                    />
+                </div>
+              </section>
+            </>
+          )}
+          {activeTab !== 'Загальна інформація' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+              Контент вкладки "{activeTab}" знаходиться в розробці.
             </div>
-            <div className="p-0">
-                <DataTable 
-                    columns={studentColumns as any} 
-                    data={mockStudents} 
-                    isActionEnabled={false}
-                />
-            </div>
-          </section>
+          )}
         </div>
       </main>
     </div>
