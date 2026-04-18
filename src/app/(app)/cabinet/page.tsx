@@ -57,7 +57,7 @@ const EditIcon = () => (
 )
 
 const ExportIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="7 10 12 15 17 10"></polyline>
         <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -72,17 +72,21 @@ const staticEvents: EventItem[] = [
 ]
 
 // Mock data for admin
-const mockSubjects = ['Лінійна алгебра', 'Програмування на C#', 'Бази даних']
-const mockFaculties = ['ФІТ', 'ФЕУ', 'ФАКС']
-const mockDepartments = ['Кафедра ПЗ', 'Кафедра КН', 'Кафедра ІСТ']
-const mockGroups = ['ПЗ-21', 'ПЗ-22', 'КН-21']
 const initialStudentGrades: StudentGrade[] = [
     { id: 1, fullName: 'Іванов Іван Іванович', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 95 },
     { id: 2, fullName: 'Петров Петро Петрович', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 88 },
     { id: 3, fullName: 'Сидоров Сидір Сидорович', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-22', semesterGrade: 75 },
     { id: 4, fullName: 'Коваленко Ганна Олександрівна', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 92 },
     { id: 5, fullName: 'Бондаренко Олексій Сергійович', facultyAbbr: 'ФІТ', department: 'Кафедра КН', group: 'КН-21', semesterGrade: 84 },
+    { id: 6, fullName: 'Ткаченко Марія Ігорівна', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 91 },
+    { id: 7, fullName: 'Мельник Дмитро Володимирович', facultyAbbr: 'ФЕУ', department: 'Кафедра ІСТ', group: 'ІСТ-11', semesterGrade: 79 },
+    { id: 8, fullName: 'Шевченко Олена Вікторівна', facultyAbbr: 'ФАКС', department: 'Кафедра КН', group: 'КН-21', semesterGrade: 86 },
 ]
+
+const mockSubjects = ['Лінійна алгебра', 'Програмування на C#', 'Бази даних']
+const mockFaculties = ['ФІТ', 'ФЕУ', 'ФАКС']
+const mockDepartments = ['Кафедра ПЗ', 'Кафедра КН', 'Кафедра ІСТ']
+const mockGroups = ['ПЗ-21', 'ПЗ-22', 'КН-21']
 
 export default function Page() {
     const [roleId, setRoleId] = useState<number | null>(null)
@@ -109,13 +113,15 @@ export default function Page() {
     const [groupFilter, setGroupFilter] = useState('')
     const [studentGrades, setStudentGrades] = useState<StudentGrade[]>(initialStudentGrades)
     const [editingGradeId, setEditingGradeId] = useState<number | null>(null)
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 5
 
     useEffect(() => {
         const raw = getCookie(USER_PROFLE)
         if (!raw) return
         try {
             const prof = JSON.parse(raw)
-            setRoleId(prof.roleId || 1) // default to student if not specified
+            setRoleId(prof.roleId || 1)
             setUserName(prof.name)
             setDegreeName(prof.nameFaculty)
             setSpecialty(prof.speciality || '')
@@ -138,27 +144,21 @@ export default function Page() {
             const response = await fetch(
                 `http://212.3.125.183:5154/api/StudentPage/educational-program/${studentId}`
             )
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
             const data: PlanResponse = await response.json()
-
             if (data.mainDisciplines && data.mainDisciplines.length > 0) {
                 setEducationalProgram(data.mainDisciplines[0].educationalProgramName)
             }
-
             const mainGrouped: Record<number, DisciplineDto[]> = {}
             data.mainDisciplines.forEach((d) => {
                 if (!mainGrouped[d.semestr]) mainGrouped[d.semestr] = []
                 mainGrouped[d.semestr].push(d)
             })
-
             const addGrouped: Record<number, AdditionalDto[]> = {}
             data.additionalDisciplines.forEach((d) => {
                 if (!addGrouped[d.semestr]) addGrouped[d.semestr] = []
                 addGrouped[d.semestr].push(d)
             })
-
             setMainBySem(mainGrouped)
             setAddBySem(addGrouped)
         } catch (err: any) {
@@ -166,7 +166,6 @@ export default function Page() {
         }
     }
 
-    // Static schedule for student
     const defaultSchedule: Record<string, { time: string; subject: string }[]> = {
         Понеділок: [
             { time: '08:30 - 10:00', subject: 'Лінійна алгебра' },
@@ -190,6 +189,9 @@ export default function Page() {
         const matchesGroup = groupFilter ? sg.group === groupFilter : true
         return matchesSearch && matchesFaculty && matchesDept && matchesGroup
     })
+
+    const totalPages = Math.ceil(filteredGrades.length / itemsPerPage)
+    const paginatedGrades = filteredGrades.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
     const renderStudentView = () => (
         <>
@@ -348,7 +350,6 @@ export default function Page() {
 
             {activeTab === 'student_grades' && (
                 <div className="space-y-6">
-                    {/* Top Row: Button and Subject Select */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
                             Генерувати семестрову відомість
@@ -365,18 +366,23 @@ export default function Page() {
                         </div>
                     </div>
 
-                    {/* Filters Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <input 
                             type="text" 
                             placeholder="Пошук (ПІБ)..." 
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value)
+                                setCurrentPage(1)
+                            }}
                             className="border border-gray-300 rounded px-3 py-2"
                         />
                         <select 
                             value={facultyFilter} 
-                            onChange={(e) => setFacultyFilter(e.target.value)}
+                            onChange={(e) => {
+                                setFacultyFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
                             className="border border-gray-300 rounded px-3 py-2"
                         >
                             <option value="">Усі факультети</option>
@@ -384,7 +390,10 @@ export default function Page() {
                         </select>
                         <select 
                             value={departmentFilter} 
-                            onChange={(e) => setDepartmentFilter(e.target.value)}
+                            onChange={(e) => {
+                                setDepartmentFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
                             className="border border-gray-300 rounded px-3 py-2"
                         >
                             <option value="">Усі кафедри</option>
@@ -392,7 +401,10 @@ export default function Page() {
                         </select>
                         <select 
                             value={groupFilter} 
-                            onChange={(e) => setGroupFilter(e.target.value)}
+                            onChange={(e) => {
+                                setGroupFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
                             className="border border-gray-300 rounded px-3 py-2"
                         >
                             <option value="">Усі групи</option>
@@ -400,9 +412,11 @@ export default function Page() {
                         </select>
                     </div>
 
-                    {/* Table Area */}
                     <div className="relative">
-                        <div className="flex justify-end mb-2">
+                        <div className="flex justify-end mb-2 gap-2 items-center">
+                            <button className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition">
+                                Прийняти зміни
+                            </button>
                             <button title="Експорт" className="text-gray-600 hover:text-blue-600 transition p-1">
                                 <ExportIcon />
                             </button>
@@ -420,9 +434,9 @@ export default function Page() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredGrades.map((sg, idx) => (
+                                    {paginatedGrades.map((sg, idx) => (
                                         <tr key={sg.id} className="border-b hover:bg-blue-50 transition">
-                                            <td className="px-4 py-3">{idx + 1}</td>
+                                            <td className="px-4 py-3">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                                             <td className="px-4 py-3 font-medium">{sg.fullName}</td>
                                             <td className="px-4 py-3">{sg.facultyAbbr}</td>
                                             <td className="px-4 py-3">{sg.department}</td>
@@ -459,7 +473,7 @@ export default function Page() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {filteredGrades.length === 0 && (
+                                    {paginatedGrades.length === 0 && (
                                         <tr>
                                             <td colSpan={6} className="px-4 py-10 text-center text-gray-500 italic">Студентів не знайдено</td>
                                         </tr>
@@ -469,11 +483,37 @@ export default function Page() {
                         </div>
                     </div>
 
-                    <div className="flex justify-center mt-8">
-                        <button className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold shadow-md hover:bg-green-700 transition transform hover:scale-105 active:scale-95">
-                            Прийняти зміни
-                        </button>
-                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-1 mt-4">
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 rounded border border-gray-300 disabled:opacity-50 hover:bg-gray-100 transition"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-8 h-8 rounded text-sm font-medium transition ${
+                                        currentPage === i + 1 
+                                            ? 'bg-blue-600 text-white' 
+                                            : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 rounded border border-gray-300 disabled:opacity-50 hover:bg-gray-100 transition"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </>
@@ -481,52 +521,49 @@ export default function Page() {
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50/50">
-            {/* Sidebar */}
-            <aside className="w-full lg:w-72 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center h-fit sticky top-8">
-                <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-100 to-blue-50 mb-4 border-4 border-white shadow-sm flex items-center justify-center">
-                    <span className="text-4xl font-bold text-blue-300">
+            <aside className="w-full lg:w-64 bg-white p-6 rounded-lg shadow border border-gray-200 text-center h-fit sticky top-8">
+                <div className="w-32 h-32 mx-auto rounded-full bg-gray-200 mb-4 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-gray-400">
                         {userName ? userName.charAt(0) : '?'}
                     </span>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">
                     {userName || '---'}
                 </h2>
-                <p className="text-sm font-medium text-blue-600 mb-6">
+                <p className="text-sm text-blue-600 mb-4 font-medium">
                     {roleId === 2 ? 'Адміністратор' : 'Студент'}
                 </p>
-                
-                <div className="space-y-3 text-left border-t pt-6">
+                <div className="space-y-3 text-left border-t pt-4">
                     <div className="flex flex-col">
-                        <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Факультет</span>
+                        <span className="text-xs text-gray-400 uppercase font-bold">Факультет</span>
                         <span className="text-sm text-gray-700 font-medium">{degreeName || '---'}</span>
                     </div>
                     {specialty && (
                         <div className="flex flex-col">
-                            <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Спеціальність</span>
+                            <span className="text-xs text-gray-400 uppercase font-bold">Спеціальність</span>
                             <span className="text-sm text-gray-700 font-medium">{specialty}</span>
                         </div>
                     )}
                     {educationalProgram && (
                         <div className="flex flex-col">
-                            <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Освітня програма</span>
+                            <span className="text-xs text-gray-400 uppercase font-bold">Освітня програма</span>
                             <span className="text-sm text-gray-700 font-medium">{educationalProgram}</span>
                         </div>
                     )}
                     {course && (
                         <div className="flex flex-col">
-                            <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Курс</span>
+                            <span className="text-xs text-gray-400 uppercase font-bold">Курс</span>
                             <span className="text-sm text-gray-700 font-medium">{course}</span>
                         </div>
                     )}
                     <div className="flex flex-col">
-                        <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Освітній ступінь</span>
+                        <span className="text-xs text-gray-400 uppercase font-bold">Освітній ступінь</span>
                         <span className="text-sm text-gray-700 font-medium">{degreeLevel}</span>
                     </div>
                 </div>
             </aside>
 
-            {/* Content */}
-            <main className="flex-1 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+            <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow border border-gray-200">
                 {roleId === 2 ? renderAdminView() : renderStudentView()}
             </main>
         </div>

@@ -7,6 +7,7 @@ export const ROUTES = {
   stud_catalogue: '/stud_disciplines_catalogue',
   notifications: '/notifications',
   periods: '/periods',
+  parameters: '/parameters',
 
   // ADMIN CATALOGUES
   adminCatalogue: '/catalogue',
