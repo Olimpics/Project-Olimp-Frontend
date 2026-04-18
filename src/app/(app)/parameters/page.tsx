@@ -381,11 +381,11 @@ const ParametersPage = () => {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] bg-[#f4f6f8] font-sans">
-      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
+      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900 uppercase tracking-wider">System Parameters</h2>
         </div>
-        <nav className="flex-grow p-4 space-y-2">
+        <nav className="flex-grow p-4 space-y-1.5">
           {menuItems.map((item) => (
             <button
               key={item}
@@ -400,8 +400,9 @@ const ParametersPage = () => {
         </nav>
       </aside>
 
-      <main className="flex-grow p-8 overflow-auto">
-        <div className="max-w-[1200px] mx-auto space-y-8">
+      <main className="flex-grow p-4 lg:p-8 xl:p-10 2xl:p-12 overflow-auto">
+        <div className="w-full max-w-[1200px] xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto space-y-8 transition-all duration-300">
+
           
           {activeSubTab === 'Нормативи' && (
             <div className="space-y-6">
