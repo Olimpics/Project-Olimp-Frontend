@@ -18,6 +18,7 @@ interface DataTableProps<T> {
   showDeleteAction?: boolean
   onDelete?: (el: T) => void
   onEdit?: (el: T) => void
+  onManagePermissions?: (el: T) => void
   onClick?: (el: T) => void
 }
 
@@ -29,6 +30,7 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
   showDeleteAction = true,
   onDelete,
   onEdit,
+  onManagePermissions,
   onClick,
 }: DataTableProps<T>) => {
   const router = useRouter()
@@ -90,6 +92,28 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
                 {isActionEnabled && (
                   <td className="py-2 px-4 border-b text-center">
                     <div className="flex justify-center gap-2">
+                      {onManagePermissions && (
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Керувати дозволами"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onManagePermissions(row)
+                          }}
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-5 h-5"
+                          >
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                          </svg>
+                        </button>
+                      )}
                       {onEdit && (
                         <button
                           className="p-1 hover:bg-gray-100 rounded text-blue-600 transition-colors"
