@@ -25,6 +25,7 @@ const headerLinksAdmin = [
   { name: 'Каталоги', link: ROUTES.catalogue },
   { name: 'Вибіркові дисципліни', link: ROUTES.courseCatalogue },
   { name: 'Періоди вибірних дисциплін', link: ROUTES.periods },
+  { name: 'Параметри', link: ROUTES.parameters },
   { name: 'Рейтинги', link: '#' },
   { name: 'Аналітика', link: '##' },
   { name: 'Новини', link: '###' },
