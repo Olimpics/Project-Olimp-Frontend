@@ -34,9 +34,6 @@ const AdditionalScoresPage = () => {
   const [structureSubTab, setStructureSubTab] = useState<'Events' | 'List'>('Events')
   const [inventorySubTab, setInventorySubTab] = useState<'Accounting' | 'Journal'>('Accounting')
   
-  // Event adding state
-  const [isAddingEvent, setIsAddingEvent] = useState(false)
-
   // Standards state
   const [standardsSearchQuery, setStandardsSearchQuery] = useState('')
   const [standardsCategoryFilter, setStandardsCategoryFilter] = useState('Всі')
@@ -404,17 +401,7 @@ const AdditionalScoresPage = () => {
 
       {/* Main Content */}
       <main className="flex-grow flex flex-col overflow-hidden">
-        {isAddingEvent ? (
-          <EventForm 
-            departments={faculties.filter(f => f !== 'All')}
-            mockStudents={mockStudents}
-            onCancel={() => setIsAddingEvent(false)}
-            onSave={(data) => {
-              console.log('Saved Event:', data)
-              setIsAddingEvent(false)
-            }}
-          />
-        ) : activeTab === 'My Scores' ? (
+        {activeTab === 'My Scores' ? (
           <>
             {/* Top Selection Bar */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
@@ -537,7 +524,7 @@ const AdditionalScoresPage = () => {
                         </div>
                       </div>
                       <button 
-                        onClick={() => setIsAddingEvent(true)}
+                        onClick={() => window.open('/additional-scores/add-event', '_blank')}
                         className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-blue-700 transition active:scale-95 text-sm"
                       >
                         + Додати захід
