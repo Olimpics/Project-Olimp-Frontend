@@ -8,6 +8,7 @@ export const ROUTES = {
   notifications: '/notifications',
   periods: '/periods',
   parameters: '/parameters',
+  additionalScores: '/additional-scores',
 
   // ADMIN CATALOGUES
   adminCatalogue: '/catalogue',

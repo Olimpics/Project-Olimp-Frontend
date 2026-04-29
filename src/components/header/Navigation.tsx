@@ -14,6 +14,7 @@ import { getCookie } from '@/services/cookie-servies'
 const headerLinks = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Вибір дисциплін', link: ROUTES.catalogue },
+  { name: 'Додаткові бали', link: ROUTES.additionalScores },
   { name: 'Рейтинги', link: '#' },
   { name: 'Контакти, інформація', link: '##' },
   { name: 'Новини', link: '###' },
@@ -23,6 +24,7 @@ const headerLinks = [
 const headerLinksAdmin = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Каталоги', link: ROUTES.catalogue },
+  { name: 'Додаткові бали', link: ROUTES.additionalScores },
   { name: 'Вибіркові дисципліни', link: ROUTES.courseCatalogue },
   { name: 'Періоди вибірних дисциплін', link: ROUTES.periods },
   { name: 'Параметри', link: ROUTES.parameters },
