@@ -32,24 +32,50 @@ interface DisciplineDetails {
   typeOfControll: string;
 }
 
-interface Faculty {
-  idFaculty: number
-  nameFaculty: string
-  abbreviation: string
-}
+const CircularProgress = ({ current, total }: { current: number, total: number }) => {
+  const percentage = Math.min((current / total) * 100, 100);
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-interface Department {
-  idDepartment: number
-  facultyId: number
-  nameDepartment: string
-  abbreviation: string
-  facultyName: string
-}
-
-interface Degree {
-  idEducationalDegree: number
-  nameEducationalDegreec: string
-}
+  return (
+    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center gap-4 min-w-[180px]">
+      <div className="relative inline-flex items-center justify-center shrink-0">
+        <svg className="w-14 h-14 transform -rotate-90">
+          <circle
+            cx="28"
+            cy="28"
+            r={radius}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="5"
+            fill="transparent"
+          />
+          <circle
+            cx="28"
+            cy="28"
+            r={radius}
+            stroke="white"
+            strokeWidth="5"
+            fill="transparent"
+            strokeDasharray={circumference}
+            style={{ strokeDashoffset }}
+            strokeLinecap="round"
+            className="transition-all duration-500 ease-out"
+          />
+        </svg>
+        <div className="absolute flex flex-col items-center">
+           <span className="text-[8px] font-bold text-white/50 leading-none">{current}</span>
+           <div className="w-4 h-[1px] bg-white/30 my-0.5" />
+           <span className="text-[8px] font-bold text-white/50 leading-none">{total}</span>
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-xs font-medium text-blue-100">Записано</span>
+        <span className="text-sm font-bold text-white">{current} з {total}</span>
+      </div>
+    </div>
+  );
+};
 
 interface Params {
   params: {
@@ -57,642 +83,201 @@ interface Params {
   };
 }
 
-export default function ProductPage({ params }: Params) {
+export default function DisciplinePage({ params }: Params) {
   const { id } = use(params);
-  const user = JSON.parse(getCookie(USER_PROFLE) || '{}');
-  const isAdmin = user.roleId === 2;
   const [discipline, setDiscipline] = useState<DisciplineDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
-  const [faculty, setFaculty] = useState<Faculty[] | null>(null)
-  const [departament, setDepartment] = useState<Department[] | null>(null)
-  const [degrees, setDegrees] = useState<Degree[] | null>(null)
 
   useEffect(() => {  
-    const fetchDisciplineAndFaculty = async () => {
+    const fetchDiscipline = async () => {
       try {
         const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-
         const data: DisciplineDetails = await response.json();
-        const fac_res = await apiService.get<Faculty[]>('Faculty');
-        const dep_res = await apiService.get<Department[]>('Department?page=1&pageSize=500&sortOrder=0')
-        const deg_res = await apiService.get<Degree[]>('EducationalDegree')
-        
-        setDegrees(deg_res)
         setDiscipline(data);
-        setDepartment(dep_res)
-        setFaculty(fac_res); 
-
-        setEditData({
-          nameAddDisciplines: data.nameAddDisciplines,
-          codeAddDisciplines: data.codeAddDisciplines,
-          faculty: data.facultyAbbreviation,
-          facultyId: 0,
-          minCountPeople: data.minCountPeople,
-          maxCountPeople: data.maxCountPeople,
-          minCourse: data.minCourse,
-          maxCourse: data.maxCourse,
-          isEven: data.isEven.toString(),
-          degreeLevelName: data.degreeLevelName,
-          degreeLevelId: 0,
-          details: {
-            departmentId: 0,
-            departamentName: data.departmentName,
-            teacher: data.teacher,
-            recomend: data.recomend,
-            prerequisites: data.prerequisites,
-            language: data.language,
-            determination: data.determination,
-            whyInterestingDetermination: data.whyInterestingDetermination,
-            resultEducation: data.resultEducation,
-            usingIrl: data.usingIrl,
-            additionaLiterature: data.additionaLiterature,
-            typesOfTraining: data.typesOfTraining,
-            typeOfControll: data.typeOfControll
-          },
-          idAddDisciplines: data.idAddDisciplines
-        });
-
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDisciplineAndFaculty();
+    fetchDiscipline();
   }, [id]);
 
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-
-    if (name === 'facultyId') {
-      const selectedId = Number(value);
-      const selectedFaculty = faculty.find(f => f.idFaculty === selectedId);
-      if (selectedFaculty) {
-        setEditData(prev => ({
-          ...prev,
-          facultyId: selectedFaculty.idFaculty, 
-          nameFaculty: selectedFaculty.nameFaculty,
-        }));
-      }
-      return;
-    }
-
-    if (name === 'details.departmentId') {
-      const selectedId = Number(value);
-      const selectedDepartment = departament?.items.find(d => d.idDepartment === selectedId);
-      if (selectedDepartment) {
-        setEditData(prev => ({
-          ...prev,
-          details: {
-            ...prev.details,
-            departmentId: selectedDepartment.idDepartment,
-          }
-        }));
-      }
-      return;
-    }
-
-    if (name === 'degreeLevelId') {
-      const selectedId = Number(value);
-      const selectedDegree = degrees.find(d => d.idEducationalDegree === selectedId);
-      if (selectedDegree) {
-        setEditData(prev => ({
-          ...prev,
-          degreeLevelId: selectedDegree.idEducationalDegree,
-          degreeLevelName: selectedDegree.nameEducationalDegreec,
-        }));
-      }
-      return;
-    }
-
-    // Other top-level fields
-    if (name in editData) {
-      setEditData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-      return;
-    }
-
-    // Other nested `details.*` fields
-    if (name.startsWith('details.')) {
-      const detailField = name.split('.')[1];
-      setEditData(prev => ({
-        ...prev,
-        details: {
-          ...prev.details,
-          [detailField]: value
-        }
-      }));
-    }
-  };
-
-
-
-  const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const numValue = value === '' ? null : Number(value);
-
-    if (name in editData) {
-      setEditData({
-        ...editData,
-        [name]: numValue
-      });
-    } else if (name.startsWith('details.')) {
-      const detailField = name.split('.')[1];
-      setEditData({
-        ...editData,
-        details: {
-          ...editData.details,
-          [detailField]: numValue
-        }
-      });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const requiredFields = [
-        { key: 'degreeLevelId', label: 'Рівень освіти' },
-        { key: 'facultyId', label: 'Факультет' },
-        //{ key: 'departmentId', label: 'Кафедра' },
-      ];
-
-      for (const field of requiredFields) {
-        const value = (editData as any)[field.key];
-        if (!value || value === 0) {
-          console.log(value)
-          throw new Error(`Поле '${field.label}' відсутнє!`);
-        }
-      }
-
-      const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      setIsEditing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
     </div>
   );
 
-  if (error) return (
-    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md mx-auto mt-10" role="alert">
-      <strong className="font-bold">Error!</strong>
-      <span className="block sm:inline"> {error}</span>
+  if (error || !discipline) return (
+    <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-md w-full text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
+        <p className="text-gray-500">{error || 'Discipline not found'}</p>
+      </div>
     </div>
   );
 
-  if (!discipline || !editData) return (
-    <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative max-w-md mx-auto mt-10" role="alert">
-      <strong className="font-bold">Warning!</strong>
-      <span className="block sm:inline"> No discipline found with ID {id}</span>
-    </div>
-  );
+  const getSemesterText = (isEven: number) => {
+    if (isEven === 1) return "Непарний";
+    if (isEven === 2) return "Парний";
+    return "Обидва";
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-          {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-white">
-            <div className="flex justify-between items-start">
-              <div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="nameAddDisciplines"
-                    value={editData.nameAddDisciplines}
-                    onChange={handleInputChange}
-                    className="text-3xl font-bold bg-blue-700 border border-blue-500 rounded p-1 w-full"
-                  />
-                ) : (
-                  <h1 className="text-3xl font-bold">{discipline.nameAddDisciplines}</h1>
-                )}
-                <div className="flex flex-wrap items-center mt-2">
-                  {isEditing? (
-                    <input
-                      type="text"
-                      name="codeAddDisciplines"
-                      value={editData.codeAddDisciplines}
-                      onChange={handleInputChange}
-                      className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2"
-                    />
-                  ) : (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2">
-                      {discipline.codeAddDisciplines}
-                    </span>
-                  )}
-                  {isEditing? (
-                    <select
-                      name="degreeLevelId"
-                      value={editData.degreeLevelId ?? ''}
-                      onChange={handleInputChange}
-                      className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2"
-                    >
-                      <option value="">Оберіть рівень освіти</option>
-                      {degrees.map(degree => (
-                        <option key={degree.idEducationalDegree} value={degree.idEducationalDegree}>
-                          {degree.nameEducationalDegreec}
-                        </option>
-                      ))}
-                    </select>
-
-                  ) : (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2">
-                      {discipline.degreeLevelName}
-                    </span>
-                  )}
-                  {isEditing && isAdmin ? (
-                    <input
-                      type="text"
-                      name="details.typesOfTraining"
-                      value={editData.details.typesOfTraining}
-                      onChange={handleInputChange}
-                      className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2"
-                    />
-                  ) : (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-2 mb-2">
-                      {discipline.typesOfTraining}
-                    </span>
-                  )}
-                </div>
+    <div className="min-h-screen bg-[#f8fafc] font-sans pb-12">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+        
+        {/* Header Section */}
+        <section className="bg-[#1e50f0] rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row justify-between gap-8 relative z-10">
+            
+            {/* Left Side */}
+            <div className="flex-1 space-y-6">
+              <div className="flex gap-2">
+                <span className="bg-[#4a72f5] px-3 py-1 rounded-full text-[11px] font-bold tracking-wide">
+                  {discipline.codeAddDisciplines}
+                </span>
+                <span className="bg-[#10b981] px-3 py-1 rounded-full text-[11px] font-bold tracking-wide">
+                  Набір відкрито
+                </span>
               </div>
-              {isAdmin && (<button
-                onClick={isEditing && isAdmin ? handleSubmit : handleEditToggle}
-                className={`px-4 py-2 rounded-md ${isEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
-              >
-                {isEditing ?'Зберегти' : 'Редагувати'}
-              </button>)}
               
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                {discipline.nameAddDisciplines}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium text-blue-100">
+                <p>Рівень: <span className="text-white font-bold">{discipline.degreeLevelName}</span></p>
+                <span className="opacity-40">|</span>
+                <p>Курс: <span className="text-white font-bold">{discipline.minCourse} курс</span></p>
+                <span className="opacity-40">|</span>
+                <p>Семестр: <span className="text-white font-bold">{getSemesterText(discipline.isEven)}</span></p>
+                <span className="opacity-40">|</span>
+                <p>Мова: <span className="text-white font-bold">{discipline.language}</span></p>
+              </div>
+            </div>
+
+            {/* Right Side */}
+            <div className="flex flex-col items-center md:items-end justify-between gap-6">
+              <div className="flex items-center gap-2">
+                <button className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-sm active:scale-95 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Записатися
+                </button>
+                <button className="p-2.5 border border-white/30 rounded-xl hover:bg-white/10 transition-all active:scale-95 text-white">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-3.976-2.888a1 1 0 00-1.175 0l-3.976 2.888c-.784.57-1.838-.197-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+              </div>
+              
+              <CircularProgress current={120} total={discipline.maxCountPeople || 500} />
+            </div>
+          </div>
+        </section>
+
+        {/* Middle Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Основна інформація */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-8">Основна інформація</h3>
+            <div className="grid grid-cols-2 gap-y-8 gap-x-12">
+              <div className="space-y-8">
+                <InfoBlock label="Рекомендовані знання" value={discipline.recomend} />
+                <InfoBlock label="Викладач" value={discipline.teacher} />
+                <InfoBlock label="Тип контролю" value={discipline.typeOfControll} />
+              </div>
+              <div className="space-y-8">
+                <InfoBlock label="Кафедра" value={discipline.departmentName} />
+                <InfoBlock label="Мова викладання" value={discipline.language} />
+                <InfoBlock label="Передумови" value={discipline.prerequisites} />
+              </div>
             </div>
           </div>
 
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Основна інформація</h2>
-                  <EditInfoItem
-                    label="Факультет"
-                    name="facultyId"
-                    value={editData.faculty.facultyId}
-                    onChange={handleInputChange}
-                    options={faculty}
-                    optionValue="idFaculty"
-                    optionLabel="nameFaculty"
-                  />
-
-                  <EditInfoItem
-                    label="Кафедра"
-                    name="details.departmentId"
-                    value={editData.details.departmentId}
-                    onChange={handleInputChange}
-                    options={departament?.items}
-                    optionValue="idDepartment"
-                    optionLabel="nameDepartment"
-                  />
-
-
-
-                  <EditInfoItem
-                    label="Викладач"
-                    name="details.teacher"
-                    value={editData.details.teacher}
-                    onChange={handleInputChange}
-                  />
-                  <EditInfoItem
-                    label="Мова"
-                    name="details.language"
-                    value={editData.details.language}
-                    onChange={handleInputChange}
-                  />
-                  <EditInfoItem
-                    label="Тип контролю"
-                    name="details.typeOfControll"
-                    value={editData.details.typeOfControll}
-                    onChange={handleInputChange}
-                  />
-                  <EditInfoItem
-                    label="Семестр"
-                    name="isEven"
-                    value={editData.isEven}
-                    onChange={handleInputChange}
-                    type="number"
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Вимоги</h2>
-                  <EditInfoItem
-                    label="Мін. студентів"
-                    name="minCountPeople"
-                    value={editData.minCountPeople?.toString() || ''}
-                    onChange={handleNumberInputChange}
-                    type="number"
-                  />
-                  <EditInfoItem
-                    label="Макс. студентів"
-                    name="maxCountPeople"
-                    value={editData.maxCountPeople?.toString() || ''}
-                    onChange={handleNumberInputChange}
-                    type="number"
-                  />
-                  <EditInfoItem
-                    label="Мін. курс"
-                    name="minCourse"
-                    value={editData.minCourse?.toString() || ''}
-                    onChange={handleNumberInputChange}
-                    type="number"
-                  />
-                  <EditInfoItem
-                    label="Макс. курс"
-                    name="maxCourse"
-                    value={editData.maxCourse?.toString() || ''}
-                    onChange={handleNumberInputChange}
-                    type="number"
-                  />
-                </div>
+          {/* Опис дисципліни */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-10">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Опис дисципліни</h3>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h4 className="text-[13px] font-medium text-gray-400">Що вивчатиметься</h4>
+                <p className="text-sm font-bold text-gray-900 leading-relaxed">
+                  {discipline.determination}
+                </p>
               </div>
-
-              <div className="md:col-span-2 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Опис дисципліни</h2>
-                  <EditTextAreaItem
-                    label="Визначення"
-                    name="details.determination"
-                    value={editData.details.determination}
-                    onChange={handleInputChange}
-                  />
-                  <EditTextAreaItem
-                    label="Чому цікаво"
-                    name="details.whyInterestingDetermination"
-                    value={editData.details.whyInterestingDetermination}
-                    onChange={handleInputChange}
-                  />
-                  <EditTextAreaItem
-                    label="Передумови"
-                    name="details.prerequisites"
-                    value={editData.details.prerequisites}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Результати навчання</h2>
-                  <EditTextAreaItem
-                    name="details.resultEducation"
-                    value={editData.details.resultEducation}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Практичне застосування</h2>
-                  <EditTextAreaItem
-                    name="details.usingIrl"
-                    value={editData.details.usingIrl}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Додаткова інформація</h2>
-                  <EditTextAreaItem
-                    label="Рекомендації"
-                    name="details.recomend"
-                    value={editData.details.recomend}
-                    onChange={handleInputChange}
-                  />
-                  <EditTextAreaItem
-                    label="Література"
-                    name="details.additionaLiterature"
-                    value={editData.details.additionaLiterature}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-            </form>
-          ) : (
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Основна інформація</h2>
-                  <InfoItem label="Факультет" value={discipline.facultyAbbreviation} />
-                  <InfoItem label="Кафедра" value={discipline.departmentName} />
-                  <InfoItem label="Викладач" value={discipline.teacher} />
-                  <InfoItem label="Мова" value={discipline.language} />
-                  <InfoItem label="Тип контролю" value={discipline.typeOfControll} />
-                  <InfoItem label="Семестр" value={discipline.isEven.toString()} />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Вимоги</h2>
-                  <InfoItem label="Мін. студентів" value={discipline.minCountPeople?.toString() || 'Не вказано'} />
-                  <InfoItem label="Макс. студентів" value={discipline.maxCountPeople?.toString() || 'Не вказано'} />
-                  <InfoItem label="Мін. курс" value={discipline.minCourse?.toString() || 'Не вказано'} />
-                  <InfoItem label="Макс. курс" value={discipline.maxCourse?.toString() || 'Не вказано'} />
-                </div>
-              </div>
-
-              <div className="md:col-span-2 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Опис дисципліни</h2>
-                  <InfoItem label="Визначення" value={discipline.determination} />
-                  <InfoItem label="Чому цікаво" value={discipline.whyInterestingDetermination} />
-                  <InfoItem label="Передумови" value={discipline.prerequisites} />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Результати навчання</h2>
-                  <p className="text-gray-700">{discipline.resultEducation}</p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Практичне застосування</h2>
-                  <p className="text-gray-700">{discipline.usingIrl}</p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Додаткова інформація</h2>
-                  <InfoItem label="Рекомендації" value={discipline.recomend} />
-                  <InfoItem label="Література" value={discipline.additionaLiterature} />
-                </div>
+              <div className="space-y-2">
+                <h4 className="text-[13px] font-medium text-gray-400">Чому важливо</h4>
+                <p className="text-sm font-bold text-gray-900 leading-relaxed">
+                  {discipline.whyInterestingDetermination}
+                </p>
               </div>
             </div>
-          )}
-
-          {/* Footer */}
-          <div className="bg-gray-100 px-6 py-4 flex justify-between items-center">
-            <span className="text-sm text-gray-600">ID дисципліни: {discipline.idAddDisciplines}</span>
-            {(!isEditing && isAdmin) && (
-              <button
-                onClick={handleEditToggle}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-              >
-                Редагувати
-              </button>
-            )}
           </div>
         </div>
+
+        {/* Bottom Section */}
+        <div className="space-y-6">
+          {/* Результати навчання */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Що можна навчитися (результати навчання)</h3>
+            <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
+              {discipline.resultEducation}
+            </p>
+          </div>
+
+          {/* Компетенції */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Як можна набути знань та інтелекту (компетенції)</h3>
+            <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
+              {discipline.usingIrl}
+            </p>
+          </div>
+
+          {/* Додаткова інформація */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-10">Додаткова інформація</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+              <div className="space-y-10">
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Інформаційне забезпечення</h4>
+                  <p className="text-base font-bold text-gray-900">{discipline.additionaLiterature || "НМК дисципліни"}</p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Максимальна кількість студентів</h4>
+                  <p className="text-base font-bold text-gray-900">{discipline.maxCountPeople || "100"} осіб</p>
+                </div>
+              </div>
+              <div className="space-y-10">
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Види навчальної діяльності</h4>
+                  <p className="text-base font-bold text-gray-900">{discipline.typesOfTraining || "Лекції, семінарські заняття"}</p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Мінімальна кількість студентів</h4>
+                  <p className="text-base font-bold text-gray-900">{discipline.minCountPeople || "Не встановлено"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-function InfoItem({ label, value }: { label: string; value: string }) {
+function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mb-3">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="text-gray-800">{value || 'Не вказано'}</p>
-    </div>
-  );
-}
-
-type EditInfoItemProps<T = any> = {
-  label?: string;
-  name: string;
-  value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => void;
-  type?: string;
-  options?: T[] | null;
-  optionValue?: keyof T;
-  optionLabel?: keyof T;
-};
-
-type EditTextAreaItemProps<T = any> = {
-  label?: string;
-  name: string;
-  value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>
-  ) => void;
-  options?: T[] | null;
-  optionValue?: keyof T;
-  optionLabel?: keyof T;
-};
-
-export function EditInfoItem<T = any>({
-  label,
-  name,
-  value,
-  onChange,
-  type = 'text',
-  options,
-  optionValue,
-  optionLabel,
-}: EditInfoItemProps<T>) {
-  const isDropdown = options && options.length > 0 && optionValue && optionLabel;
-
-  return (
-    <div className="mb-3">
-      {label && <p className="text-sm font-medium text-gray-500">{label}</p>}
-      {isDropdown ? (
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md h-10"
-        >
-          <option value="">Оберіть значення</option>
-          {options!.map((item, idx) => (
-            <option key={idx} value={String(item[optionValue])}>
-              {String(item[optionLabel])}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          type={type}
-          name={name}
-          value={value ?? ""}
-          onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md"
-        />
-      )}
-    </div>
-  );
-}
-
-export function EditTextAreaItem<T = any>({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  optionValue,
-  optionLabel,
-}: EditTextAreaItemProps<T>) {
-  const isDropdown = options && options.length > 0;
-
-  return (
-    <div className="mb-3">
-      {label && <p className="text-sm font-medium text-gray-500">{label}</p>}
-      {isDropdown ? (
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md h-10"
-        >
-          <option value="">Оберіть значення</option>
-          {options!.map((item, idx) => {
-            const optionVal =
-              optionValue && typeof item === 'object'
-                ? String(item[optionValue])
-                : String(item);
-            const optionLbl =
-              optionLabel && typeof item === 'object'
-                ? String(item[optionLabel])
-                : String(item);
-            return (
-              <option key={idx} value={optionVal}>
-                {optionLbl}
-              </option>
-            );
-          })}
-        </select>
-      ) : (
-        <textarea
-          name={name}
-          value={value}
-          onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md h-24"
-        />
-      )}
+    <div className="flex flex-col gap-1">
+      <span className="text-[13px] font-medium text-gray-400">{label}</span>
+      <span className="text-sm font-bold text-gray-900 leading-tight">{value || 'Не вказано'}</span>
     </div>
   );
 }
