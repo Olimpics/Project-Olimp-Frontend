@@ -9,6 +9,7 @@ export const ROUTES = {
   periods: '/periods',
   parameters: '/parameters',
   additionalScores: '/additional-scores',
+  archiveScores: '/archive-scores',
 
   // ADMIN CATALOGUES
   adminCatalogue: '/catalogue',

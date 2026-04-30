@@ -383,6 +383,7 @@ export const AdminEducationalProgramCatalogue = () => {
               <DataTable
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onClick={(row) => window.open(`/catalogue/admin_catalogues/edu-programs/${row.idEducationalProgram}`, '_blank')}
                 isActionEnabled={true}
                 columns={columns}
                 data={programs}

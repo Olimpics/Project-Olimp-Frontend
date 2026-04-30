@@ -15,6 +15,7 @@ const headerLinks = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Вибір дисциплін', link: ROUTES.catalogue },
   { name: 'Додаткові бали', link: ROUTES.additionalScores },
+  { name: 'Архів балів', link: '#' },
   { name: 'Рейтинги', link: '#' },
   { name: 'Контакти, інформація', link: '##' },
   { name: 'Новини', link: '###' },
@@ -25,6 +26,7 @@ const headerLinksAdmin = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
   { name: 'Каталоги', link: ROUTES.catalogue },
   { name: 'Додаткові бали', link: ROUTES.additionalScores },
+  { name: 'Архів балів', link: '#' },
   { name: 'Вибіркові дисципліни', link: ROUTES.courseCatalogue },
   { name: 'Періоди вибірних дисциплін', link: ROUTES.periods },
   { name: 'Параметри', link: ROUTES.parameters },
@@ -68,6 +70,7 @@ export const Navigation: FunctionComponent = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCataloguesOpen, setIsCataloguesOpen] = useState(false)
   const [isRatingsOpen, setIsRatingsOpen] = useState(false)
+  const [isArchiveScoresOpen, setIsArchiveScoresOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userId, setUserId] = useState<number | null>(null)
   const [roleId, setRoleId] = useState<number | null>(null)
@@ -213,6 +216,7 @@ export const Navigation: FunctionComponent = () => {
                 const isLogout = el.name === 'Logout'
                 const isCatalogues = el.name === 'Каталоги'
                 const isRatings = el.name === 'Рейтинги'
+                const isArchiveScores = el.name === 'Архів балів'
 
                 if (isLogout) {
                   return (
@@ -223,6 +227,45 @@ export const Navigation: FunctionComponent = () => {
                     >
                       {el.name}
                     </button>
+                  )
+                }
+
+                if (isArchiveScores && roleId !== null) {
+                  return (
+                    <div key={el.name} className="flex flex-col">
+                      <button
+                        onClick={() => setIsArchiveScoresOpen(prev => !prev)}
+                        className="flex justify-between items-center text-gray-800 font-medium text-xl"
+                      >
+                        {el.name}
+                        <span
+                          className={clsx(
+                            'transition-transform',
+                            isArchiveScoresOpen && 'rotate-180'
+                          )}
+                        >
+                          ▼
+                        </span>
+                      </button>
+
+                      {isArchiveScoresOpen && (
+                        <div className="ml-4 mt-2 flex flex-col gap-2">
+                          {faculties?.map((faculty) => (
+                            <Link
+                              key={faculty.idFaculty}
+                              href={`${ROUTES.archiveScores}/${faculty.idFaculty}`}
+                              onClick={() => {
+                                setIsMenuOpen(false)
+                                setIsArchiveScoresOpen(false)
+                              }}
+                              className="text-gray-600 text-lg"
+                            >
+                              {faculty.nameFaculty} ({faculty.abbreviation})
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )
                 }
 
