@@ -183,87 +183,63 @@ export default function DisciplinePage({ params }: Params) {
           </div>
         </section>
 
-        {/* Middle Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Основна інформація */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-8">Основна інформація</h3>
-            <div className="grid grid-cols-2 gap-y-8 gap-x-12">
-              <div className="space-y-8">
-                <InfoBlock label="Рекомендовані знання" value={discipline.recomend} />
-                <InfoBlock label="Викладач" value={discipline.teacher} />
-                <InfoBlock label="Тип контролю" value={discipline.typeOfControll} />
-              </div>
-              <div className="space-y-8">
-                <InfoBlock label="Кафедра" value={discipline.departmentName} />
-                <InfoBlock label="Мова викладання" value={discipline.language} />
-                <InfoBlock label="Передумови" value={discipline.prerequisites} />
-              </div>
+     {/* Two-Column Row (Middle Section) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px]">
+          {/* Block 1: Основна інформація */}
+          <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[32px] flex flex-col">
+            <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[24px]">Основна інформація</h3>
+            <div className="grid grid-cols-2 gap-x-[24px] gap-y-[16px]">
+              <InfoBlock label="Рекомендовані знання" value={discipline.recomend} />
+              <InfoBlock label="Кафедра" value={discipline.departmentName} />
+              <InfoBlock label="Викладач" value={discipline.teacher} />
+              <InfoBlock label="Мова викладання" value={discipline.language} />
+              <InfoBlock label="Тип контролю" value={discipline.typeOfControll} />
+              <InfoBlock label="Передумови" value={discipline.prerequisites} />
             </div>
           </div>
 
-          {/* Опис дисципліни */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-10">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Опис дисципліни</h3>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h4 className="text-[13px] font-medium text-gray-400">Що вивчатиметься</h4>
-                <p className="text-sm font-bold text-gray-900 leading-relaxed">
-                  {discipline.determination}
-                </p>
+          {/* Block 2: Опис дисципліни */}
+          <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[32px] flex flex-col">
+            <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[24px]">Опис дисципліни</h3>
+            <div className="space-y-[24px]">
+              <div className="space-y-[8px]">
+                <h4 className="text-[14px] font-medium text-gray-400">Що вивчатиметься</h4>
+                <p className="text-[15px] font-bold text-gray-900 leading-relaxed">{discipline.determination}</p>
               </div>
-              <div className="space-y-2">
-                <h4 className="text-[13px] font-medium text-gray-400">Чому важливо</h4>
-                <p className="text-sm font-bold text-gray-900 leading-relaxed">
-                  {discipline.whyInterestingDetermination}
-                </p>
+              <div className="space-y-[8px]">
+                <h4 className="text-[14px] font-medium text-gray-400">Чому важливо</h4>
+                <p className="text-[15px] font-bold text-gray-900 leading-relaxed">{discipline.whyInterestingDetermination}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="space-y-6">
+        {/* Full-Width Blocks (Bottom Section) */}
+        <div className="space-y-[24px]">
           {/* Результати навчання */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Що можна навчитися (результати навчання)</h3>
-            <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
+          <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[24px_32px]">
+            <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[16px]">Що можна навчитися (результати навчання)</h3>
+            <p className="text-[15px] font-medium text-gray-600 leading-relaxed max-w-full">
               {discipline.resultEducation}
             </p>
           </div>
 
           {/* Компетенції */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Як можна набути знань та інтелекту (компетенції)</h3>
-            <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
+          <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[24px_32px]">
+            <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[16px]">Як можна набути знань та інтелекту (компетенції)</h3>
+            <p className="text-[15px] font-medium text-gray-600 leading-relaxed max-w-full">
               {discipline.usingIrl}
             </p>
           </div>
 
           {/* Додаткова інформація */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-10">Додаткова інформація</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-              <div className="space-y-10">
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Інформаційне забезпечення</h4>
-                  <p className="text-base font-bold text-gray-900">{discipline.additionaLiterature || "НМК дисципліни"}</p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Максимальна кількість студентів</h4>
-                  <p className="text-base font-bold text-gray-900">{discipline.maxCountPeople || "100"} осіб</p>
-                </div>
-              </div>
-              <div className="space-y-10">
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Види навчальної діяльності</h4>
-                  <p className="text-base font-bold text-gray-900">{discipline.typesOfTraining || "Лекції, семінарські заняття"}</p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Мінімальна кількість студентів</h4>
-                  <p className="text-base font-bold text-gray-900">{discipline.minCountPeople || "Не встановлено"}</p>
-                </div>
-              </div>
+          <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[24px_32px]">
+            <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[24px]">Додаткова інформація</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[32px] gap-y-[24px]">
+              <InfoBlock label="Інформаційне забезпечення" value={discipline.additionaLiterature || "НМК дисципліни"} />
+              <InfoBlock label="Види навчальної діяльності" value={discipline.typesOfTraining || "Лекції, семінарські заняття"} />
+              <InfoBlock label="Максимальна кількість студентів" value={`${discipline.maxCountPeople || 100} осіб`} />
+              <InfoBlock label="Мінімальна количество студентів" value={discipline.minCountPeople ? `${discipline.minCountPeople} осіб` : "Не встановлено"} />
             </div>
           </div>
         </div>
