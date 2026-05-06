@@ -1,9 +1,5 @@
 "use client"
-import { USER_PROFLE } from '@/constants/cookies';
-import { apiService } from '@/services/axiosService';
-import { getCookie } from '@/services/cookie-servies'
-import { useEffect, useState, use, useCallback } from 'react';
-import DataTable from '@/components/ui/DataTable';
+import { useEffect, useState, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 
 interface DisciplineDetails {
@@ -162,10 +158,23 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isRecommendedModalOpen, setIsRecommendedModalOpen] = useState(false);
   const [selectedStudentForReject, setSelectedStudentForReject] = useState<Student | null>(null);
   const [notificationTemplates, setNotificationTemplates] = useState<any[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | 'custom'>('custom');
   const [refusalReason, setRefusalReason] = useState('');
+
+  // Recommended Modal States
+  const [branches, setBranches] = useState<any[]>([]);
+  const [specialties, setSpecialties] = useState<any[]>([]);
+  const [eduPrograms, setEduPrograms] = useState<any[]>([]);
+  const [selectedBranches, setSelectedBranches] = useState<number[]>([]);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<number[]>([]);
+  const [selectedEduPrograms, setSelectedEduPrograms] = useState<number[]>([]);
+  const [branchSearch, setBranchSearch] = useState('');
+  const [specialtySearch, setSpecialtySearch] = useState('');
+  const [eduProgSearch, setEduProgSearch] = useState('');
+  const [modalDataLoading, setModalDataLoading] = useState(false);
 
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
@@ -188,7 +197,45 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     };
     fetchDiscipline();
     fetchNotificationTemplates();
+    fetchModalData();
   }, [id]);
+
+  const fetchModalData = async () => {
+    setModalDataLoading(true);
+    try {
+      const [facRes, specRes, eduRes] = await Promise.all([
+        fetch('http://212.3.125.183:5154/api/Faculty'),
+        fetch('http://212.3.125.183:5154/api/Filter/specialities'),
+        fetch('http://212.3.125.183:5154/api/EducationalProgram?pageSize=1000')
+      ]);
+      
+      const facData = await facRes.json();
+      const specData = await specRes.json();
+      const eduData = await eduRes.json();
+      
+      setBranches(facData || []);
+      setSpecialties(specData || []);
+      setEduPrograms(eduData.items || []);
+    } catch (err) {
+      console.error('Failed to fetch modal data', err);
+    } finally {
+      setModalDataLoading(false);
+    }
+  };
+
+  const handleConfirmRecommended = () => {
+    const selectedBranchNames = branches.filter(b => selectedBranches.includes(b.idFaculty)).map(b => b.nameFaculty);
+    const selectedSpecialtyNames = specialties.filter(s => selectedSpecialties.includes(s.id)).map(s => s.name);
+    const selectedEduProgNames = eduPrograms.filter(e => selectedEduPrograms.includes(e.idEducationalProgram)).map(e => e.nameEducationalProgram);
+    
+    const allSelected = [...selectedBranchNames, ...selectedSpecialtyNames, ...selectedEduProgNames];
+    const recomendString = allSelected.join(', ');
+    
+    if (discipline) {
+      setDiscipline({ ...discipline, recomend: recomendString });
+    }
+    setIsRecommendedModalOpen(false);
+  };
 
   const fetchNotificationTemplates = async () => {
     try {
@@ -422,7 +469,18 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-[32px] flex flex-col">
                 <h3 className="text-[18px] lg:text-[20px] font-semibold text-gray-900 mb-[24px]">Основна інформація</h3>
                 <div className="grid grid-cols-2 gap-x-[24px] gap-y-[16px]">
-                  <InfoBlock label="Рекомендовані знання" value={discipline.recomend} />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between items-center pr-4">
+                      <span className="text-[13px] font-medium text-gray-400">Рекомендовані знання</span>
+                      <button 
+                        onClick={() => setIsRecommendedModalOpen(true)}
+                        className="text-[11px] font-bold text-[#1e50f0] hover:underline bg-blue-50 px-2 py-0.5 rounded transition-all"
+                      >
+                        Рекомендовано
+                      </button>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900 leading-tight">{discipline.recomend || 'Не вказано'}</span>
+                  </div>
                   <InfoBlock label="Кафедра" value={discipline.departmentName} />
                   <InfoBlock label="Викладач" value={discipline.teacher} />
                   <InfoBlock label="Мова викладання" value={discipline.language} />
@@ -709,9 +767,135 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           </div>
         </div>
       </Modal>
+
+      {/* Recommended Knowledge Modal */}
+      <Modal isOpen={isRecommendedModalOpen} onClose={() => setIsRecommendedModalOpen(false)} classSize="max-w-6xl">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center border-b pb-4">
+            <h2 className="text-xl font-bold text-gray-900">Виберіть рекомендовані знання</h2>
+            <button onClick={() => setIsRecommendedModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <SelectionColumn 
+              title="Галузі" 
+              options={branches} 
+              selectedIds={selectedBranches}
+              onToggle={(id: number) => setSelectedBranches(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
+              accessor="idFaculty"
+              nameAccessor="nameFaculty"
+              searchTerm={branchSearch}
+              onSearchChange={setBranchSearch}
+              isLoading={modalDataLoading}
+            />
+            <SelectionColumn 
+              title="Спеціальності" 
+              options={specialties} 
+              selectedIds={selectedSpecialties}
+              onToggle={(id: number) => setSelectedSpecialties(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
+              accessor="id"
+              nameAccessor="name"
+              searchTerm={specialtySearch}
+              onSearchChange={setSpecialtySearch}
+              isLoading={modalDataLoading}
+            />
+            <SelectionColumn 
+              title="Освітні програми" 
+              options={eduPrograms} 
+              selectedIds={selectedEduPrograms}
+              onToggle={(id: number) => setSelectedEduPrograms(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
+              accessor="idEducationalProgram"
+              nameAccessor="nameEducationalProgram"
+              searchTerm={eduProgSearch}
+              onSearchChange={setEduProgSearch}
+              isLoading={modalDataLoading}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button 
+              onClick={() => setIsRecommendedModalOpen(false)}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all active:scale-95"
+            >
+              Скасувати
+            </button>
+            <button 
+              onClick={handleConfirmRecommended}
+              className="px-6 py-2 bg-[#1e50f0] text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+            >
+              Підтвердити
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
+
+const SelectionColumn = ({ 
+  title, 
+  options, 
+  selectedIds, 
+  onToggle, 
+  accessor, 
+  nameAccessor, 
+  searchTerm, 
+  onSearchChange,
+  isLoading
+}: any) => {
+  const filteredOptions = options.filter((opt: any) => 
+    String(opt[nameAccessor] || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-col h-[400px] bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+      <div className="p-4 bg-gray-50 border-b border-gray-100">
+        <h4 className="text-sm font-bold text-gray-900 mb-2">{title}</h4>
+        <div className="relative">
+          <input 
+            type="text" 
+            placeholder="Пошук..." 
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          />
+          <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+          </div>
+        ) : filteredOptions.length > 0 ? (
+          filteredOptions.map((opt: any) => (
+            <label key={opt[accessor]} className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors group">
+              <input 
+                type="checkbox" 
+                checked={selectedIds.includes(opt[accessor])}
+                onChange={() => onToggle(opt[accessor])}
+                className="w-4 h-4 text-[#1e50f0] border-gray-300 rounded focus:ring-[#1e50f0] cursor-pointer"
+              />
+              <span className="text-xs font-medium text-gray-700 group-hover:text-[#1e50f0] transition-colors line-clamp-2">
+                {opt[nameAccessor]}
+              </span>
+            </label>
+          ))
+        ) : (
+          <div className="p-8 text-center text-xs text-gray-400 italic">
+            Нічого не знайдено
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
