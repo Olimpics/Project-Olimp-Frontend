@@ -15,14 +15,12 @@ export const Modal = ({
   if (!isOpen) return null
 
   return (
-    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className={clsx("bg-white rounded-lg p-6 w-full", classSize)}
+        className={clsx("bg-white rounded-[32px] shadow-2xl w-full overflow-hidden", classSize)}
       >
         {children}
-        <div className="mt-4 flex justify-end space-x-2">
-        </div>
       </div>
     </div>
   )
