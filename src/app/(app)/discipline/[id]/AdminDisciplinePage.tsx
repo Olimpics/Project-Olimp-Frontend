@@ -7,7 +7,8 @@ import {
   SelectionColumn,
   DisciplineBlock,
   InfoBlock,
-  ModalField
+  ModalField,
+  DisciplineTopicsBlock
 } from './AdminComponents';
 import { getCookie } from '@/services/cookie-servies';
 import { USER_PROFLE } from '@/constants/cookies';
@@ -52,6 +53,7 @@ interface Student {
   educationLevel: string;
   isShort: number;
   faculty: string;
+  idBindAddDisciplines: number;
 }
 
 interface AvailableStudent {
@@ -103,6 +105,16 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const [availableStudents, setAvailableStudents] = useState<AvailableStudent[]>([]);
   const [availableLoading, setAvailableLoading] = useState(false);
   const [modalSearch, setModalSearch] = useState('');
+
+  // Rejection Modal State
+  const [studentToReject, setStudentToReject] = useState<Student | null>(null);
+  const [rejectTemplate, setRejectTemplate] = useState('Власна причина');
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectSaving, setRejectSaving] = useState(false);
+  const [rejectError, setRejectError] = useState<string | null>(null);
+
+  // Comparison Placeholder Modal State
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
   const fetchDiscipline = async () => {
     try {
@@ -325,13 +337,13 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-12 font-sans">
-      <div className="max-w-[1280px] mx-auto px-4 pt-8 space-y-6">
+    <div className="min-h-screen bg-[#f4f6f8] pb-12 font-sans">
+      <div className="max-w-[1440px] mx-auto px-4 pt-8 space-y-6">
 
         {/* Header Section */}
-        <section className="bg-[#1e50f0] rounded-[32px] p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
-          <div className="flex flex-col md:flex-row justify-between gap-8 relative z-10">
-            <div className="flex-1 space-y-6">
+        <section className="bg-[#1e50f0] rounded-[32px] py-6 px-8 md:py-8 md:px-10 text-white shadow-xl relative">
+          <div className="flex flex-col xl:flex-row justify-between gap-8 relative z-10">
+            <div className="flex-1 space-y-4">
               <div className="flex gap-2">
                 <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   {discipline.codeAddDisciplines}
@@ -360,19 +372,32 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               </div>
             </div>
 
-            <div className="flex flex-col items-center md:items-end justify-between gap-6">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setIsEditModalOpen(true)} className="px-6 py-3 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg active:scale-95 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
-                  Редагувати
-                </button>
-              </div>
-
+            <div className="flex flex-col md:flex-row items-center gap-6">
               <CircularProgress current={totalItems} total={discipline.maxCountPeople || 500} />
 
-              <div className="flex bg-white/10 p-1 rounded-[14px] backdrop-blur-md">
-                <button onClick={() => setActiveTab('details')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'details' ? 'bg-white text-[#1e50f0] shadow-sm' : 'text-white hover:bg-white/10'}`}>Деталі курсу</button>
-                <button onClick={() => setActiveTab('students')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-white text-[#1e50f0] shadow-sm' : 'text-white hover:bg-white/10'}`}>Список студентів</button>
+              <div className="flex flex-col gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setIsEditModalOpen(true)} className="flex-1 px-6 py-3 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                    Редагувати
+                  </button>
+                  <div className="relative group">
+                    <button onClick={() => setIsCompareModalOpen(true)} className="p-3 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg active:scale-95 flex items-center justify-center whitespace-nowrap" title="Порівняти дисципліну">
+                      <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                    </button>
+                    <div className="absolute bottom-full right-0 mb-2.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-md z-50">
+                      Порівняти дисципліну
+                      <div className="absolute top-full right-4 -mt-1 border-4 border-transparent border-t-gray-900" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex bg-white/10 p-1 rounded-[14px] backdrop-blur-md w-full justify-between">
+                  <button onClick={() => setActiveTab('details')} className={`flex-1 px-5 py-2 rounded-xl text-xs font-bold transition-all text-center whitespace-nowrap ${activeTab === 'details' ? 'bg-white text-[#1e50f0] shadow-sm' : 'text-white hover:bg-white/10'}`}>Деталі курсу</button>
+                  <button onClick={() => setActiveTab('students')} className={`flex-1 px-5 py-2 rounded-xl text-xs font-bold transition-all text-center whitespace-nowrap ${activeTab === 'students' ? 'bg-white text-[#1e50f0] shadow-sm' : 'text-white hover:bg-white/10'}`}>Список студентів</button>
+                </div>
               </div>
             </div>
           </div>
@@ -404,11 +429,14 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
               <DisciplineBlock title="Опис дисципліни">
                 <div className="space-y-6">
-                  <div className="space-y-2"><h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Що вивчатиметься</h4><p className="text-[15px] font-bold text-gray-900 leading-relaxed">{discipline.determination}</p></div>
                   <div className="space-y-2"><h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Чому важливо</h4><p className="text-[15px] font-bold text-gray-900 leading-relaxed">{discipline.whyInterestingDetermination}</p></div>
                 </div>
               </DisciplineBlock>
             </div>
+
+            <DisciplineBlock title="Перелік тем з дисципліни">
+              <DisciplineTopicsBlock topics={discipline.determination} />
+            </DisciplineBlock>
 
             <div className="space-y-6">
               <DisciplineBlock title="Що можна навчитися (результати навчання)">
@@ -475,7 +503,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                         <td className="px-6 py-4 text-gray-600 font-medium">{s.educationLevel}</td>
                         <td className="px-6 py-4 text-gray-500 font-medium">{s.faculty}</td>
                         <td className="px-6 py-4 text-center">
-                          <button onClick={() => console.log('Reject student', s.studentId)}
+                          <button onClick={() => { setStudentToReject(s); setRejectTemplate('Власна причина'); setRejectReason(''); setRejectError(null); }}
                             className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 font-bold text-[11px] transition-all active:scale-95">✕ Відмовити</button>
                         </td>
                       </tr>
@@ -597,10 +625,137 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                       <div className="font-bold text-gray-900 group-hover:text-[#1e50f0] transition-colors">{s.studentName}</div>
                       <div className="text-[11px] font-bold text-gray-400 mt-0.5">ID: {s.studentId}</div>
                     </div>
-                    <button onClick={() => handleAddStudent(s.studentId)} className="bg-blue-50 text-[#1e50f0] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#1e50f0] hover:text-white transition-all shadow-sm">Додати</button>
+                    <button onClick={() => handleAddStudent(s.studentId)} className="bg-[#1e50f0] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-sm">Додати</button>
                   </div>
                 )) : <div className="p-12 text-center text-gray-400 italic">Студентів не знайдено</div>}
           </div>
+        </div>
+      </Modal>
+
+      {/* Reject Confirmation Modal */}
+      <Modal isOpen={!!studentToReject} onClose={() => setStudentToReject(null)} classSize="max-w-xl">
+        <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 className="text-xl font-bold text-gray-900">Підтвердження відмови</h2>
+            <button onClick={() => setStudentToReject(null)} className="hover:rotate-90 transition-all duration-300">
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-8 space-y-6">
+            <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
+              Ви дійсно хочете відмовити студенту <span className="font-bold text-gray-900">{studentToReject?.studentName}</span>?
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Шаблон причини відмови</label>
+              <div className="relative">
+                <select
+                  value={rejectTemplate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRejectTemplate(val);
+                    if (val === 'Власна причина') {
+                      setRejectReason('');
+                    } else {
+                      setRejectReason(val);
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer text-[15px] font-bold text-gray-900"
+                >
+                  <option value="Власна причина">Власна причина</option>
+                  <option value="Невідповідність вимогам до курсу">Невідповідність вимогам до курсу</option>
+                  <option value="Група вже переповнена">Група вже переповнена</option>
+                  <option value="Недостатньо кредитів / заборгованість">Недостатньо кредитів / заборгованість</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Причина відмови</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Введіть причину відмови..."
+                className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none text-[15px] font-bold text-gray-900 h-28 resize-none leading-relaxed placeholder:text-gray-400 placeholder:font-medium"
+              />
+            </div>
+
+            {rejectError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 font-medium">
+                {rejectError}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-100 flex gap-4 bg-gray-50/30">
+            <button
+              onClick={() => setStudentToReject(null)}
+              className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all bg-white"
+              disabled={rejectSaving}
+            >
+              Скасувати
+            </button>
+            <button
+              onClick={async () => {
+                if (!studentToReject) return;
+                setRejectSaving(true);
+                setRejectError(null);
+                try {
+                  const raw = getCookie(USER_PROFLE);
+                  const token = raw ? JSON.parse(raw).token : null;
+                  const response = await fetch('http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateChoice', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(token && { 'Authorization': `Bearer ${token}` })
+                    },
+                    body: JSON.stringify([{
+                      bindId: studentToReject.idBindAddDisciplines,
+                      isConfirm: 0 // 0 means reject
+                    }])
+                  });
+                  if (!response.ok) throw new Error('Не вдалося відхилити запит студента');
+                  setStudentToReject(null);
+                  fetchStudents(currentPage);
+                } catch (err: any) {
+                  setRejectError(err.message || 'Сталася помилка при збереженні');
+                } finally {
+                  setRejectSaving(false);
+                }
+              }}
+              className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-200"
+              disabled={rejectSaving}
+            >
+              {rejectSaving ? 'Відхилення...' : 'Підтвердити відмову'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Compare Placeholder Modal */}
+      <Modal isOpen={isCompareModalOpen} onClose={() => setIsCompareModalOpen(false)} classSize="max-w-md">
+        <div className="p-8 text-center space-y-6">
+          <div className="w-20 h-20 bg-blue-50 text-[#1e50f0] rounded-full flex items-center justify-center mx-auto shadow-md">
+            <svg className="w-10 h-10 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-gray-900">Порівняння дисциплін</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Цей функціонал знаходиться в розробці. Незабаром ви зможете порівнювати вибіркові дисципліни за різними параметрами!
+            </p>
+          </div>
+          <button onClick={() => setIsCompareModalOpen(false)} className="w-full py-3 bg-[#1e50f0] text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all">
+            Зрозуміло
+          </button>
         </div>
       </Modal>
     </div>

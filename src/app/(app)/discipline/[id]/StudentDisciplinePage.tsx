@@ -1,9 +1,10 @@
 "use client"
 import { useEffect, useState } from 'react';
 import {
-  CircularProgress,
   InfoBlock,
-  DisciplineBlock
+  DisciplineBlock,
+  DisciplineHeader,
+  DisciplineTopicsBlock
 } from './AdminComponents';
 
 interface DisciplineDetails {
@@ -72,8 +73,8 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
   if (error || !discipline) return <div className="p-8 text-center text-red-500">{error || 'Дисципліну не знайдено'}</div>;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-12 font-sans">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+    <div className="min-h-screen bg-[#f4f6f8] pb-12 font-sans">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
 
         <DisciplineHeader
           code={discipline.codeAddDisciplines}
@@ -125,16 +126,16 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
           <DisciplineBlock title="Опис дисципліни">
             <div className="space-y-10">
               <div className="space-y-3">
-                <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Що вивчатиметься</h4>
-                <p className="text-[16px] font-bold text-gray-900 leading-relaxed">{discipline.determination}</p>
-              </div>
-              <div className="space-y-3">
                 <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Чому важливо</h4>
                 <p className="text-[16px] font-bold text-gray-900 leading-relaxed">{discipline.whyInterestingDetermination}</p>
               </div>
             </div>
           </DisciplineBlock>
         </div>
+
+        <DisciplineBlock title="Перелік тем з дисципліни">
+          <DisciplineTopicsBlock topics={discipline.determination} />
+        </DisciplineBlock>
 
         <div className="space-y-8">
           <DisciplineBlock title="Що можна навчитися (результати навчання)">

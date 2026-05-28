@@ -57,19 +57,19 @@ interface DisciplineHeaderProps {
 
 export const DisciplineHeader = ({ code, name, details, actions, progress, tabs }: DisciplineHeaderProps) => {
   return (
-    <section className="bg-[#1e50f0] rounded-[40px] p-8 md:p-12 text-white shadow-[0_20px_50px_rgba(30,80,240,0.15)] relative overflow-hidden">
+    <section className="bg-[#1e50f0] rounded-[40px] py-6 px-8 md:py-8 md:px-12 text-white shadow-[0_20px_50px_rgba(30,80,240,0.15)] relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-150px] left-[-50px] w-[300px] h-[300px] bg-blue-400/[0.05] rounded-full blur-3xl pointer-events-none" />
 
-      <div className="flex flex-col md:flex-row justify-between gap-10 relative z-10">
-        <div className="flex-1 space-y-8">
+      <div className="flex flex-col xl:flex-row justify-between gap-10 relative z-10">
+        <div className="flex-1 space-y-6">
           <div className="flex items-center gap-3">
             <DisciplineBadge>{code}</DisciplineBadge>
             <DisciplineBadge variant="success">Набір відкрито</DisciplineBadge>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] max-w-3xl">
             {name}
           </h1>
 
@@ -85,18 +85,20 @@ export const DisciplineHeader = ({ code, name, details, actions, progress, tabs 
           </div>
         </div>
 
-        <div className="flex flex-col items-center md:items-end justify-between gap-8 min-w-fit">
-          <div className="flex items-center gap-4">
-            {actions}
-          </div>
-
+        <div className="flex flex-col md:flex-row items-center gap-6 min-w-fit">
           {progress && <CircularProgress current={progress.current} total={progress.total} />}
 
-          {tabs && (
-            <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5">
-              {tabs}
+          <div className="flex flex-col gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-3">
+              {actions}
             </div>
-          )}
+
+            {tabs && (
+              <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5 w-full justify-between">
+                {tabs}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
@@ -283,4 +285,37 @@ export const DisciplineBlock = ({ title, children, className = "" }: { title: st
     {children}
   </div>
 );
+
+// ─── Discipline Topics/Themes Block ───
+export const DisciplineTopicsBlock = ({ topics }: { topics: string }) => {
+  if (!topics) return <p className="text-gray-400 italic font-medium">Не вказано</p>;
+  const lines = topics.split('\n').map(line => line.trim()).filter(Boolean);
+  return (
+    <div className="space-y-3">
+      {lines.map((line, index) => {
+        const match = line.match(/^(Тема\s+\d+[\.:]?|Theme\s+\d+[\.:]?|\d+[\.:])\s*(.*)$/i);
+        if (match) {
+          return (
+            <div key={index} className="flex gap-4 items-start p-4 bg-gray-50/70 rounded-2xl border border-gray-100/80 hover:bg-blue-50/20 transition-all duration-200">
+              <span className="bg-[#1e50f0]/10 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm">
+                {match[1].replace(/[\.:]$/, '')}
+              </span>
+              <span className="text-[15px] font-bold text-gray-900 leading-relaxed pt-0.5">
+                {match[2]}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="flex gap-3 items-start p-4 bg-gray-50/70 rounded-2xl border border-gray-100/80 hover:bg-blue-50/20 transition-all duration-200">
+            <span className="w-2 h-2 rounded-full bg-[#1e50f0] mt-2 shrink-0 shadow-sm" />
+            <span className="text-[15px] font-bold text-gray-900 leading-relaxed">
+              {line}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
