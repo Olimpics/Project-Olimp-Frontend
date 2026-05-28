@@ -57,19 +57,19 @@ interface DisciplineHeaderProps {
 
 export const DisciplineHeader = ({ code, name, details, actions, progress, tabs }: DisciplineHeaderProps) => {
   return (
-    <section className="bg-[#1e50f0] rounded-[40px] p-8 md:p-12 text-white shadow-[0_20px_50px_rgba(30,80,240,0.15)] relative overflow-hidden">
+    <section className="bg-[#1e50f0] rounded-[40px] py-6 px-8 md:py-8 md:px-12 text-white shadow-[0_20px_50px_rgba(30,80,240,0.15)] relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-150px] left-[-50px] w-[300px] h-[300px] bg-blue-400/[0.05] rounded-full blur-3xl pointer-events-none" />
 
-      <div className="flex flex-col md:flex-row justify-between gap-10 relative z-10">
-        <div className="flex-1 space-y-8">
+      <div className="flex flex-col xl:flex-row justify-between gap-10 relative z-10">
+        <div className="flex-1 space-y-6">
           <div className="flex items-center gap-3">
             <DisciplineBadge>{code}</DisciplineBadge>
             <DisciplineBadge variant="success">Набір відкрито</DisciplineBadge>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] max-w-3xl">
             {name}
           </h1>
 
@@ -85,18 +85,20 @@ export const DisciplineHeader = ({ code, name, details, actions, progress, tabs 
           </div>
         </div>
 
-        <div className="flex flex-col items-center md:items-end justify-between gap-8 min-w-fit">
-          <div className="flex items-center gap-4">
-            {actions}
-          </div>
-
+        <div className="flex flex-col md:flex-row items-center gap-6 min-w-fit">
           {progress && <CircularProgress current={progress.current} total={progress.total} />}
 
-          {tabs && (
-            <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5">
-              {tabs}
+          <div className="flex flex-col gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-3">
+              {actions}
             </div>
-          )}
+
+            {tabs && (
+              <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5 w-full justify-between">
+                {tabs}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
@@ -143,11 +145,12 @@ export const Pagination: React.FC<{
 // ─── Selection Column (for Recommended modal) ───
 export const SelectionColumn = ({
   title, options, selectedIds, onToggle, accessor, nameAccessor,
-  searchTerm, onSearchChange, isLoading
+  searchTerm, onSearchChange, isLoading, activeId, onActiveChange
 }: {
-  title: string; options: any[]; selectedIds: number[];
-  onToggle: (id: number) => void; accessor: string; nameAccessor: string;
+  title: string; options: any[]; selectedIds: any[];
+  onToggle: (id: any) => void; accessor: string; nameAccessor: string;
   searchTerm: string; onSearchChange: (v: string) => void; isLoading: boolean;
+  activeId?: any; onActiveChange?: (id: any) => void;
 }) => {
   const filtered = options.filter((opt: any) =>
     String(opt[nameAccessor] || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -173,16 +176,36 @@ export const SelectionColumn = ({
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600" />
           </div>
         ) : filtered.length > 0 ? (
-          filtered.map((opt: any, i: number) => (
-            <label key={`${opt[accessor]}-${i}`} className="flex items-center gap-3 p-3 hover:bg-blue-50/50 rounded-xl cursor-pointer transition-all group">
-              <input type="checkbox" checked={selectedIds.includes(opt[accessor])}
-                onChange={() => onToggle(opt[accessor])}
-                className="w-4.5 h-4.5 text-[#1e50f0] border-gray-300 rounded-lg focus:ring-[#1e50f0] cursor-pointer transition-all" />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-[#1e50f0] transition-colors line-clamp-2 leading-snug">
-                {opt[nameAccessor]}
-              </span>
-            </label>
-          ))
+          filtered.map((opt: any, i: number) => {
+            const isSelected = selectedIds.includes(opt[accessor]);
+            const isActive = activeId !== undefined && activeId === opt[accessor];
+            return (
+              <div key={`${opt[accessor]}-${i}`}
+                onClick={() => onActiveChange && onActiveChange(opt[accessor])}
+                className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all group ${
+                  isActive ? 'bg-blue-50 border border-blue-100/50' : 'hover:bg-blue-50/30 border border-transparent'
+                }`}
+              >
+                <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={isSelected}
+                    onChange={() => onToggle(opt[accessor])}
+                    className="w-4.5 h-4.5 text-[#1e50f0] border-gray-300 rounded-lg focus:ring-[#1e50f0] cursor-pointer transition-all" />
+                  <span className={`text-sm font-medium transition-colors line-clamp-2 leading-snug ${
+                    isActive ? 'text-[#1e50f0] font-bold' : 'text-gray-700 group-hover:text-[#1e50f0]'
+                  }`}>
+                    {opt[nameAccessor]}
+                  </span>
+                </label>
+                {onActiveChange && (
+                  <svg className={`w-4 h-4 transition-all shrink-0 ${
+                    isActive ? 'text-[#1e50f0] translate-x-0' : 'text-gray-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="p-8 text-center text-sm text-gray-400 italic">Нічого не знайдено</div>
         )}
@@ -283,4 +306,161 @@ export const DisciplineBlock = ({ title, children, className = "" }: { title: st
     {children}
   </div>
 );
+
+// ─── Discipline Topics/Themes Block ───
+export const DisciplineTopicsBlock = ({ topics }: { topics: string }) => {
+  if (!topics) return <p className="text-gray-400 italic font-medium">Не вказано</p>;
+  const lines = topics.split('\n').map(line => line.trim()).filter(Boolean);
+  return (
+    <div className="space-y-3">
+      {lines.map((line, index) => {
+        const match = line.match(/^(Тема\s+\d+[\.:]?|Theme\s+\d+[\.:]?|\d+[\.:])\s*(.*)$/i);
+        if (match) {
+          return (
+            <div key={index} className="flex gap-4 items-start p-4 bg-gray-50/70 rounded-2xl border border-gray-100/80 hover:bg-blue-50/20 transition-all duration-200">
+              <span className="bg-[#1e50f0]/10 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm">
+                {match[1].replace(/[\.:]$/, '')}
+              </span>
+              <span className="text-[15px] font-bold text-gray-900 leading-relaxed pt-0.5">
+                {match[2]}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="flex gap-3 items-start p-4 bg-gray-50/70 rounded-2xl border border-gray-100/80 hover:bg-blue-50/20 transition-all duration-200">
+            <span className="w-2 h-2 rounded-full bg-[#1e50f0] mt-2 shrink-0 shadow-sm" />
+            <span className="text-[15px] font-bold text-gray-900 leading-relaxed">
+              {line}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const BRANCH_NAMES: Record<string, string> = {
+  "01": "Освіта/Педагогіка",
+  "02": "Культура і мистецтво",
+  "03": "Гуманітарні науки",
+  "04": "Богослов'я",
+  "05": "Соціальні та поведінкові науки",
+  "06": "Журналістика",
+  "07": "Управління та адміністрування",
+  "08": "Право",
+  "09": "Біологія",
+  "10": "Природничі науки",
+  "11": "Математика та статистика",
+  "12": "Інформаційні технології",
+  "13": "Механічна інженерія",
+  "14": "Електрична інженерія",
+  "15": "Автоматизація та приладобудування",
+  "16": "Хімічна та біоінженерія",
+  "17": "Електроніка та телекомунікації",
+  "18": "Виробництво та технології",
+  "19": "Архітектура та будівництво",
+  "20": "Аграрні науки та продовольство",
+  "21": "Ветеринарна медицина",
+  "22": "Охорона здоров'я",
+  "23": "Соціальна робота",
+  "24": "Сфера обслуговування",
+  "25": "Воєнні науки, нац. безпека",
+  "26": "Цивільна безпека",
+  "27": "Транспорт",
+  "28": "Публічне управління та адміністрування",
+  "29": "Міжнародні відносини"
+};
+
+// ─── Discipline Specialties Block ───
+export const DisciplineSpecialtiesBlock = ({ 
+  specialtyIds, 
+  eduProgramIds, 
+  specialtiesList, 
+  eduProgramsList 
+}: { 
+  specialtyIds: number[]; 
+  eduProgramIds: number[]; 
+  specialtiesList: any[]; 
+  eduProgramsList: any[]; 
+}) => {
+  // Extract and group unique branches based on selected specialties
+  const selectedSpecs = specialtyIds
+    .map(id => specialtiesList.find(s => s.id === id))
+    .filter(Boolean);
+
+  const selectedBranches = React.useMemo(() => {
+    const codes = Array.from(
+      new Set(
+        selectedSpecs
+          .map(s => (s.code && s.code.length >= 2 ? s.code.substring(0, 2) : ''))
+          .filter(Boolean)
+      )
+    );
+    return codes
+      .map(code => ({
+        code,
+        name: BRANCH_NAMES[code] || `Галузь знань ${code}`
+      }))
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [selectedSpecs]);
+
+  return (
+    <div className="space-y-8">
+      {/* 1. Галузі знань */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Галузі знань</h4>
+        {selectedBranches.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {selectedBranches.map(branch => (
+              <span key={branch.code} className="bg-purple-50 text-purple-600 px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-purple-100 shadow-sm animate-fade-in">
+                {branch.code} - {branch.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх галузей знань</p>
+        )}
+      </div>
+
+      {/* 2. Спеціальності */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Спеціальності</h4>
+        {specialtyIds && specialtyIds.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {specialtyIds.map(id => {
+              const spec = specialtiesList.find(s => s.id === id);
+              return (
+                <span key={id} className="bg-blue-50 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-blue-100 shadow-sm">
+                  {spec ? `${spec.code} - ${spec.name}` : id}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх спеціальностей</p>
+        )}
+      </div>
+
+      {/* 3. Освітні програми */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Освітні програми</h4>
+        {eduProgramIds && eduProgramIds.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {eduProgramIds.map(id => {
+              const edu = eduProgramsList.find(e => e.id === id);
+              return (
+                <span key={id} className="bg-[#10b981]/10 text-[#10b981] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-[#10b981]/20 shadow-sm">
+                  {edu ? edu.name : id}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх освітніх програм</p>
+        )}
+      </div>
+    </div>
+  );
+};
 

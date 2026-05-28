@@ -1,9 +1,11 @@
 "use client"
 import { useEffect, useState } from 'react';
 import {
-  CircularProgress,
   InfoBlock,
-  DisciplineBlock
+  DisciplineBlock,
+  DisciplineHeader,
+  DisciplineTopicsBlock,
+  DisciplineSpecialtiesBlock
 } from './AdminComponents';
 
 interface DisciplineDetails {
@@ -32,6 +34,8 @@ interface DisciplineDetails {
   additionaLiterature: string;
   typesOfTraining: string;
   typeOfControll: string;
+  recomendationSpeciality: number[];
+  recomendationEducationalProgram: number[];
 }
 
 export default function StudentDisciplinePage({ id }: { id: string }) {
@@ -39,6 +43,8 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
   const [studentCount, setStudentCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [specialties, setSpecialties] = useState<any[]>([]);
+  const [eduPrograms, setEduPrograms] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDiscipline = async () => {
@@ -64,16 +70,32 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
       }
     };
 
+    const fetchFilters = async () => {
+      try {
+        const [specRes, eduRes] = await Promise.all([
+          fetch('http://212.3.125.183:5154/api/Filter/specialities'),
+          fetch('http://212.3.125.183:5154/api/Filter/educational-programs')
+        ]);
+        const specData = await specRes.json();
+        const eduData = await eduRes.json();
+        setSpecialties(Array.isArray(specData) ? specData : []);
+        setEduPrograms(Array.isArray(eduData) ? eduData : Array.isArray(eduData?.items) ? eduData.items : []);
+      } catch (err) {
+        console.error('Failed to fetch filters', err);
+      }
+    };
+
     fetchDiscipline();
     fetchStudentCount();
+    fetchFilters();
   }, [id]);
 
   if (loading) return <div className="flex justify-center items-center min-h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600" /></div>;
   if (error || !discipline) return <div className="p-8 text-center text-red-500">{error || 'Дисципліну не знайдено'}</div>;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-12 font-sans">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+    <div className="min-h-screen bg-[#f4f6f8] pb-12 font-sans">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
 
         <DisciplineHeader
           code={discipline.codeAddDisciplines}
@@ -125,16 +147,25 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
           <DisciplineBlock title="Опис дисципліни">
             <div className="space-y-10">
               <div className="space-y-3">
-                <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Що вивчатиметься</h4>
-                <p className="text-[16px] font-bold text-gray-900 leading-relaxed">{discipline.determination}</p>
-              </div>
-              <div className="space-y-3">
                 <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Чому важливо</h4>
                 <p className="text-[16px] font-bold text-gray-900 leading-relaxed">{discipline.whyInterestingDetermination}</p>
               </div>
             </div>
           </DisciplineBlock>
         </div>
+
+        <DisciplineBlock title="Перелік тем з дисципліни">
+          <DisciplineTopicsBlock topics={discipline.determination} />
+        </DisciplineBlock>
+
+        <DisciplineBlock title="Спеціальності">
+          <DisciplineSpecialtiesBlock 
+            specialtyIds={discipline.recomendationSpeciality || []} 
+            eduProgramIds={discipline.recomendationEducationalProgram || []}
+            specialtiesList={specialties}
+            eduProgramsList={eduPrograms}
+          />
+        </DisciplineBlock>
 
         <div className="space-y-8">
           <DisciplineBlock title="Що можна навчитися (результати навчання)">
