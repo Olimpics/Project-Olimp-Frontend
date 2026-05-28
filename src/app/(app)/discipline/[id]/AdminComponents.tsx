@@ -145,11 +145,12 @@ export const Pagination: React.FC<{
 // ─── Selection Column (for Recommended modal) ───
 export const SelectionColumn = ({
   title, options, selectedIds, onToggle, accessor, nameAccessor,
-  searchTerm, onSearchChange, isLoading
+  searchTerm, onSearchChange, isLoading, activeId, onActiveChange
 }: {
-  title: string; options: any[]; selectedIds: number[];
-  onToggle: (id: number) => void; accessor: string; nameAccessor: string;
+  title: string; options: any[]; selectedIds: any[];
+  onToggle: (id: any) => void; accessor: string; nameAccessor: string;
   searchTerm: string; onSearchChange: (v: string) => void; isLoading: boolean;
+  activeId?: any; onActiveChange?: (id: any) => void;
 }) => {
   const filtered = options.filter((opt: any) =>
     String(opt[nameAccessor] || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -175,16 +176,36 @@ export const SelectionColumn = ({
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600" />
           </div>
         ) : filtered.length > 0 ? (
-          filtered.map((opt: any, i: number) => (
-            <label key={`${opt[accessor]}-${i}`} className="flex items-center gap-3 p-3 hover:bg-blue-50/50 rounded-xl cursor-pointer transition-all group">
-              <input type="checkbox" checked={selectedIds.includes(opt[accessor])}
-                onChange={() => onToggle(opt[accessor])}
-                className="w-4.5 h-4.5 text-[#1e50f0] border-gray-300 rounded-lg focus:ring-[#1e50f0] cursor-pointer transition-all" />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-[#1e50f0] transition-colors line-clamp-2 leading-snug">
-                {opt[nameAccessor]}
-              </span>
-            </label>
-          ))
+          filtered.map((opt: any, i: number) => {
+            const isSelected = selectedIds.includes(opt[accessor]);
+            const isActive = activeId !== undefined && activeId === opt[accessor];
+            return (
+              <div key={`${opt[accessor]}-${i}`}
+                onClick={() => onActiveChange && onActiveChange(opt[accessor])}
+                className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all group ${
+                  isActive ? 'bg-blue-50 border border-blue-100/50' : 'hover:bg-blue-50/30 border border-transparent'
+                }`}
+              >
+                <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={isSelected}
+                    onChange={() => onToggle(opt[accessor])}
+                    className="w-4.5 h-4.5 text-[#1e50f0] border-gray-300 rounded-lg focus:ring-[#1e50f0] cursor-pointer transition-all" />
+                  <span className={`text-sm font-medium transition-colors line-clamp-2 leading-snug ${
+                    isActive ? 'text-[#1e50f0] font-bold' : 'text-gray-700 group-hover:text-[#1e50f0]'
+                  }`}>
+                    {opt[nameAccessor]}
+                  </span>
+                </label>
+                {onActiveChange && (
+                  <svg className={`w-4 h-4 transition-all shrink-0 ${
+                    isActive ? 'text-[#1e50f0] translate-x-0' : 'text-gray-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="p-8 text-center text-sm text-gray-400 italic">Нічого не знайдено</div>
         )}
@@ -315,6 +336,130 @@ export const DisciplineTopicsBlock = ({ topics }: { topics: string }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+const BRANCH_NAMES: Record<string, string> = {
+  "01": "Освіта/Педагогіка",
+  "02": "Культура і мистецтво",
+  "03": "Гуманітарні науки",
+  "04": "Богослов'я",
+  "05": "Соціальні та поведінкові науки",
+  "06": "Журналістика",
+  "07": "Управління та адміністрування",
+  "08": "Право",
+  "09": "Біологія",
+  "10": "Природничі науки",
+  "11": "Математика та статистика",
+  "12": "Інформаційні технології",
+  "13": "Механічна інженерія",
+  "14": "Електрична інженерія",
+  "15": "Автоматизація та приладобудування",
+  "16": "Хімічна та біоінженерія",
+  "17": "Електроніка та телекомунікації",
+  "18": "Виробництво та технології",
+  "19": "Архітектура та будівництво",
+  "20": "Аграрні науки та продовольство",
+  "21": "Ветеринарна медицина",
+  "22": "Охорона здоров'я",
+  "23": "Соціальна робота",
+  "24": "Сфера обслуговування",
+  "25": "Воєнні науки, нац. безпека",
+  "26": "Цивільна безпека",
+  "27": "Транспорт",
+  "28": "Публічне управління та адміністрування",
+  "29": "Міжнародні відносини"
+};
+
+// ─── Discipline Specialties Block ───
+export const DisciplineSpecialtiesBlock = ({ 
+  specialtyIds, 
+  eduProgramIds, 
+  specialtiesList, 
+  eduProgramsList 
+}: { 
+  specialtyIds: number[]; 
+  eduProgramIds: number[]; 
+  specialtiesList: any[]; 
+  eduProgramsList: any[]; 
+}) => {
+  // Extract and group unique branches based on selected specialties
+  const selectedSpecs = specialtyIds
+    .map(id => specialtiesList.find(s => s.id === id))
+    .filter(Boolean);
+
+  const selectedBranches = React.useMemo(() => {
+    const codes = Array.from(
+      new Set(
+        selectedSpecs
+          .map(s => (s.code && s.code.length >= 2 ? s.code.substring(0, 2) : ''))
+          .filter(Boolean)
+      )
+    );
+    return codes
+      .map(code => ({
+        code,
+        name: BRANCH_NAMES[code] || `Галузь знань ${code}`
+      }))
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [selectedSpecs]);
+
+  return (
+    <div className="space-y-8">
+      {/* 1. Галузі знань */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Галузі знань</h4>
+        {selectedBranches.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {selectedBranches.map(branch => (
+              <span key={branch.code} className="bg-purple-50 text-purple-600 px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-purple-100 shadow-sm animate-fade-in">
+                {branch.code} - {branch.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх галузей знань</p>
+        )}
+      </div>
+
+      {/* 2. Спеціальності */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Спеціальності</h4>
+        {specialtyIds && specialtyIds.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {specialtyIds.map(id => {
+              const spec = specialtiesList.find(s => s.id === id);
+              return (
+                <span key={id} className="bg-blue-50 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-blue-100 shadow-sm">
+                  {spec ? `${spec.code} - ${spec.name}` : id}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх спеціальностей</p>
+        )}
+      </div>
+
+      {/* 3. Освітні програми */}
+      <div className="space-y-3">
+        <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Освітні програми</h4>
+        {eduProgramIds && eduProgramIds.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {eduProgramIds.map(id => {
+              const edu = eduProgramsList.find(e => e.id === id);
+              return (
+                <span key={id} className="bg-[#10b981]/10 text-[#10b981] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-[#10b981]/20 shadow-sm">
+                  {edu ? edu.name : id}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх освітніх програм</p>
+        )}
+      </div>
     </div>
   );
 };

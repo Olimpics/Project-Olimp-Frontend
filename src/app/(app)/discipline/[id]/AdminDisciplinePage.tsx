@@ -8,10 +8,43 @@ import {
   DisciplineBlock,
   InfoBlock,
   ModalField,
-  DisciplineTopicsBlock
+  DisciplineTopicsBlock,
+  DisciplineSpecialtiesBlock
 } from './AdminComponents';
 import { getCookie } from '@/services/cookie-servies';
 import { USER_PROFLE } from '@/constants/cookies';
+
+const BRANCH_NAMES: Record<string, string> = {
+  "01": "Освіта/Педагогіка",
+  "02": "Культура і мистецтво",
+  "03": "Гуманітарні науки",
+  "04": "Богослов'я",
+  "05": "Соціальні та поведінкові науки",
+  "06": "Журналістика",
+  "07": "Управління та адміністрування",
+  "08": "Право",
+  "09": "Біологія",
+  "10": "Природничі науки",
+  "11": "Математика та статистика",
+  "12": "Інформаційні технології",
+  "13": "Механічна інженерія",
+  "14": "Електрична інженерія",
+  "15": "Автоматизація та приладобудування",
+  "16": "Хімічна та біоінженерія",
+  "17": "Електроніка та телекомунікації",
+  "18": "Виробництво та технології",
+  "19": "Архітектура та будівництво",
+  "20": "Аграрні науки та продовольство",
+  "21": "Ветеринарна медицина",
+  "22": "Охорона здоров'я",
+  "23": "Соціальна робота",
+  "24": "Сфера обслуговування",
+  "25": "Воєнні науки, нац. безпека",
+  "26": "Цивільна безпека",
+  "27": "Транспорт",
+  "28": "Публічне управління та адміністрування",
+  "29": "Міжнародні відносини"
+};
 
 interface DisciplineDetails {
   idAddDisciplines: number;
@@ -83,7 +116,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const [facultyFilter, setFacultyFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState('');
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -101,6 +137,75 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const [selectedEduPrograms, setSelectedEduPrograms] = useState<number[]>([]);
   const [specSearch, setSpecSearch] = useState('');
   const [eduSearch, setEduSearch] = useState('');
+
+  // Branches filter states
+  const [branchSearch, setBranchSearch] = useState('');
+  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+
+  // Dynamically extract Branches from Specialties list
+  const branches = useMemo(() => {
+    const map = new Map<string, { id: string; code: string; name: string }>();
+    specialties.forEach(spec => {
+      if (spec.code && spec.code.length >= 2) {
+        const code = spec.code.substring(0, 2);
+        if (!map.has(code)) {
+          map.set(code, {
+            id: code,
+            code: code,
+            name: `${code} ${BRANCH_NAMES[code] || 'Галузь знань'}`
+          });
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code));
+  }, [specialties]);
+
+  // Compute selected branches based on selected specialties
+  const selectedBranches = useMemo(() => {
+    const selectedList: string[] = [];
+    branches.forEach(branch => {
+      const branchSpecs = specialties.filter(s => s.code && s.code.startsWith(branch.code));
+      if (branchSpecs.length > 0 && branchSpecs.every(s => selectedSpecialties.includes(s.id))) {
+        selectedList.push(branch.id);
+      }
+    });
+    return selectedList;
+  }, [branches, specialties, selectedSpecialties]);
+
+  // Specialties with code prepended to name for cleaner display
+  const specialtiesWithDisplayNames = useMemo(() => {
+    return specialties.map(s => ({
+      ...s,
+      displayName: `${s.code} - ${s.name}`
+    }));
+  }, [specialties]);
+
+  // Filter specialties list in the column by active branch
+  const filteredSpecialtiesForColumn = useMemo(() => {
+    if (!activeBranchId) return specialtiesWithDisplayNames;
+    return specialtiesWithDisplayNames.filter(s => s.code && s.code.startsWith(activeBranchId));
+  }, [specialtiesWithDisplayNames, activeBranchId]);
+
+  const handleBranchToggle = (branchId: string) => {
+    const branch = branches.find(b => b.id === branchId);
+    if (!branch) return;
+
+    const branchSpecs = specialties.filter(s => s.code && s.code.startsWith(branch.code));
+    const branchSpecIds = branchSpecs.map(s => s.id);
+
+    const isCurrentlySelected = selectedBranches.includes(branchId);
+    if (isCurrentlySelected) {
+      // Deselect all specialties in this branch
+      setSelectedSpecialties(prev => prev.filter(id => !branchSpecIds.includes(id)));
+    } else {
+      // Select all specialties in this branch (avoiding duplicates)
+      setSelectedSpecialties(prev => Array.from(new Set([...prev, ...branchSpecIds])));
+    }
+  };
+
+  const handleActiveBranchChange = (branchId: string) => {
+    setActiveBranchId(prev => prev === branchId ? null : branchId);
+  };
 
   const [availableStudents, setAvailableStudents] = useState<AvailableStudent[]>([]);
   const [availableLoading, setAvailableLoading] = useState(false);
@@ -312,9 +417,21 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   };
 
   const filteredStudents = useMemo(() => {
-    if (!facultyFilter) return students;
-    return students.filter(s => s.faculty === facultyFilter);
-  }, [students, facultyFilter]);
+    let result = students;
+    if (searchTerm) {
+      result = result.filter(s => s.studentName.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    if (facultyFilter) {
+      result = result.filter(s => s.faculty === facultyFilter);
+    }
+    if (departmentFilter) {
+      result = result.filter(s => s.departmentName === departmentFilter);
+    }
+    if (groupFilter) {
+      result = result.filter(s => s.groupCode === groupFilter);
+    }
+    return result;
+  }, [students, searchTerm, facultyFilter, departmentFilter, groupFilter]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" /></div>;
   if (error || !discipline) return <div className="p-8 text-center text-red-500">{error || 'Курс не знайдено'}</div>;
@@ -338,7 +455,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] pb-12 font-sans">
-      <div className="max-w-[1440px] mx-auto px-4 pt-8 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto px-4 pt-8 space-y-6">
 
         {/* Header Section */}
         <section className="bg-[#1e50f0] rounded-[32px] py-6 px-8 md:py-8 md:px-10 text-white shadow-xl relative">
@@ -438,6 +555,15 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               <DisciplineTopicsBlock topics={discipline.determination} />
             </DisciplineBlock>
 
+            <DisciplineBlock title="Спеціальності">
+              <DisciplineSpecialtiesBlock 
+                specialtyIds={discipline.recomendationSpeciality || []} 
+                eduProgramIds={discipline.recomendationEducationalProgram || []}
+                specialtiesList={specialties}
+                eduProgramsList={eduPrograms}
+              />
+            </DisciplineBlock>
+
             <div className="space-y-6">
               <DisciplineBlock title="Що можна навчитися (результати навчання)">
                 <p className="text-[15px] font-medium text-gray-600 leading-relaxed">{discipline.resultEducation}</p>
@@ -459,50 +585,88 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           </div>
         ) : (
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-6 flex justify-between items-center bg-gray-50/50 border-b border-gray-100">
-              <div className="flex items-center gap-4">
+            <div className="p-6 flex flex-col gap-4 bg-gray-50/50 border-b border-gray-100">
+              <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-gray-900">Зареєстровані студенти</h3>
-                <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-1.5 shadow-sm">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase">Фільтр:</span>
-                  <select value={facultyFilter ?? ''} onChange={e => setFacultyFilter(e.target.value)}
-                    className="text-xs font-bold text-[#1e50f0] outline-none border-none bg-transparent cursor-pointer">
-                    <option value="">Всі факультети</option>
-                    {Array.from(new Set(students.map(s => s.faculty))).map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
+                <button onClick={() => { setIsAddModalOpen(true); fetchAvailableStudents(); }}
+                  className="bg-[#1e50f0] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-600 transition-all active:scale-95 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+                  Додати в список
+                </button>
               </div>
-              <button onClick={() => { setIsAddModalOpen(true); fetchAvailableStudents(); }}
-                className="bg-[#1e50f0] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-600 transition-all active:scale-95 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                Додати в список
-              </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-gray-200">
+                <input 
+                  type="text" 
+                  placeholder="Пошук (ПІБ)..." 
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e50f0]/20 focus:border-[#1e50f0] outline-none transition-all"
+                />
+                <select 
+                  value={facultyFilter} 
+                  onChange={(e) => {
+                    setFacultyFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e50f0]/20 focus:border-[#1e50f0] outline-none transition-all"
+                >
+                  <option value="">Усі факультети</option>
+                  {Array.from(new Set(students.map(s => s.faculty))).map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+                <select 
+                  value={departmentFilter} 
+                  onChange={(e) => {
+                    setDepartmentFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e50f0]/20 focus:border-[#1e50f0] outline-none transition-all"
+                >
+                  <option value="">Усі кафедри</option>
+                  {Array.from(new Set(students.map(s => s.departmentName))).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select 
+                  value={groupFilter} 
+                  onChange={(e) => {
+                    setGroupFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e50f0]/20 focus:border-[#1e50f0] outline-none transition-all"
+                >
+                  <option value="">Усі групи</option>
+                  {Array.from(new Set(students.map(s => s.groupCode))).map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-[#1e50f0] text-white">
                   <tr className="text-left text-[11px] font-bold uppercase tracking-wider">
-                    <th className="px-6 py-4">ПІБ студента</th>
-                    <th className="px-6 py-4">Група</th>
-                    <th className="px-6 py-4">Кафедра</th>
-                    <th className="px-6 py-4">Рік</th>
-                    <th className="px-6 py-4">Рівень освіти</th>
-                    <th className="px-6 py-4">Факультет</th>
-                    <th className="px-6 py-4 text-center">Відмова</th>
+                    <th className="px-4 py-3">ПІБ студента</th>
+                    <th className="px-4 py-3">Група</th>
+                    <th className="px-4 py-3">Кафедра</th>
+                    <th className="px-4 py-3">Рік</th>
+                    <th className="px-4 py-3">Рівень освіти</th>
+                    <th className="px-4 py-3">Факультет</th>
+                    <th className="px-4 py-3 text-center">Відмова</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 text-sm">
                   {studentsLoading ? <tr><td colSpan={7} className="p-12 text-center text-gray-400 animate-pulse font-medium">Завантаження даних...</td></tr> :
                     filteredStudents.length > 0 ? filteredStudents.map(s => (
                       <tr key={s.studentId} className="hover:bg-blue-50/30 transition-all group">
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <div className="font-bold text-gray-900">{s.studentName}</div>
                         </td>
-                        <td className="px-6 py-4"><span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-[11px] font-bold">{s.groupCode}</span></td>
-                        <td className="px-6 py-4 text-gray-500 font-medium">{s.departmentName}</td>
-                        <td className="px-6 py-4 font-bold text-gray-700">{s.year} курс</td>
-                        <td className="px-6 py-4 text-gray-600 font-medium">{s.educationLevel}</td>
-                        <td className="px-6 py-4 text-gray-500 font-medium">{s.faculty}</td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-3"><span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-[11px] font-bold">{s.groupCode}</span></td>
+                        <td className="px-4 py-3 text-gray-500 font-medium">{s.departmentName}</td>
+                        <td className="px-4 py-3 font-bold text-gray-700">{s.year} курс</td>
+                        <td className="px-4 py-3 text-gray-600 font-medium">{s.educationLevel}</td>
+                        <td className="px-4 py-3 text-gray-500 font-medium">{s.faculty}</td>
+                        <td className="px-4 py-3 text-center">
                           <button onClick={() => { setStudentToReject(s); setRejectTemplate('Власна причина'); setRejectReason(''); setRejectError(null); }}
                             className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 font-bold text-[11px] transition-all active:scale-95">✕ Відмовити</button>
                         </td>
@@ -579,18 +743,22 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
       </Modal>
 
       {/* Recommended Modal */}
-      <Modal isOpen={isRecommendedModalOpen} onClose={() => setIsRecommendedModalOpen(false)} classSize="max-w-4xl">
-        <div className="p-8 space-y-6">
+      <Modal isOpen={isRecommendedModalOpen} onClose={() => setIsRecommendedModalOpen(false)} classSize="max-w-[1250px]">
+        <div className="p-8 space-y-6 bg-white rounded-3xl">
           <div className="flex justify-between items-center border-b pb-4">
             <h2 className="text-xl font-bold text-gray-900">Доступність дисципліни</h2>
             <button onClick={() => setIsRecommendedModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <SelectionColumn title="Галузі спеціальностей" options={specialties} selectedIds={selectedSpecialties}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <SelectionColumn title="Галузі" options={branches} selectedIds={selectedBranches}
+              onToggle={handleBranchToggle} accessor="id" nameAccessor="name"
+              searchTerm={branchSearch} onSearchChange={setBranchSearch} isLoading={modalDataLoading}
+              activeId={activeBranchId} onActiveChange={handleActiveBranchChange} />
+            <SelectionColumn title="Спеціальності" options={filteredSpecialtiesForColumn} selectedIds={selectedSpecialties}
               onToggle={id => setSelectedSpecialties(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
-              accessor="id" nameAccessor="name" searchTerm={specSearch} onSearchChange={setSpecSearch} isLoading={modalDataLoading} />
+              accessor="id" nameAccessor="displayName" searchTerm={specSearch} onSearchChange={setSpecSearch} isLoading={modalDataLoading} />
             <SelectionColumn title="Освітні програми" options={eduPrograms} selectedIds={selectedEduPrograms}
               onToggle={id => setSelectedEduPrograms(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
               accessor="id" nameAccessor="name" searchTerm={eduSearch} onSearchChange={setEduSearch} isLoading={modalDataLoading} />
