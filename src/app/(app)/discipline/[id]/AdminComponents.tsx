@@ -282,21 +282,21 @@ export function ModalField({
   placeholder?: string;
   className?: string;
 }) {
-  const baseClass = "w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-[15px] font-bold text-gray-900 placeholder:text-gray-400 placeholder:font-medium";
+  const baseClass = "w-full min-w-0 px-3.5 py-2.5 bg-[#f1f3f7] rounded-xl border border-transparent focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:border-blue-100 outline-none transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-medium";
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
-      <label className="text-[13px] font-bold text-gray-500 px-1 uppercase tracking-wider">{label}</label>
+    <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
+      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">{label}</label>
       {type === 'textarea' ? (
         <textarea value={value ?? ''} onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder} className={`${baseClass} h-28 resize-none leading-relaxed`} />
+          placeholder={placeholder} className={`${baseClass} h-24 resize-y leading-relaxed`} />
       ) : type === 'select' && options ? (
         <div className="relative">
-          <select value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`${baseClass} appearance-none cursor-pointer`}>
+          <select value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`${baseClass} appearance-none cursor-pointer pr-10`}>
             {options.map((o, i) => <option key={`${o.value}-${i}`} value={o.value}>{o.label}</option>)}
           </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
       ) : (

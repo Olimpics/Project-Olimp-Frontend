@@ -684,28 +684,28 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
       </div>
 
       {/* Edit Discipline Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} classSize="max-w-[800px]">
-        <div className="relative">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} classSize="max-w-[820px]">
+        <div className="relative p-[0px]">
           {/* Header */}
-          <div className="bg-[#1e50f0] p-6 flex justify-between items-center text-white">
-            <h2 className="text-xl font-bold">Редагувати дисципліну</h2>
+          <div className="bg-[#1e50f0] px-6 py-5 flex justify-between items-center text-white">
+            <h2 className="text-lg font-bold">Редагувати дисципліну</h2>
             <button onClick={() => setIsEditModalOpen(false)} className="hover:rotate-90 transition-all duration-300">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
-          <div className="p-8 space-y-8 max-h-[75vh] overflow-y-auto bg-white">
-            <div className="space-y-6">
+          <div className="px-6 py-6 space-y-6 max-h-[72vh] overflow-y-auto bg-white">
+            <div className="space-y-5">
               <ModalField label="Назва дисципліни" value={editForm?.nameAddDisciplines} onChange={v => updateForm('nameAddDisciplines', v)} />
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ModalField label="Код" value={editForm?.codeAddDisciplines} onChange={v => updateForm('codeAddDisciplines', v)} />
                 <ModalField label="Кредити" value="4 бали" onChange={() => { }} placeholder="4 бали" />
               </div>
 
-              <div className="pt-4 border-t border-gray-100">
-                <h3 className="text-[17px] font-bold text-gray-900 mb-6 uppercase tracking-wider">Основна інформація</h3>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
+              <div className="pt-5 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Основна інформація</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
                   <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty, label: f.abbreviation || f.nameFaculty }))} onChange={v => updateForm('facultyId', Number(v))} />
                   <ModalField label="Кафедра" value={editForm?.details?.departmentId} type="select" options={departments.map(d => ({ value: d.idDepartment, label: d.nameDepartment }))} onChange={v => updateForm('details.departmentId', Number(v))} />
                   <ModalField label="Викладач" value={editForm?.details?.content?.teacher} onChange={v => updateForm('details.content.teacher', v)} />
@@ -720,9 +720,9 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-100">
-                <h3 className="text-[17px] font-bold text-gray-900 mb-6 uppercase tracking-wider">Опис дисципліни</h3>
-                <div className="space-y-6">
+              <div className="pt-5 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Опис дисципліни</h3>
+                <div className="space-y-4">
                   <ModalField label="Визначення" type="textarea" value={editForm?.details?.content?.disciplineTopics} onChange={v => updateForm('details.content.disciplineTopics', v)} />
                   <ModalField label="Чому цікаво" type="textarea" value={editForm?.details?.content?.whyInterestingDetermination} onChange={v => updateForm('details.content.whyInterestingDetermination', v)} />
                   <ModalField label="Передумови" type="textarea" value={editForm?.details?.content?.prerequisites} onChange={v => updateForm('details.content.prerequisites', v)} />
@@ -735,9 +735,9 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t flex gap-4 bg-white">
-            <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all">Скасувати</button>
-            <button onClick={handleUpdate} className="flex-1 py-3 bg-[#1e50f0] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">Зберегти зміни</button>
+          <div className="px-6 py-4 border-t flex gap-3 bg-white">
+            <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all">Скасувати</button>
+            <button onClick={handleUpdate} className="flex-1 py-2.5 bg-[#1e50f0] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">Зберегти зміни</button>
           </div>
         </div>
       </Modal>
