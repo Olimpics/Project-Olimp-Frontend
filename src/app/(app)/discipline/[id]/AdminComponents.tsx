@@ -85,20 +85,28 @@ export const DisciplineHeader = ({ code, name, details, actions, progress, tabs 
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-6 min-w-fit">
-          {progress && <CircularProgress current={progress.current} total={progress.total} />}
-
-          <div className="flex flex-col gap-4 w-full md:w-auto">
-            <div className="flex items-center gap-3">
-              {actions}
-            </div>
-
-            {tabs && (
-              <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5 w-full justify-between">
-                {tabs}
+        <div className="flex w-full flex-col items-start gap-4 md:w-auto xl:self-start xl:items-end xl:pt-3">
+          {actions && (
+            <div className="flex flex-col gap-4 w-full md:w-auto">
+              <div className="flex items-center gap-3 xl:justify-end">
+                {actions}
               </div>
-            )}
-          </div>
+
+              {tabs && (
+                <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5 w-full justify-between">
+                  {tabs}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!actions && tabs && (
+            <div className="flex bg-white/10 p-1.5 rounded-[20px] backdrop-blur-md border border-white/5 w-full justify-between">
+              {tabs}
+            </div>
+          )}
+
+          {progress && <CircularProgress current={progress.current} total={progress.total} />}
         </div>
       </div>
     </section>
@@ -463,4 +471,3 @@ export const DisciplineSpecialtiesBlock = ({
     </div>
   );
 };
-
