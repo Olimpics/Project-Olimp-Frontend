@@ -28,6 +28,11 @@ type Speciality = {
   name: string
 }
 
+type EducationalProgram = {
+  id: number
+  name: string
+}
+
 interface Column {
   header: string
   accessor: keyof BindLoan
@@ -88,6 +93,7 @@ export const AdminBindLoansPage = () => {
   const [bindLoans, setBindLoans] = useState<BindLoan[]>([])
   const [addDisciplines, setAddDisciplines] = useState<AddDiscipline[]>([])
   const [specialities, setSpecialities] = useState<Speciality[]>([])
+  const [educationalPrograms, setEducationalPrograms] = useState<EducationalProgram[]>([])
   const [token, setToken] = useState<string>('')
 
   // Filter states
@@ -163,16 +169,25 @@ export const AdminBindLoansPage = () => {
       if (!token) return
 
       try {
-        const [disciplinesRes, specialitiesRes] = await Promise.all([
+        const [disciplinesRes, specialitiesRes, educationalProgramsRes] = await Promise.all([
           fetchWithAuth('http://212.3.125.183:5154/api/Filter/add-disciplines'), 
-          fetchWithAuth('http://212.3.125.183:5154/api/Filter/specialities')
+          fetchWithAuth('http://212.3.125.183:5154/api/Filter/specialities'),
+          fetchWithAuth('http://212.3.125.183:5154/api/Filter/educational-programs')
         ])
 
         const disciplinesData = await disciplinesRes.json()
         const specialitiesData = await specialitiesRes.json()
+        const educationalProgramsData = await educationalProgramsRes.json()
 
         setAddDisciplines(disciplinesData || [])
         setSpecialities(specialitiesData || [])
+        setEducationalPrograms(
+          Array.isArray(educationalProgramsData)
+            ? educationalProgramsData
+            : Array.isArray(educationalProgramsData?.items)
+              ? educationalProgramsData.items
+              : []
+        )
         await fetchFilteredData(1)
       } catch (error) {
         console.error('Error fetching initial data:', error)
@@ -278,7 +293,6 @@ export const AdminBindLoansPage = () => {
     { header: 'Назва програми', accessor: 'educationalProgramName' },
     { header: 'Код спеціальності', accessor: 'specialityCode' },
   ]
-console.log(`bindLoans`,bindLoans)
   return (
     <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
       <aside className="sm:w-1/5 w-full">
@@ -371,14 +385,14 @@ console.log(`bindLoans`,bindLoans)
         </div>
       </main>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} classSize="max-w-xl">
         {modalType && ['add', 'edit'].includes(modalType) && selectedBindLoan && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">
+          <div className="p-6 sm:p-7 space-y-6 min-w-0">
+            <h2 className="text-xl font-bold text-gray-900">
               {modalType === 'add' ? 'Додати прив\'язку' : 'Редагувати прив\'язку'}
             </h2>
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-5">
+              <div className="min-w-0 space-y-1.5">
                 <label className="block text-sm font-medium text-gray-700">Дисципліна</label>
                 <select
                   value={selectedBindLoan.addDisciplinesId || 0}
@@ -386,7 +400,7 @@ console.log(`bindLoans`,bindLoans)
                     ...selectedBindLoan,
                     addDisciplinesId: Number(e.target.value)
                   })}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="block h-11 w-full min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value={0}>Оберіть дисципліну</option>
                   {addDisciplines.map(discipline => (
@@ -396,7 +410,7 @@ console.log(`bindLoans`,bindLoans)
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="min-w-0 space-y-1.5">
                 <label className="block text-sm font-medium text-gray-700">Освітня програма</label>
                 <select
                   value={selectedBindLoan.educationalProgramId || 0}
@@ -404,26 +418,27 @@ console.log(`bindLoans`,bindLoans)
                     ...selectedBindLoan,
                     educationalProgramId: Number(e.target.value)
                   })}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="block h-11 w-full min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value={0}>Оберіть освітню програму</option>
-                  {specialities.map(speciality => (
-                    <option key={speciality.id} value={speciality.id}>
-                      {speciality.name}
+                  {educationalPrograms.map(program => (
+                    <option key={program.id} value={program.id}>
+                      {program.name}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
                 >
                   Скасувати
                 </button>
                 <button
                   onClick={saveChanges}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  disabled={!selectedBindLoan.addDisciplinesId || !selectedBindLoan.educationalProgramId}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Зберегти
                 </button>
@@ -433,9 +448,9 @@ console.log(`bindLoans`,bindLoans)
         )}
 
         {modalType === 'delete' && selectedBindLoan && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Видалення прив'язки</h2>
-            <p>Ви впевнені, що хочете видалити цю прив'язку?</p>
+          <div className="p-6 sm:p-7">
+            <h2 className="text-xl font-bold mb-4">{'Видалення прив\'язки'}</h2>
+            <p>{'Ви впевнені, що хочете видалити цю прив\'язку?'}</p>
             <div className="flex justify-end space-x-2 mt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
