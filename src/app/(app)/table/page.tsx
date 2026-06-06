@@ -7,6 +7,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type AdminDiscipline = {
   idAddDisciplines: number
@@ -278,10 +279,7 @@ const CourseTableCataloguePage = () => {
           params.set(key, value)
         })
 
-        const res = await fetch(`http://212.3.125.183:5154/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
-        if (!res.ok) throw new Error('Не вдалося завантажити дисципліни')
-
-        const data = await res.json()
+        const data = await apiService.get<any>(`/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
 
         setDisciplines(data.items || [])
         setTotalDisciplinesPages(data.totalPages || 1)
@@ -382,13 +380,9 @@ const CourseTableCataloguePage = () => {
           }
         }
 
-        const res = await fetch(
-          `http://212.3.125.183:5154/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
+        const data = await apiService.get<any>(
+          `/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
         )
-        if (!res.ok) {
-          throw new Error('Не вдалося завантажити дані')
-        }
-        const data = await res.json()
         const list: StudentWithChoices[] = data.items || []
 
         const mapped: StudentRow[] = list.map((s) => {
@@ -470,16 +464,10 @@ const CourseTableCataloguePage = () => {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const [facRes, degRes, groupRes] = await Promise.all([
-          fetch('http://212.3.125.183:5154/api/Faculty'),
-          fetch('http://212.3.125.183:5154/api/EducationalDegree'),
-          fetch('http://212.3.125.183:5154/api/Filter/groups'),
-        ])
-
         const [facData, degData, groupData] = await Promise.all([
-          facRes.json(),
-          degRes.json(),
-          groupRes.json(),
+          apiService.get<Faculty[]>('/Faculty'),
+          apiService.get<EduDegree[]>('/EducationalDegree'),
+          apiService.get<GroupItem[]>('/Filter/groups'),
         ])
 
         setFaculties(facData)
@@ -615,19 +603,13 @@ const CourseTableCataloguePage = () => {
       setModalSaving(true)
       setModalError(null)
 
-      const res = await fetch(
-        `http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateDisciplineStatus`,
+      await apiService.put(
+        `/DisciplineTabAdmin/UpdateDisciplineStatus`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            disciplineId: editingDiscipline.idAddDisciplines,
-            status: selectedStatus,
-          }),
+          disciplineId: editingDiscipline.idAddDisciplines,
+          status: selectedStatus,
         }
       )
-
-      if (!res.ok) throw new Error('Не вдалося зберегти статус')
 
       setIsModalOpen(false)
       await fetchDisciplines(currentDisciplinesPage)
@@ -650,13 +632,7 @@ const CourseTableCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateChoice', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) throw new Error('Не вдалося зберегти зміни')
+      await apiService.put('/DisciplineTabAdmin/UpdateChoice', payload)
 
       setShowDeclineConfirm(false)
       setIsModalOpen(false)

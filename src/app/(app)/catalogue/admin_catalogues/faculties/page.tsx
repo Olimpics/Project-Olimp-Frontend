@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { Modal } from '@/components/ui/Modal'
+import { apiService } from '@/services/axiosService'
 
 type Faculty = {
   idFaculty: number
@@ -93,13 +94,7 @@ export const AdminFacultyCatalogue = () => {
         sortOrder: selectedSorting.toString()
       })
 
-      const res = await fetch(`http://212.3.125.183:5154/api/Faculty?${query.toString()}`)
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch faculties')
-      }
-
-      const data = await res.json()
+      const data = await apiService.get<any>(`Faculty?${query.toString()}`)
 
       // Проверяем формат ответа и адаптируем его при необходимости
       let facultiesData = Array.isArray(data) ? data : (data.faculties || data)
@@ -152,16 +147,9 @@ export const AdminFacultyCatalogue = () => {
     if (!selectedFaculty) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Faculty/${selectedFaculty.idFaculty}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchFaculties(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при видаленні факультету')
-      }
+      await apiService.delete(`Faculty/${selectedFaculty.idFaculty}`)
+      fetchFaculties(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при видаленні факультету:', error)
     }
@@ -171,20 +159,9 @@ export const AdminFacultyCatalogue = () => {
     if (!selectedFaculty) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Faculty/${selectedFaculty.idFaculty}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(selectedFaculty)
-      })
-
-      if (response.ok) {
-        fetchFaculties(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при оновленні даних факультету')
-      }
+      await apiService.put(`Faculty/${selectedFaculty.idFaculty}`, selectedFaculty)
+      fetchFaculties(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при оновленні даних факультету:', error)
     }
@@ -192,24 +169,13 @@ export const AdminFacultyCatalogue = () => {
 
   const addFaculty = async () => {
     try {
-      const response = await fetch('http://212.3.125.183:5154/api/Faculty', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          idFaculty: 0,
-          nameFaculty: newFaculty.nameFaculty,
-          abbreviation: newFaculty.abbreviation
-        })
+      await apiService.post('Faculty', {
+        idFaculty: 0,
+        nameFaculty: newFaculty.nameFaculty,
+        abbreviation: newFaculty.abbreviation
       })
-
-      if (response.ok) {
-        fetchFaculties(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при додаванні факультету')
-      }
+      fetchFaculties(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при додаванні факультету:', error)
     }

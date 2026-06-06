@@ -23,7 +23,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
     const userProfile = getCookie(USER_PROFLE);
     const user = userProfile ? JSON.parse(userProfile) : {};
-    const isAdmin = user.roleId === 2;
+    const isAdmin = user.isAdmin;
 
     if (isAdmin) {
         return <AdminDisciplinePage id={id} />;

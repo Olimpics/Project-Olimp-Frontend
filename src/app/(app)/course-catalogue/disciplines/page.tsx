@@ -6,6 +6,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type AdminDiscipline = {
   idAddDisciplines: number

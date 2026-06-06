@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
+import { apiService } from '@/services/axiosService'
 
 type Student = {
   idStudents: number
@@ -182,16 +183,13 @@ export const AdminStudentCatalogue = () => {
 
     if (groupGive) {
       try {
-        const groupRes = await fetch('http://212.3.125.183:5154/api/Filter/groups');
-        if (groupRes.ok) {
-          const groupList = await groupRes.json();
-          const matchingGroup = groupList.find((g) => g.code === groupGive);
-          if (matchingGroup) {
-            query.append('group', matchingGroup.id.toString());
-            setPendingGroupes((prev) => 
-              prev.includes(matchingGroup.code) ? prev : [...prev, matchingGroup.code]
-            );
-          }
+        const groupList = await apiService.get<any[]>('Filter/groups');
+        const matchingGroup = groupList.find((g) => g.code === groupGive);
+        if (matchingGroup) {
+          query.append('group', matchingGroup.id.toString());
+          setPendingGroupes((prev) => 
+            prev.includes(matchingGroup.code) ? prev : [...prev, matchingGroup.code]
+          );
         }
       } catch (error) {
         console.error("Error resolving group:", error);
@@ -210,8 +208,7 @@ export const AdminStudentCatalogue = () => {
     }
 
     try {
-      const res = await fetch(`http://212.3.125.183:5154/api/Student?${query.toString()}`);
-      const data = await res.json();
+      const data = await apiService.get<any>(`Student?${query.toString()}`);
 
       const displayStudents = data.items.map((student: any) => {
         const matchingForm = studyForms.find(sf => sf.idStudyForm === student.idStudyForm);
@@ -219,7 +216,6 @@ export const AdminStudentCatalogue = () => {
         return {
           ...student,
           nameStudyForm: matchingForm ? matchingForm.nameStudyForm : "Не вказано",
-          
           isShortLabel: student.isShort === 1 ? "Так" : "Ні",
         };
       });
@@ -238,26 +234,30 @@ export const AdminStudentCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://212.3.125.183:5154/api/Faculty')).json()
-      const eduData = await (await fetch('http://212.3.125.183:5154/api/EducationalDegree')).json()
-      const specData = await (await fetch('http://212.3.125.183:5154/api/Filter/specialities')).json()
-      const groupData = await (await fetch('http://212.3.125.183:5154/api/Filter/groups')).json()
-      const studyFormData = await (await fetch('http://212.3.125.183:5154/api/StudyForm')).json()
-    
+      try {
+        const [facData, eduData, specData, groupData, studyFormData] = await Promise.all([
+          apiService.get<any[]>('Faculty'),
+          apiService.get<any[]>('EducationalDegree'),
+          apiService.get<any[]>('Filter/specialities'),
+          apiService.get<any[]>('Filter/groups'),
+          apiService.get<any[]>('StudyForm')
+        ])
 
-      const formattedSpecs = specData.map((s: Specialities) => ({
-        ...s,
-        label: `${s.code} - ${s.name}`,
-      }))
+        const formattedSpecs = specData.map((s: Specialities) => ({
+          ...s,
+          label: `${s.code} - ${s.name}`,
+        }))
 
-      setFaculties(facData)
-      setEduDegrees(eduData)
-      setSpecialities(formattedSpecs)
-      setGroupes(groupData)
-      setStudyForms(studyFormData)
-      
-      // Trigger initial student load
-      fetchFilteredData(1)
+        setFaculties(facData)
+        setEduDegrees(eduData)
+        setSpecialities(formattedSpecs)
+        setGroupes(groupData)
+        setStudyForms(studyFormData)
+        
+        fetchFilteredData(1)
+      } catch (error) {
+        console.error("Error fetching initial data:", error)
+      }
     }
 
     fetchInitialData()
@@ -284,33 +284,23 @@ export const AdminStudentCatalogue = () => {
 
   const confirmDelete = async () => {
     if (!selectedStudent) return
-    const response = await fetch(`http://212.3.125.183:5154/api/Student/${selectedStudent.idStudents}`, {
-      method: 'DELETE'
-    })
-
-    if (response.ok) {
+    try {
+      await apiService.delete(`Student/${selectedStudent.idStudents}`)
       fetchFilteredData(currentPage)
       setIsModalOpen(false)
-    } else {
-      console.error('Помилка при видаленні студента')
+    } catch (error) {
+      console.error('Помилка при видаленні студента:', error)
     }
   }
 
   const saveChanges = async () => {
     if (!selectedStudent) return
-    const response = await fetch(`http://212.3.125.183:5154/api/Student/${selectedStudent.idStudents}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(selectedStudent)
-    })
-
-    if (response.ok) {
+    try {
+      await apiService.put(`Student/${selectedStudent.idStudents}`, selectedStudent)
       fetchFilteredData(currentPage)
       setIsModalOpen(false)
-    } else {
-      console.error('Помилка при оновленні даних студента')
+    } catch (error) {
+      console.error('Помилка при оновленні даних студента:', error)
     }
   }
 

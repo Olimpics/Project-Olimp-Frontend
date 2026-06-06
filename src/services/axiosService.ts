@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { getCookie } from './cookie-servies'
+import { AUTH_TOKEN } from '@/constants/cookies'
 
-const BASE_URL = 'http://212.3.125.183:5154/api/'
+const BASE_URL = 'http://localhost:5154/api/'
 
 let authToken: string | null = null
 
@@ -8,16 +10,16 @@ const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': '*/*',
   },
 })
 
 axiosInstance.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
-    if (authToken) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${authToken}`,
-      }
+  (config: any) => {
+    const token = authToken || getCookie(AUTH_TOKEN)
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers['Accept'] = '*/*'
     }
     return config
   },

@@ -5,6 +5,7 @@ import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
+import { apiService } from '@/services/axiosService'
 
 type Department = {
   idDepartment: number
@@ -101,26 +102,18 @@ export const AdminDepartmentCatalogue = () => {
   const fetchDepartments = useCallback(async (page: number = currentPage) => {
     setIsLoading(true)
     try {
-      const query = new URLSearchParams({
+      const params: any = {
         page: page.toString(),
         pageSize: "17",
         search: searchTerm,
         sortOrder: selectedSorting.toString()
-      })
+      }
 
       if (pendingFaculties.length > 0) {
-        query.append("facultyIds", pendingFaculties.join(","))
+        params.facultyIds = pendingFaculties.join(",")
       }
 
-      const res = await fetch(`http://212.3.125.183:5154/api/Department?${query.toString()}`)
-
-      console.log(res)
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch departments')
-      }
-
-      const data = await res.json()
+      const data = await apiService.get<any>('Department', { params })
 
       // Проверяем формат ответа и адаптируем его при необходимости
       let departmentsData = Array.isArray(data) ? data : (data.items || data)
@@ -141,9 +134,13 @@ export const AdminDepartmentCatalogue = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://212.3.125.183:5154/api/Faculty')).json()
-      setFaculties(facData)
-      fetchDepartments(1)
+      try {
+        const facData = await apiService.get<Faculty[]>('Faculty')
+        setFaculties(facData)
+        fetchDepartments(1)
+      } catch (error) {
+        console.error('Error fetching initial data:', error)
+      }
     }
 
     fetchInitialData()
@@ -180,16 +177,9 @@ export const AdminDepartmentCatalogue = () => {
     if (!selectedDepartment) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Department/${selectedDepartment.idDepartment}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchDepartments(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при видаленні кафедри')
-      }
+      await apiService.delete(`Department/${selectedDepartment.idDepartment}`)
+      fetchDepartments(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при видаленні кафедри:', error)
     }
@@ -199,25 +189,14 @@ export const AdminDepartmentCatalogue = () => {
     if (!selectedDepartment) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Department/${selectedDepartment.idDepartment}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          facultyId: selectedDepartment.facultyId,
-          nameDepartment: selectedDepartment.nameDepartment,
-          abbreviation: selectedDepartment.abbreviation,
-          idDepartment: selectedDepartment.idDepartment
-        })
+      await apiService.put(`Department/${selectedDepartment.idDepartment}`, {
+        facultyId: selectedDepartment.facultyId,
+        nameDepartment: selectedDepartment.nameDepartment,
+        abbreviation: selectedDepartment.abbreviation,
+        idDepartment: selectedDepartment.idDepartment
       })
-
-      if (response.ok) {
-        fetchDepartments(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при оновленні даних кафедри')
-      }
+      fetchDepartments(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при оновленні даних кафедри:', error)
     }
@@ -225,24 +204,13 @@ export const AdminDepartmentCatalogue = () => {
 
   const addDepartment = async () => {
     try {
-      const response = await fetch('http://212.3.125.183:5154/api/Department', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          facultyId: newDepartment.facultyId,
-          nameDepartment: newDepartment.nameDepartment,
-          abbreviation: newDepartment.abbreviation
-        })
+      await apiService.post('Department', {
+        facultyId: newDepartment.facultyId,
+        nameDepartment: newDepartment.nameDepartment,
+        abbreviation: newDepartment.abbreviation
       })
-
-      if (response.ok) {
-        fetchDepartments(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при додаванні кафедри')
-      }
+      fetchDepartments(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при додаванні кафедри:', error)
     }

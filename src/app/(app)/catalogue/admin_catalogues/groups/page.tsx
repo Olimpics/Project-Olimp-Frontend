@@ -4,8 +4,7 @@ import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
-import { useRouter } from 'next/navigation'
-import { ROUTES } from '@/constants'
+import { apiService } from '@/services/axiosService'
 
 type Group = {
   id: number
@@ -16,6 +15,8 @@ type Group = {
   educationalDegree: string
   course: number
   studentsCount: number
+  facultyId?: number
+  degreeName?: string
 }
 
 type Faculty = {
@@ -122,6 +123,8 @@ export const AdminGroupsCatalogue = () => {
   const [modalType, setModalType] = useState<'edit' | 'delete' | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
 
+  const router = useRouter()
+
   const fetchFilteredData = useCallback(async (page: number = currentPage) => {
     const query = new URLSearchParams({
       page: page.toString(),
@@ -146,13 +149,13 @@ export const AdminGroupsCatalogue = () => {
       query.append("courses", selectedCourses.join(","))
     }
 
-    const res = await fetch(
-      `http://212.3.125.183:5154/api/Group?${query.toString()}`
-    )
-    const data = await res.json()
-
-    setGroups(data || []) // Изменено, так как API возвращает массив групп напрямую
-    setTotalPages(Math.ceil(data.length / 17) || 1) // Простая пагинация
+    try {
+      const data = await apiService.get<any>(`Group?${query.toString()}`)
+      setGroups(data || []) 
+      setTotalPages(Math.ceil(data.length / 17) || 1)
+    } catch (error) {
+      console.error('Error fetching groups:', error)
+    }
   }, [
     currentPage,
     searchTerm,
@@ -165,19 +168,25 @@ export const AdminGroupsCatalogue = () => {
 
   useEffect(() => {
     fetchFilteredData(1)
-  }, [selectedSorting])
+  }, [selectedSorting, fetchFilteredData])
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (await fetch('http://212.3.125.183:5154/api/Faculty')).json()
-      const deptData = await (await fetch('http://212.3.125.183:5154/api/Department?page=1&pageSize=50')).json()
-      const eduData = await (await fetch('http://212.3.125.183:5154/api/EducationalDegree')).json()
+      try {
+        const [facData, deptData, eduData] = await Promise.all([
+          apiService.get<any[]>('Faculty'),
+          apiService.get<any>('Department?page=1&pageSize=50'),
+          apiService.get<any[]>('EducationalDegree')
+        ])
 
-      setFaculties(facData)
-      setDepartments(deptData.items || [])
-      setEduDegrees(eduData)
+        setFaculties(facData)
+        setDepartments(deptData.items || [])
+        setEduDegrees(eduData)
 
-      fetchFilteredData(1)
+        fetchFilteredData(1)
+      } catch (error) {
+        console.error('Error fetching initial data:', error)
+      }
     }
 
     fetchInitialData()
@@ -204,45 +213,21 @@ export const AdminGroupsCatalogue = () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Group/${selectedGroup.id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при видаленні групи')
-      }
+      await apiService.delete(`Group/${selectedGroup.id}`)
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при видаленні групи:', error)
     }
   }
 
-  const router = useRouter()
-      useEffect(() => {
-          fetchFilteredData(1)
-      }, [selectedSorting])
-  
-
   const saveChanges = async () => {
     if (!selectedGroup) return
 
     try {
-      const response = await fetch(`http://212.3.125.183:5154/api/Group/${selectedGroup.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(selectedGroup)
-      })
-
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при оновленні даних групи')
-      }
+      await apiService.put(`Group/${selectedGroup.id}`, selectedGroup)
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при оновленні даних групи:', error)
     }

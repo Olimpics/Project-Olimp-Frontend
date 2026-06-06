@@ -7,6 +7,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type EducationalProgram = {
   idEducationalProgram: number
@@ -98,7 +99,6 @@ export const AdminEducationalProgramCatalogue = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const [token, setToken] = useState('')
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -130,8 +130,6 @@ export const AdminEducationalProgramCatalogue = () => {
   }, [])
 
   const fetchPrograms = useCallback(async (page: number = currentPage) => {
-    if (!token) return
-
     setIsLoading(true)
     try {
       const query = new URLSearchParams({
@@ -148,20 +146,10 @@ export const AdminEducationalProgramCatalogue = () => {
         query.append("degreeLevelIds", degreeIds.join(","))
       }
 
-      const res = await fetch(
-        `http://212.3.125.183:5154/api/EducationalProgram?${query.toString()}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+      const data = await apiService.get<any>(
+        `EducationalProgram?${query.toString()}`
       )
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch educational programs')
-      }
-
-      const data = await res.json()
       setPrograms(data.items || [])
       setTotalPages(data.totalPages || 1)
     } catch (error) {
@@ -170,16 +158,16 @@ export const AdminEducationalProgramCatalogue = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [currentPage, searchTerm, selectedSorting, pendingDegrees, token, degrees])
+  }, [currentPage, searchTerm, selectedSorting, pendingDegrees, degrees])
 
   useEffect(() => {
     fetchPrograms(1)
-  }, [selectedSorting, token])
+  }, [selectedSorting])
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const degreesData = await (await fetch('http://212.3.125.183:5154/api/EducationalDegree')).json()
+        const degreesData = await apiService.get<any[]>('EducationalDegree')
         setDegrees(degreesData)
         fetchPrograms(1)
       } catch (error) {
@@ -228,76 +216,39 @@ export const AdminEducationalProgramCatalogue = () => {
   }
 
   const confirmDelete = async () => {
-    if (!selectedProgram || !token) return
+    if (!selectedProgram) return
 
     try {
-      const response = await fetch(
-        `http://212.3.125.183:5154/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+      await apiService.delete(
+        `EducationalProgram/${selectedProgram.idEducationalProgram}`
       )
-
-      if (response.ok) {
-        fetchPrograms(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при видаленні освітньої програми')
-      }
+      fetchPrograms(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при видаленні освітньої програми:', error)
     }
   }
 
   const saveChanges = async () => {
-    if (!selectedProgram || !token) return
+    if (!selectedProgram) return
 
     try {
-      const response = await fetch(
-        `http://212.3.125.183:5154/api/EducationalProgram/${selectedProgram.idEducationalProgram}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(selectedProgram)
-        }
+      await apiService.put(
+        `EducationalProgram/${selectedProgram.idEducationalProgram}`,
+        selectedProgram
       )
-
-      if (response.ok) {
-        fetchPrograms(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при оновленні освітньої програми')
-      }
+      fetchPrograms(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при оновленні освітньої програми:', error)
     }
   }
 
   const addProgram = async () => {
-    if (!token) return
-
     try {
-      const response = await fetch('http://212.3.125.183:5154/api/EducationalProgram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newProgram)
-      })
-
-      if (response.ok) {
-        fetchPrograms(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Помилка при додаванні освітньої програми')
-      }
+      await apiService.post('EducationalProgram', newProgram)
+      fetchPrograms(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Помилка при додаванні освітньої програми:', error)
     }

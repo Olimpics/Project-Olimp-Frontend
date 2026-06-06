@@ -11,8 +11,7 @@ import {
   DisciplineTopicsBlock,
   DisciplineSpecialtiesBlock
 } from './AdminComponents';
-import { getCookie } from '@/services/cookie-servies';
-import { USER_PROFLE } from '@/constants/cookies';
+import { apiService } from '@/services/axiosService';
 
 const BRANCH_NAMES: Record<string, string> = {
   "01": "Освіта/Педагогіка",
@@ -223,15 +222,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   const fetchDiscipline = async () => {
     try {
-      const raw = getCookie(USER_PROFLE);
-      const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch(`http://localhost:5154/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}?t=${Date.now()}`, {
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch discipline');
-      const data: DisciplineDetails = await response.json();
+      const data = await apiService.get<DisciplineDetails>(`DisciplineTabStudent/GetDisciplineWithDetails/${id}?t=${Date.now()}`);
       setDiscipline(data);
       setSelectedSpecialties(data.recomendationSpeciality || []);
       setSelectedEduPrograms(data.recomendationEducationalProgram || []);
@@ -275,14 +266,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const fetchStudents = useCallback(async (page: number) => {
     setStudentsLoading(true);
     try {
-      const raw = getCookie(USER_PROFLE);
-      const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch(`http://localhost:5154/api/DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=${page}&pageSize=20`, {
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
-      const data: StudentResponse = await response.json();
+      const data = await apiService.get<StudentResponse>(`DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=${page}&pageSize=20`);
       setStudents(data.items || []);
       setTotalPages(data.totalPages || 1);
       setTotalItems(data.totalItems || 0);
@@ -296,18 +280,13 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const fetchFilters = async () => {
     setModalDataLoading(true);
     try {
-      const [facRes, specRes, eduRes, depRes, degRes] = await Promise.all([
-        fetch('http://212.3.125.183:5154/api/Faculty'),
-        fetch('http://212.3.125.183:5154/api/Filter/specialities'),
-        fetch('http://212.3.125.183:5154/api/Filter/educational-programs'),
-        fetch('http://212.3.125.183:5154/api/Department?page=1&pageSize=500&sortOrder=0'),
-        fetch('http://212.3.125.183:5154/api/EducationalDegree')
+      const [facData, specData, eduData, depData, degData] = await Promise.all([
+        apiService.get<any[]>('Faculty'),
+        apiService.get<any[]>('Filter/specialities'),
+        apiService.get<any>('Filter/educational-programs'),
+        apiService.get<any>('Department?page=1&pageSize=500&sortOrder=0'),
+        apiService.get<any[]>('EducationalDegree')
       ]);
-      const facData = await facRes.json();
-      const specData = await specRes.json();
-      const eduData = await eduRes.json();
-      const depData = await depRes.json();
-      const degData = await degRes.json();
 
       setFaculties(Array.isArray(facData) ? facData : []);
       setSpecialties(Array.isArray(specData) ? specData : []);
@@ -333,25 +312,14 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   const handleUpdate = async () => {
     try {
-      const raw = getCookie(USER_PROFLE);
-      const token = raw ? JSON.parse(raw).token : null;
       const payload = {
         ...editForm,
         recomendationSpeciality: selectedSpecialties,
         recomendationEducationalProgram: selectedEduPrograms
       };
-      const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        setIsEditModalOpen(false);
-        fetchDiscipline();
-      }
+      await apiService.put(`DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, payload);
+      setIsEditModalOpen(false);
+      fetchDiscipline();
     } catch (err) {
       console.error(err);
     }
@@ -374,14 +342,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
     setAvailableLoading(true);
     try {
-      const raw = getCookie(USER_PROFLE);
-      const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabAdmin/GetStudentsIncompleteAfterChoicePeriod?facultyId=${fId}`, {
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
-      const data = await response.json();
+      const data = await apiService.get<AvailableStudent[]>(`DisciplineTabAdmin/GetStudentsIncompleteAfterChoicePeriod?facultyId=${fId}`);
       setAvailableStudents(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -392,25 +353,14 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   const handleAddStudent = async (studentId: number) => {
     try {
-      const raw = getCookie(USER_PROFLE);
-      const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch('http://212.3.125.183:5154/api/DisciplineTabStudent/AddDisciplineBind', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          studentId,
-          disciplineId: discipline?.idAddDisciplines,
-          semestr: discipline?.isEven === 2 ? 1 : 0,
-          loans: 0
-        })
+      await apiService.post('DisciplineTabStudent/AddDisciplineBind', {
+        studentId,
+        disciplineId: discipline?.idAddDisciplines,
+        semestr: discipline?.isEven === 2 ? 1 : 0,
+        loans: 0
       });
-      if (response.ok) {
-        setIsAddModalOpen(false);
-        fetchStudents(currentPage);
-      }
+      setIsAddModalOpen(false);
+      fetchStudents(currentPage);
     } catch (err) {
       console.error(err);
     }
@@ -876,20 +826,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                 setRejectSaving(true);
                 setRejectError(null);
                 try {
-                  const raw = getCookie(USER_PROFLE);
-                  const token = raw ? JSON.parse(raw).token : null;
-                  const response = await fetch('http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateChoice', {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      ...(token && { 'Authorization': `Bearer ${token}` })
-                    },
-                    body: JSON.stringify([{
-                      bindId: studentToReject.idBindAddDisciplines,
-                      isConfirm: 0 // 0 means reject
-                    }])
-                  });
-                  if (!response.ok) throw new Error('Не вдалося відхилити запит студента');
+                  await apiService.put('DisciplineTabAdmin/UpdateChoice', [{
+                    bindId: studentToReject.idBindAddDisciplines,
+                    isConfirm: 0 // 0 means reject
+                  }]);
                   setStudentToReject(null);
                   fetchStudents(currentPage);
                 } catch (err: any) {

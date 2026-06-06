@@ -6,6 +6,7 @@ import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type Discipline = {
   idAddDisciplines: number
@@ -171,13 +172,11 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
         query.append('isEvenSemester', isEvenSemester.toString())
       }
 
-      const res = await fetch(
-        `http://212.3.125.183:5154/api/DisciplineTabStudent/GetAllDisciplinesWithAvailability?${query.toString()}`
+      const data = await apiService.get<any>(
+        `DisciplineTabStudent/GetAllDisciplinesWithAvailability?${query.toString()}`
       )
-      const data = await res.json()
 
-
-      const formatted = (data.items || []).map((d: Discipline) => ({
+      const formatted = (data.items || []).map((d: any) => ({
         ...d,
         studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
         isEvenSemesterParsed: new Map<any, string>([
@@ -209,17 +208,19 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const facData = await (
-        await fetch('http://212.3.125.183:5154/api/Faculty')
-      ).json()
-      const eduData = await (
-        await fetch('http://212.3.125.183:5154/api/EducationalDegree')
-      ).json()
+      try {
+        const [facData, eduData] = await Promise.all([
+          apiService.get<any[]>('Faculty'),
+          apiService.get<any[]>('EducationalDegree')
+        ])
 
-      setFaculties(facData)
-      setEduDegrees(eduData)
+        setFaculties(facData)
+        setEduDegrees(eduData)
 
-      fetchFilteredData(1)
+        fetchFilteredData(1)
+      } catch (error) {
+        console.error('Error fetching initial data:', error)
+      }
     }
 
     fetchInitialData()

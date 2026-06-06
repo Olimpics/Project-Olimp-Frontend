@@ -49,7 +49,7 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
     try {
       await Promise.all(
         localNotifications.map(noti =>
-          fetch(`http://212.3.125.183:5154/api/Notification/${noti.idNotification}/mark-as-read`, {
+          fetch(`https://webhook.site/63950832-58eb-4017-88ad-0dc3fd8ec76a`, {
             method: 'POST',
           })
         )

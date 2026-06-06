@@ -8,6 +8,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { Modal } from '@/components/ui/Modal'
+import { apiService } from '@/services/axiosService'
 import { router } from 'next/client';
 import Import_button from '@/app/(app)/catalogue/admin_catalogues/import_button';
 import FileUploadModal from '@/app/(app)/catalogue/admin_catalogues/import_button';
@@ -139,8 +140,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     const fetchCatalogs = async () => {
         try {
-            const res = await fetch('http://212.3.125.183:5154/api/Parameters/CatalogYears')
-            const data = await res.json()
+            const data = await apiService.get<any[]>('Parameters/CatalogYears')
             setCatalogYears(data)
         } catch (error) {
             console.error('Failed to fetch catalogs', error)
@@ -149,8 +149,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     const fetchPastDisciplines = useCallback(async (catalogId: number, search: string = '') => {
         try {
-            const res = await fetch(`http://212.3.125.183:5154/api/Filter/add-disciplines-paged?CatalogYearId=${catalogId}&search=${encodeURIComponent(search)}`)
-            const data = await res.json()
+            const data = await apiService.get<any>(`Filter/add-disciplines-paged?CatalogYearId=${catalogId}&search=${encodeURIComponent(search)}`)
             setPastDisciplines(data.items || [])
         } catch (error) {
             console.error('Failed to fetch past disciplines', error)
@@ -205,10 +204,9 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                 query.append('isEvenSemester', isEvenSemester.toString())
             }
 
-            const res = await fetch(
-                `http://212.3.125.183:5154/api/DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
+            const data = await apiService.get<any>(
+                `DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
             )
-            const data = await res.json()
 
             const formatted = (data.items || []).map((d: Discipline) => ({
                 ...d,
@@ -236,12 +234,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const facData = await (
-                await fetch('http://212.3.125.183:5154/api/Faculty')
-            ).json()
-            const eduData = await (
-                await fetch('http://212.3.125.183:5154/api/EducationalDegree')
-            ).json()
+            const facData = await apiService.get<any[]>('Faculty')
+            const eduData = await apiService.get<any[]>('EducationalDegree')
 
             setFaculties(facData)
             setEduDegrees(eduData)

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 // DTOs for student
 interface DisciplineDto {
@@ -141,11 +142,9 @@ export default function Page() {
 
     const fetchStudentPlan = async (studentId: number) => {
         try {
-            const response = await fetch(
-                `http://212.3.125.183:5154/api/StudentPage/educational-program/${studentId}`
+            const data = await apiService.get<PlanResponse>(
+                `StudentPage/educational-program/${studentId}`
             )
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-            const data: PlanResponse = await response.json()
             if (data.mainDisciplines && data.mainDisciplines.length > 0) {
                 setEducationalProgram(data.mainDisciplines[0].educationalProgramName)
             }

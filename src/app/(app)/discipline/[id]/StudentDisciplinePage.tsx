@@ -119,7 +119,7 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
         loans: 5
       });
       // Refresh student count or show success
-      const countData = await apiService.get<any>(`DisciplineTabAdmin/GetStudentsByAddDiscipline?DisciplineId=${id}&page=1&pageSize=1`);
+      const countData = await apiService.get<any>(`DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=1&pageSize=1`);
       setStudentCount(countData.totalItems || 0);
       alert('Ви успішно записались на дисципліну!');
     } catch (err: any) {
