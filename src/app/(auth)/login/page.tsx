@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { USER_PROFLE } from '@/constants/cookies'
+import { USER_PROFLE, AUTH_TOKEN } from '@/constants/cookies'
 import { setCookie, getCookie} from '@/services/cookie-servies'
 import { apiService, setToken } from '@/services/axiosService'
 
@@ -56,6 +56,7 @@ export default function LoginPage() {
       localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(userPermissions))*/
 
       setCookie(USER_PROFLE, JSON.stringify(result_auth))
+      setCookie(AUTH_TOKEN, result_auth.token)
       console.log(getCookie(USER_PROFLE))
 
       window.dispatchEvent(new Event('student-auth-changed'))

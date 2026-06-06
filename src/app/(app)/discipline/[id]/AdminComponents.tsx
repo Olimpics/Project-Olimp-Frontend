@@ -18,28 +18,28 @@ export const DisciplineBadge = ({ children, variant = 'default' }: { children: R
 // ─── Circular Progress ───
 export const CircularProgress = ({ current, total }: { current: number; total: number }) => {
   const percentage = Math.min((current / total) * 100, 100);
-  const radius = 24;
+  const radius = 22;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="bg-white/10 backdrop-blur-[12px] border border-white/20 rounded-[24px] p-5 flex items-center gap-5 min-w-[220px] shadow-lg shadow-black/5">
+    <div className="bg-white/10 backdrop-blur-[12px] border border-white/20 rounded-[24px] p-4 flex items-center gap-4 min-w-[250px] shadow-lg shadow-black/5">
       <div className="relative inline-flex items-center justify-center shrink-0">
-        <svg className="w-16 h-16 transform -rotate-90">
-          <circle cx="32" cy="32" r={radius} stroke="rgba(255,255,255,0.15)" strokeWidth="6" fill="transparent" />
-          <circle cx="32" cy="32" r={radius} stroke="white" strokeWidth="6" fill="transparent"
+        <svg className="w-14 h-14 transform -rotate-90">
+          <circle cx="28" cy="28" r={radius} stroke="rgba(255,255,255,0.15)" strokeWidth="5" fill="transparent" />
+          <circle cx="28" cy="28" r={radius} stroke="white" strokeWidth="5" fill="transparent"
             strokeDasharray={circumference} style={{ strokeDashoffset }} strokeLinecap="round"
             className="transition-all duration-700 ease-out" />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="text-[11px] font-bold text-white leading-none">{current}</span>
-          <div className="w-5 h-[1px] bg-white/20 my-1" />
-          <span className="text-[11px] font-bold text-white/40 leading-none">{total}</span>
+          <span className="text-[10px] font-bold text-white leading-none">{current}</span>
+          <div className="w-4 h-[1px] bg-white/20 my-0.5" />
+          <span className="text-[10px] font-bold text-white/40 leading-none">{total}</span>
         </div>
       </div>
       <div className="flex flex-col">
-        <span className="text-[13px] font-medium text-blue-100/70">Записано</span>
-        <span className="text-[17px] font-bold text-white leading-tight mt-0.5 tracking-tight">{current} з {total}</span>
+        <span className="text-[12px] font-medium text-blue-100/70">Записано</span>
+        <span className="text-[16px] font-bold text-white leading-tight mt-0.5 tracking-tight">{current} з {total}</span>
       </div>
     </div>
   );
@@ -69,7 +69,7 @@ export const DisciplineHeader = ({ code, name, details, actions, progress, tabs 
             <DisciplineBadge variant="success">Набір відкрито</DisciplineBadge>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1] max-w-3xl">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-[1.1] max-w-3xl">
             {name}
           </h1>
 

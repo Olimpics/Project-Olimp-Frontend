@@ -225,7 +225,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     try {
       const raw = getCookie(USER_PROFLE);
       const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}?t=${Date.now()}`, {
+      const response = await fetch(`http://localhost:5154/api/DisciplineTabStudent/GetDisciplineWithDetails/${id}?t=${Date.now()}`, {
         headers: {
           ...(token && { 'Authorization': `Bearer ${token}` })
         }
@@ -277,7 +277,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     try {
       const raw = getCookie(USER_PROFLE);
       const token = raw ? JSON.parse(raw).token : null;
-      const response = await fetch(`http://212.3.125.183:5154/api/DisciplineTabAdmin/GetStudentsByAddDiscipline?DisciplineId=${id}&page=${page}&pageSize=20`, {
+      const response = await fetch(`http://localhost:5154/api/DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=${page}&pageSize=20`, {
         headers: {
           ...(token && { 'Authorization': `Bearer ${token}` })
         }
