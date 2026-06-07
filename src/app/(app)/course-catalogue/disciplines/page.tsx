@@ -225,11 +225,9 @@ const DisciplineCataloguePage = () => {
         if (isFacultyFilter !== 'all') params.set('isFaculty', isFacultyFilter)
         if (statusFilter > 0) params.set('statusFilter', String(statusFilter))
 
-        const res = await fetch(`http://localhost:5154/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
-        
-        if (!res.ok) throw new Error('Не вдалося завантажити дані')
-
-        const data = await res.json()
+        const data = await apiService.get<any>(
+          `DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`
+        )
         setDisciplines(data.items || [])
         setTotalPages(data.totalPages || 1)
         setCurrentPage(page) 
@@ -244,12 +242,12 @@ const DisciplineCataloguePage = () => {
 
   useEffect(() => {
     const init = async () => {
-      const [fRes, dRes] = await Promise.all([
-        fetch('http://localhost:5154/api/Faculty'),
-        fetch('http://localhost:5154/api/EducationalDegree')
+      const [fData, dData] = await Promise.all([
+        apiService.get<any>('Faculty'),
+        apiService.get<any>('EducationalDegree')
       ])
-      setFaculties(await fRes.json())
-      setDegrees(await dRes.json())
+      setFaculties(fData)
+      setDegrees(dData)
       
       fetchDisciplines(1)
     }
@@ -285,30 +283,13 @@ const DisciplineCataloguePage = () => {
       setModalSaving(true)
       setModalError(null)
 
-      const res = await fetch(
-        'http://localhost:5154/api/DisciplineTabAdmin/UpdateDisciplineStatus',
+      const data = await apiService.put<any>(
+        'DisciplineTabAdmin/UpdateDisciplineStatus',
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            disciplineId: editingDiscipline.idAddDisciplines,
-            status: selectedStatus,
-          }),
+          disciplineId: editingDiscipline.idAddDisciplines,
+          status: selectedStatus,
         }
       )
-
-      if (!res.ok) {
-        let message = 'Не вдалося оновити статус дисципліни'
-        try {
-          const data = await res.json()
-          if (data?.error) message = data.error
-        } catch {
-          // ignore
-        }
-        throw new Error(message)
-      }
-
-      const data = await res.json()
 
       setDisciplines((prev) =>
         prev.map((d) =>

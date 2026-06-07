@@ -10,6 +10,7 @@ import HamburgerSvg from '@/asssets/svgs/hamburger-svg'
 import NotificationSvg from '@/asssets/svgs/notification-svg'
 import { USER_PROFLE } from '@/constants/cookies'
 import { getCookie } from '@/services/cookie-servies'
+import { apiService } from '@/services/axiosService'
 
 const headerLinks = [
   { name: 'Особистий кабінет', link: ROUTES.cabinet },
@@ -107,10 +108,9 @@ export const Navigation: FunctionComponent = () => {
           setRoleId(role ?? null)
 
           try {
-            const res = await fetch(
-              `http://localhost:5154/api/Notification/user/${uid}?isRead=false`
+            const data = await apiService.get<any>(
+              `Notification/user/${uid}?isRead=false`
             )
-            const data = await res.json()
 
 
             if (Array.isArray(data.items)) {
@@ -142,8 +142,7 @@ export const Navigation: FunctionComponent = () => {
 
     const fetchFaculties = async () => {
       try {
-        const res = await fetch('http://localhost:5154/api/Faculty')
-        const data = await res.json()
+        const data = await apiService.get<any>('Faculty')
 
         if (Array.isArray(data)) {
           setFaculties(data)

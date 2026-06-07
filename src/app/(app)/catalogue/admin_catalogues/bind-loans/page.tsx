@@ -5,6 +5,7 @@ import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies';
+import { apiService } from '@/services/axiosService'
 
 const USER_PROFILE = 'userProfile'
 
@@ -94,7 +95,6 @@ export const AdminBindLoansPage = () => {
   const [addDisciplines, setAddDisciplines] = useState<AddDiscipline[]>([])
   const [specialities, setSpecialities] = useState<Speciality[]>([])
   const [educationalPrograms, setEducationalPrograms] = useState<EducationalProgram[]>([])
-  const [token, setToken] = useState<string>('')
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -116,27 +116,7 @@ export const AdminBindLoansPage = () => {
     setCurrentPage(1);
   }, [selectedSorting]);
 
-
-  useEffect(() => {
-    const rawProfile = getCookie(USER_PROFILE)
-    if (rawProfile) {
-      const profile = JSON.parse(rawProfile)
-      setToken(profile.token)
-    }
-  }, [])
-
-  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-    const headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`,
-      'accept': 'text/plain',
-    }
-    return fetch(url, { ...options, headers })
-  }
-
   const fetchFilteredData = useCallback(async (page: number = currentPage) => {
-    if (!token) return
-
     const query = new URLSearchParams({
       Page: page.toString(),
       PageSize: "13",
@@ -153,31 +133,24 @@ export const AdminBindLoansPage = () => {
     }
 
     try {
-      const res = await fetchWithAuth(
-        `http://localhost:5154/api/BindLoansMain?${query.toString()}`
+      const data = await apiService.get<any>(
+        `BindLoansMain?${query.toString()}`
       )
-      const data = await res.json()
       setBindLoans(data.items || [])
       setTotalPages(Math.ceil(data.totalCount / 13) || 1)
     } catch (error) {
       console.error('Error fetching bind loans:', error)
     }
-  }, [token, currentPage, searchTerm, selectedDisciplines, selectedSpecialities, selectedSorting])
+  }, [currentPage, searchTerm, selectedDisciplines, selectedSpecialities, selectedSorting])
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      if (!token) return
-
       try {
-        const [disciplinesRes, specialitiesRes, educationalProgramsRes] = await Promise.all([
-          fetchWithAuth('http://localhost:5154/api/Filter/add-disciplines'), 
-          fetchWithAuth('http://localhost:5154/api/Filter/specialities'),
-          fetchWithAuth('http://localhost:5154/api/Filter/educational-programs')
+        const [disciplinesData, specialitiesData, educationalProgramsData] = await Promise.all([
+          apiService.get<any>('Filter/add-disciplines'), 
+          apiService.get<any>('Filter/specialities'),
+          apiService.get<any>('Filter/educational-programs')
         ])
-
-        const disciplinesData = await disciplinesRes.json()
-        const specialitiesData = await specialitiesRes.json()
-        const educationalProgramsData = await educationalProgramsRes.json()
 
         setAddDisciplines(disciplinesData || [])
         setSpecialities(specialitiesData || [])
@@ -195,7 +168,7 @@ export const AdminBindLoansPage = () => {
     }
 
     fetchInitialData()
-  }, [token])
+  }, [])
 
   const handleSearch = () => {
     setCurrentPage(1)
@@ -227,17 +200,9 @@ export const AdminBindLoansPage = () => {
     if (!selectedBindLoan?.idBindLoan) return
 
     try {
-      const response = await fetchWithAuth(
-        `http://localhost:5154/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
-        { method: 'DELETE' }
-      )
-
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Error deleting bind loan')
-      }
+      await apiService.delete<any>(`BindLoansMain/${selectedBindLoan.idBindLoan}`)
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Error deleting bind loan:', error)
     }
@@ -247,41 +212,24 @@ export const AdminBindLoansPage = () => {
     if (!selectedBindLoan) return
 
     try {
-      let response
       if (modalType === 'add') {
-        response = await fetchWithAuth('http://localhost:5154/api/BindLoansMain', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            addDisciplinesId: selectedBindLoan.addDisciplinesId,
-            educationalProgramId: selectedBindLoan.educationalProgramId
-          })
+        await apiService.post<any>('BindLoansMain', {
+          addDisciplinesId: selectedBindLoan.addDisciplinesId,
+          educationalProgramId: selectedBindLoan.educationalProgramId
         })
       } else {
-        response = await fetchWithAuth(
-          `http://localhost:5154/api/BindLoansMain/${selectedBindLoan.idBindLoan}`,
+        await apiService.put<any>(
+          `BindLoansMain/${selectedBindLoan.idBindLoan}`,
           {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              addDisciplinesId: selectedBindLoan.addDisciplinesId,
-              educationalProgramId: selectedBindLoan.educationalProgramId,
-              idBindLoan: selectedBindLoan.idBindLoan
-            })
+            addDisciplinesId: selectedBindLoan.addDisciplinesId,
+            educationalProgramId: selectedBindLoan.educationalProgramId,
+            idBindLoan: selectedBindLoan.idBindLoan
           }
         )
       }
 
-      if (response.ok) {
-        fetchFilteredData(currentPage)
-        setIsModalOpen(false)
-      } else {
-        console.error('Error saving bind loan')
-      }
+      fetchFilteredData(currentPage)
+      setIsModalOpen(false)
     } catch (error) {
       console.error('Error saving bind loan:', error)
     }

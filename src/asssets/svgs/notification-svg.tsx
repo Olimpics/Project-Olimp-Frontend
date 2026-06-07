@@ -1,6 +1,7 @@
 'use client'
 import * as React from "react";
 import { useRouter } from 'next/navigation';
+import { apiService } from '@/services/axiosService'
 
 interface Notification {
   idNotification: number;
@@ -36,9 +37,7 @@ const NotificationSvg: React.FC<NotificationSvgProps> = ({ notifications, ...pro
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`http://localhost:5154/api/Notification/${id}/mark-as-read`, {
-        method: 'POST',
-      });
+      await apiService.post<any>(`Notification/${id}/mark-as-read`);
       setLocalNotifications(prev => prev.filter(n => n.idNotification !== id));
     } catch (error) {
       console.error("Failed to mark as read", error);

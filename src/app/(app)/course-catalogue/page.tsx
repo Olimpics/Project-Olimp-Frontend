@@ -7,6 +7,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type StudentSelectedDiscipline = {
   idBindAddDisciplines: number
@@ -228,13 +229,9 @@ const CourseCataloguePage = () => {
           }
         }
 
-        const res = await fetch(
-          `http://localhost:5154/api/DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
+        const data = await apiService.get<any>(
+          `DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
         )
-        if (!res.ok) {
-          throw new Error('Не вдалося завантажити дані')
-        }
-        const data = await res.json()
         const list: StudentWithChoices[] = data.items || []
 
         const mapped: StudentRow[] = list.map((s) => {
@@ -297,16 +294,10 @@ const CourseCataloguePage = () => {
   useEffect(() => {
     const fetchFilters = async () => {
       try {
-        const [facRes, degRes, groupRes] = await Promise.all([
-          fetch('http://localhost:5154/api/Faculty'),
-          fetch('http://localhost:5154/api/EducationalDegree'),
-          fetch('http://localhost:5154/api/Filter/groups'),
-        ])
-
         const [facData, degData, groupData] = await Promise.all([
-          facRes.json(),
-          degRes.json(),
-          groupRes.json(),
+          apiService.get<any>('Faculty'),
+          apiService.get<any>('EducationalDegree'),
+          apiService.get<any>('Filter/groups'),
         ])
 
         setFaculties(facData)
@@ -390,13 +381,7 @@ const CourseCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('http://localhost:5154/api/DisciplineTabAdmin/UpdateChoice', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) throw new Error('Не вдалося зберегти зміни')
+      await apiService.put<any>('DisciplineTabAdmin/UpdateChoice', payload)
 
       setShowDeclineConfirm(false)
       setIsModalOpen(false)

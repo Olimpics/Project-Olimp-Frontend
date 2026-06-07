@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from 'next/navigation';
+import { apiService } from '@/services/axiosService'
 
 const FileUploadModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -120,17 +121,8 @@ const FileUploadModal = () => {
       formData.append("IsCreate", String(isChecked));
       formData.append("Limit", useLimit ? limit : "0"); // 0 означает "без лимита"
 
-      const response = await fetch('http://localhost:5154/api/Import', {
-        method: 'POST',
-        body: formData
-      });
+      const data = await apiService.post<any>('Import', formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Помилка завантаження файлу');
-      }
-
-      const data = await response.json();
       setSuccessMessage(data.message || 'Файл успішно завантажено!');
       sessionStorage.setItem('navigationState', JSON.stringify(data.result?.students));
 

@@ -5,6 +5,7 @@ import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
+import { apiService } from '@/services/axiosService'
 
 type Notification = {
   idNotification: number
@@ -60,8 +61,9 @@ export default function NotificationPage() {
       if (readFilter.includes('Прочитані')) query.append('isRead', 'true')
       if (readFilter.includes('Непрочитані')) query.append('isRead', 'false')
 
-      const res = await fetch(`http://localhost:5154/api/Notification/user/${student.userId}?${query.toString()}`)
-      const data = await res.json()
+      const data = await apiService.get<any>(
+        `Notification/user/${student.userId}?${query.toString()}`
+      )
 
       const updated = data.items.map((n: Notification) => {
         const date = new Date(n.createdAt)
