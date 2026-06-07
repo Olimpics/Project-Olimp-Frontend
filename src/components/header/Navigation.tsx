@@ -73,6 +73,7 @@ export const Navigation: FunctionComponent = () => {
   const [isArchiveScoresOpen, setIsArchiveScoresOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userId, setUserId] = useState<number | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [roleId, setRoleId] = useState<number | null>(null)
   const [faculties, setFaculties] = useState<Faculty[] | null>(null)
 
@@ -87,6 +88,7 @@ export const Navigation: FunctionComponent = () => {
       if (!studentProfileString) {
         setIsLoggedIn(false)
         setUserId(null)
+        setIsAdmin(false)
         setRoleId(null)
         setNotifications([])
         return
@@ -95,11 +97,13 @@ export const Navigation: FunctionComponent = () => {
       try {
         const studentProfile = JSON.parse(studentProfileString)
         const uid = studentProfile?.userId
+        const admin = studentProfile?.isAdmin
         const role = studentProfile?.roleId
 
         if (uid) {
           setIsLoggedIn(true)
           setUserId(uid)
+          setIsAdmin(!!admin)
           setRoleId(role ?? null)
 
           try {
@@ -180,7 +184,7 @@ export const Navigation: FunctionComponent = () => {
   }
 
   const links = isLoggedIn
-    ? roleId === 2
+    ? isAdmin
       ? headerLinksAdmin
       : headerLinks
     : headerLinksUnlogin
@@ -230,7 +234,7 @@ export const Navigation: FunctionComponent = () => {
                   )
                 }
 
-                if (isArchiveScores && roleId !== null) {
+                if (isArchiveScores && userId !== null) {
                   return (
                     <div key={el.name} className="flex flex-col">
                       <button
@@ -269,7 +273,7 @@ export const Navigation: FunctionComponent = () => {
                   )
                 }
 
-                if (isRatings && roleId !== null) {
+                if (isRatings && userId !== null) {
                   return (
                     <div key={el.name} className="flex flex-col">
                       <button
@@ -309,7 +313,7 @@ export const Navigation: FunctionComponent = () => {
                 }
 
                 if (isCatalogues) {
-                  if (roleId === 1) {
+                  if (!isAdmin) {
                     return (
                       <Link
                         key={el.link}
@@ -325,7 +329,7 @@ export const Navigation: FunctionComponent = () => {
                     )
                   }
 
-                  if (roleId === 2) {
+                  if (isAdmin) {
                     return (
                       <div key={el.name} className="flex flex-col">
                         <button

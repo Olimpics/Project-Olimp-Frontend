@@ -22,6 +22,7 @@ interface StudentProfile {
   speciality: string | null
   course: number | null
   permissions: Permission[]
+  isAdmin: boolean
 }
 
 export default function LoginPage() {

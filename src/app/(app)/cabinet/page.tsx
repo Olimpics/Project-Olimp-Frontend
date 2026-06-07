@@ -91,6 +91,7 @@ const mockGroups = ['ПЗ-21', 'ПЗ-22', 'КН-21']
 
 export default function Page() {
     const [roleId, setRoleId] = useState<number | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
     const [activeTab, setActiveTab] = useState<string>('')
 
     // Common Profile State
@@ -123,13 +124,14 @@ export default function Page() {
         try {
             const prof = JSON.parse(raw)
             setRoleId(prof.roleId || 1)
+            setIsAdmin(!!prof.isAdmin)
             setUserName(prof.name)
             setDegreeName(prof.nameFaculty)
             setSpecialty(prof.speciality || '')
             setCourse(prof.course || null)
             setDegreeLevel(prof.degreeLevel || '-')
 
-            if (prof.roleId === 2) {
+            if (prof.isAdmin) {
                 setActiveTab('student_grades')
             } else {
                 setActiveTab('schedule')
@@ -530,7 +532,7 @@ export default function Page() {
                     {userName || '---'}
                 </h2>
                 <p className="text-sm text-blue-600 mb-4 font-medium">
-                    {roleId === 2 ? 'Адміністратор' : 'Студент'}
+                    {isAdmin ? 'Адміністратор' : 'Студент'}
                 </p>
                 <div className="space-y-3 text-left border-t pt-4">
                     <div className="flex flex-col">
@@ -563,7 +565,7 @@ export default function Page() {
             </aside>
 
             <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow border border-gray-200">
-                {roleId === 2 ? renderAdminView() : renderStudentView()}
+                {isAdmin ? renderAdminView() : renderStudentView()}
             </main>
         </div>
     )
