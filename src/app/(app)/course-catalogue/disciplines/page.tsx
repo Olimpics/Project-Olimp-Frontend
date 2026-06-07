@@ -225,7 +225,7 @@ const DisciplineCataloguePage = () => {
         if (isFacultyFilter !== 'all') params.set('isFaculty', isFacultyFilter)
         if (statusFilter > 0) params.set('statusFilter', String(statusFilter))
 
-        const res = await fetch(`http://212.3.125.183:5154/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        const res = await fetch(`http://localhost:5154/api/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
         
         if (!res.ok) throw new Error('Не вдалося завантажити дані')
 
@@ -245,8 +245,8 @@ const DisciplineCataloguePage = () => {
   useEffect(() => {
     const init = async () => {
       const [fRes, dRes] = await Promise.all([
-        fetch('http://212.3.125.183:5154/api/Faculty'),
-        fetch('http://212.3.125.183:5154/api/EducationalDegree')
+        fetch('http://localhost:5154/api/Faculty'),
+        fetch('http://localhost:5154/api/EducationalDegree')
       ])
       setFaculties(await fRes.json())
       setDegrees(await dRes.json())
@@ -286,7 +286,7 @@ const DisciplineCataloguePage = () => {
       setModalError(null)
 
       const res = await fetch(
-        'http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateDisciplineStatus',
+        'http://localhost:5154/api/DisciplineTabAdmin/UpdateDisciplineStatus',
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

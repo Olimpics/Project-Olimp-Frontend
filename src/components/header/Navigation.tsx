@@ -104,7 +104,7 @@ export const Navigation: FunctionComponent = () => {
 
           try {
             const res = await fetch(
-              `http://212.3.125.183:5154/api/Notification/user/${uid}?isRead=false`
+              `http://localhost:5154/api/Notification/user/${uid}?isRead=false`
             )
             const data = await res.json()
 
@@ -138,7 +138,7 @@ export const Navigation: FunctionComponent = () => {
 
     const fetchFaculties = async () => {
       try {
-        const res = await fetch('http://212.3.125.183:5154/api/Faculty')
+        const res = await fetch('http://localhost:5154/api/Faculty')
         const data = await res.json()
 
         if (Array.isArray(data)) {

@@ -37,7 +37,7 @@ Project Olimp Frontend is a modern web application built with **Next.js 15 (App 
 - **Linting:** `npm run lint`
 
 ### API Integration
-The API base URL is currently hardcoded in `src/services/axiosService.ts` as `http://212.3.125.183:5154/api/`. Use `apiService` for making HTTP requests to ensure authentication headers are automatically attached.
+The API base URL is currently hardcoded in `src/services/axiosService.ts` as `http://localhost:5154/api/`. Use `apiService` for making HTTP requests to ensure authentication headers are automatically attached.
 
 ### Coding Conventions
 - **Functional Components:** Use functional components with TypeScript interfaces for props.

@@ -229,7 +229,7 @@ const CourseCataloguePage = () => {
         }
 
         const res = await fetch(
-          `http://212.3.125.183:5154/api/DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
+          `http://localhost:5154/api/DisciplineTabAdmin/GetStudentsWithDisciplineChoices?${params.toString()}`
         )
         if (!res.ok) {
           throw new Error('Не вдалося завантажити дані')
@@ -298,9 +298,9 @@ const CourseCataloguePage = () => {
     const fetchFilters = async () => {
       try {
         const [facRes, degRes, groupRes] = await Promise.all([
-          fetch('http://212.3.125.183:5154/api/Faculty'),
-          fetch('http://212.3.125.183:5154/api/EducationalDegree'),
-          fetch('http://212.3.125.183:5154/api/Filter/groups'),
+          fetch('http://localhost:5154/api/Faculty'),
+          fetch('http://localhost:5154/api/EducationalDegree'),
+          fetch('http://localhost:5154/api/Filter/groups'),
         ])
 
         const [facData, degData, groupData] = await Promise.all([
@@ -390,7 +390,7 @@ const CourseCataloguePage = () => {
         isConfirm: c.isConfirm,
       }))
 
-      const res = await fetch('http://212.3.125.183:5154/api/DisciplineTabAdmin/UpdateChoice', {
+      const res = await fetch('http://localhost:5154/api/DisciplineTabAdmin/UpdateChoice', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

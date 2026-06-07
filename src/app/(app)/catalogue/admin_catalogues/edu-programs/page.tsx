@@ -7,7 +7,7 @@ import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
-import { apiService } from '@/services/axiosService'
+import { apiService, setToken } from '@/services/axiosService'
 
 type EducationalProgram = {
   idEducationalProgram: number
@@ -38,11 +38,11 @@ interface Column {
 
 const sortingOptions = [
   { label: 'Код спеціальності (↑)', value: 0 },
-  { label: 'Код спеціальності (↓)', value: 3 },
-  { label: 'Назва навчальної програми (А-Я)', value: 1 },
-  { label: 'Назва навчальної програми (Я-А)', value: 2 },
-  { label: 'Кількість студентів (↑)', value: 3 },
-  { label: 'Кількість студенті (↓)', value: 4 },
+  { label: 'Код спеціальності (↓)', value: 1 },
+  { label: 'Назва навчальної програми (А-Я)', value: 2 },
+  { label: 'Назва навчальної програми (Я-А)', value: 3 },
+  { label: 'Кількість студентів (↑)', value: 4 },
+  { label: 'Кількість студентів (↓)', value: 5 },
 ]
 
 const Pagination: React.FC<{
