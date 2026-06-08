@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { getCookie } from './cookie-servies'
-import { AUTH_TOKEN } from '@/constants/cookies'
+import { AUTH_TOKEN, USER_PROFLE } from '@/constants/cookies'
 
 const BASE_URL = 'http://localhost:5154/api/'
 
@@ -15,12 +15,32 @@ const axiosInstance: AxiosInstance = axios.create({
 })
 
 axiosInstance.interceptors.request.use(
-  (config: any) => {
-    const token = authToken || getCookie(AUTH_TOKEN)
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
-      config.headers['Accept'] = '*/*'
+  (config) => {
+    let token = authToken || getCookie(AUTH_TOKEN)
+
+    if (!token) {
+      const profileStr = getCookie(USER_PROFLE)
+      if (profileStr) {
+        try {
+          const profile = JSON.parse(profileStr)
+          token = profile.token || profile.AuthToken
+        } catch (e) {
+          console.error('Failed to parse userProfile for token fallback', e)
+        }
+      }
     }
+
+    if (token && config.headers) {
+      // Use .set() for Axios 1.x headers or direct assignment for older versions/plain objects
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`)
+        config.headers.set('Accept', '*/*')
+      } else {
+        config.headers['Authorization'] = `Bearer ${token}`
+        config.headers['Accept'] = '*/*'
+      }
+    }
+    
     return config
   },
   (error) => Promise.reject(error)

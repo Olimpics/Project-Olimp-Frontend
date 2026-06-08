@@ -98,26 +98,29 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
   const handleEnroll = async (semester?: number) => {
     const profileStr = getCookie(USER_PROFLE);
     if (!profileStr) return;
-    const profile = JSON.parse(profileStr);
-
-    // If both semesters available and none selected yet
-    if (discipline?.isEven === 0 && semester === undefined) {
-      setIsSemesterModalOpen(true);
-      return;
-    }
-
-    // semester: 1 - paired (spring), 0 - unpaired (fall)
-    // discipline.isEven: 1 - unpaired, 2 - paired, 0 - both
-    const finalSemester = semester !== undefined ? semester : (discipline?.isEven === 2 ? 1 : 0);
-
-    setIsEnrolling(true);
+    
     try {
-      await apiService.post('/DisciplineTabStudent/SelectiveDisciplineBind', {
+      const profile = JSON.parse(profileStr);
+
+      // If both semesters available and none selected yet
+      if (discipline?.isEven === 0 && semester === undefined) {
+        setIsSemesterModalOpen(true);
+        return;
+      }
+
+      // semester: 1 - paired (spring), 0 - unpaired (fall)
+      // discipline.isEven: 1 - unpaired, 2 - paired, 0 - both
+      const finalSemester = semester !== undefined ? semester : (discipline?.isEven === 2 ? 1 : 0);
+
+      setIsEnrolling(true);
+      
+      await apiService.post('DisciplineTabStudent/SelectiveDisciplineBind', {
         studentId: profile.id.toString(),
         disciplineId: discipline?.idAddDisciplines.toString(),
         semestr: finalSemester,
         loans: 5
       });
+      
       // Refresh student count or show success
       const countData = await apiService.get<any>(`DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=1&pageSize=1`);
       setStudentCount(countData.totalItems || 0);
@@ -134,10 +137,10 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
   const handleRecalculate = async () => {
     const profileStr = getCookie(USER_PROFLE);
     if (!profileStr) return;
-    const profile = JSON.parse(profileStr);
 
     try {
-      await apiService.get(`/DisciplineTabStudent/RecalculateCache/${profile.id}`);
+      const profile = JSON.parse(profileStr);
+      await apiService.get(`DisciplineTabStudent/RecalculateCache/${profile.id}`);
       setIsErrorModalOpen(false);
       alert('Дані перераховано. Спробуйте записатись знову.');
     } catch (err: any) {

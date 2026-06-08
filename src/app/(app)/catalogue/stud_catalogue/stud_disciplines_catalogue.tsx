@@ -135,59 +135,64 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
   const fetchFilteredData = useCallback(
     async (page: number = currentPage) => {
       const studentRaw = getCookie(USER_PROFLE)
+      if (!studentRaw) return
 
-      const student = JSON.parse(studentRaw)
+      try {
+        const student = JSON.parse(studentRaw)
 
-      const query = new URLSearchParams({
-        studentId: student.id,
-        pageSize: '17',
-        page: page.toString(),
-        search: searchTerm,
-        sortOrder: selectedSorting.toString(),
-      })
+        const query = new URLSearchParams({
+          studentId: student.id,
+          pageSize: '17',
+          page: page.toString(),
+          search: searchTerm,
+          sortOrder: selectedSorting.toString(),
+        })
 
-      if (pendingFaculties.length > 0) {
-        query.append('faculties', pendingFaculties.join(','))
-      }
+        if (pendingFaculties.length > 0) {
+          query.append('faculties', pendingFaculties.join(','))
+        }
 
-      const degreeIds = eduDegrees
-        .filter((d) =>
-          pendingDegrees.includes(d.nameEducationalDegreec)
+        const degreeIds = eduDegrees
+          .filter((d) =>
+            pendingDegrees.includes(d.nameEducationalDegreec)
+          )
+          .map((d) => d.idEducationalDegree)
+
+        if (degreeIds.length > 0) {
+          query.append("degreeLevelIds", degreeIds.join(","))
+        }
+
+        if (pendingCourses.length > 0) {
+          query.append('courses', pendingCourses.join(','))
+        }
+
+        if (showOnlyAvailable.includes('Тільки доступні')) {
+          query.append('onlyAvailable', 'true')
+        }
+
+        if (isEvenSemester !== null) {
+          query.append('isEvenSemester', isEvenSemester.toString())
+        }
+
+        const data = await apiService.get<any>(
+          `DisciplineTabStudent/GetAllDisciplinesWithAvailability?${query.toString()}`
         )
-        .map((d) => d.idEducationalDegree)
 
-      if (degreeIds.length > 0) {
-        query.append("degreeLevelIds", degreeIds.join(","))
+        const formatted = (data.items || []).map((d: any) => ({
+          ...d,
+          studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
+          isEvenSemesterParsed: new Map<any, string>([
+            [1, "Парний"],
+            [0, "Непарний"],
+            [null, "Для всіх"],
+            [undefined, "Для всіх"]
+          ]).get(d.isEven) ?? "Невідомо",
+          }))
+        setDisciplines(formatted)
+        setTotalPages(data.totalPages || 1)
+      } catch (e) {
+        console.error('Failed to fetch filtered data', e)
       }
-
-      if (pendingCourses.length > 0) {
-        query.append('courses', pendingCourses.join(','))
-      }
-
-      if (showOnlyAvailable.includes('Тільки доступні')) {
-        query.append('onlyAvailable', 'true')
-      }
-
-      if (isEvenSemester !== null) {
-        query.append('isEvenSemester', isEvenSemester.toString())
-      }
-
-      const data = await apiService.get<any>(
-        `DisciplineTabStudent/GetAllDisciplinesWithAvailability?${query.toString()}`
-      )
-
-      const formatted = (data.items || []).map((d: any) => ({
-        ...d,
-        studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
-        isEvenSemesterParsed: new Map<any, string>([
-          [1, "Парний"],
-          [0, "Непарний"],
-          [null, "Для всіх"],
-          [undefined, "Для всіх"]
-        ]).get(d.isEven) ?? "Невідомо",
-        }))
-      setDisciplines(formatted)
-      setTotalPages(data.totalPages || 1)
     },
     [
       currentPage,

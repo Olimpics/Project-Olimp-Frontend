@@ -21,12 +21,20 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         );
     }
 
-    const userProfile = getCookie(USER_PROFLE);
-    const user = userProfile ? JSON.parse(userProfile) : {};
-    const isAdmin = user.isAdmin;
+    const userProfileString = getCookie(USER_PROFLE);
+    let isAdmin = false;
+
+    if (userProfileString) {
+        try {
+            const user = JSON.parse(userProfileString);
+            isAdmin = !!(user.isAdmin || user.IsAdmin);
+        } catch (e) {
+            console.error('Failed to parse user profile', e);
+        }
+    }
 
     if (isAdmin) {
         return <AdminDisciplinePage id={id} />;
     }
     return <StudentDisciplinePage id={id} />;
-}
+    }

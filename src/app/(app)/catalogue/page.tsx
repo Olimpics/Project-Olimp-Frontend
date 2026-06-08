@@ -7,6 +7,7 @@ import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { StudentDisciplinesCatalogue } from '@/app/(app)/catalogue/stud_catalogue/stud_disciplines_catalogue'
 import { AdminDisciplinesCatalogue } from '@/app/(app)/catalogue/admin_catalogues/disciplines/page'
+import { apiService } from '@/services/axiosService'
 
 const Page = () => {
   const searchParams = useSearchParams()
@@ -16,23 +17,28 @@ const Page = () => {
   const [user, setUser] = useState<any | null>(null)
 
   useEffect(() => {
-    const userProfileString = getCookie(USER_PROFLE)
-    if (userProfileString) {
+    const initializeUser = async () => {
       try {
-        const parsed = JSON.parse(userProfileString)
-        setUser(parsed)
+        const userProfileString = getCookie(USER_PROFLE)
+        if (userProfileString) {
+          const parsed = JSON.parse(userProfileString)
+          setUser(parsed)
+        }
       } catch (e) {
-        console.error('Failed to parse user profile', e)
+        console.error('Failed to initialize user', e)
       }
     }
+    initializeUser()
   }, [])
 
-  const roleId = user?.roleId?.toString() ?? null
-
   const renderContent = () => {
+    if (!user) return null
+
+    const isAdmin = user.isAdmin || user.IsAdmin
+
     if (activeTab === 1) {
-      if (roleId === '2') return <AdminDisciplinesCatalogue />
-      if (roleId === '1') return <StudentDisciplinesCatalogue />
+      if (isAdmin) return <AdminDisciplinesCatalogue />
+      return <StudentDisciplinesCatalogue />
     } 
 
     return <div>Невірна вкладка</div>

@@ -279,7 +279,7 @@ const CourseTableCataloguePage = () => {
           params.set(key, value)
         })
 
-        const data = await apiService.get<any>(`/DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
+        const data = await apiService.get<any>(`DisciplineTabAdmin/GetDisciplinesWithStatus?${params.toString()}`)
 
         setDisciplines(data.items || [])
         setTotalDisciplinesPages(data.totalPages || 1)
@@ -465,7 +465,7 @@ const CourseTableCataloguePage = () => {
     const fetchFilters = async () => {
       try {
         const [facData, degData, groupData] = await Promise.all([
-          apiService.get<Faculty[]>('/Faculty'),
+          apiService.get<Faculty[]>('Faculty'),
           apiService.get<EduDegree[]>('/EducationalDegree'),
           apiService.get<GroupItem[]>('/Filter/groups'),
         ])

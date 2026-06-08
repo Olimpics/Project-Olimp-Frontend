@@ -9,8 +9,6 @@ import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { Modal } from '@/components/ui/Modal'
 import { apiService } from '@/services/axiosService'
-import { router } from 'next/client';
-import Import_button from '@/app/(app)/catalogue/admin_catalogues/import_button';
 import FileUploadModal from '@/app/(app)/catalogue/admin_catalogues/import_button';
 
 type Discipline = {
@@ -103,6 +101,7 @@ const Pagination: React.FC<{
 }
 
 export const AdminDisciplinesCatalogue = React.memo(() => {
+    const router = useRouter()
     const [disciplines, setDisciplines] = useState<Discipline[]>([])
     const [faculties, setFaculties] = useState<Faculty[]>([])
     const [eduDegrees, setEduDegrees] = useState<EduDegree[]>([])
@@ -128,7 +127,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [modalType, setModalType] = useState<'edit' | 'delete' | null>(null)
     const [selectedDiscipline, setSelectedDiscipline] =
-        useState<Discipline>(null)
+        useState<Discipline | null>(null)
 
     const [isAddMainModalOpen, setIsAddMainModalOpen] = useState(false)
     const [isCopyPastModalOpen, setIsCopyPastModalOpen] = useState(false)
@@ -163,57 +162,62 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             setPastDisciplines([])
         }
     }, [selectedCatalogId, pastSearchTerm, fetchPastDisciplines])
+
     const fetchFilteredData = useCallback(
         async (page: number = currentPage) => {
             const studentRaw = getCookie(USER_PROFLE)
+            if (!studentRaw) return
 
-            const student = JSON.parse(studentRaw)
+            try {
+                const student = JSON.parse(studentRaw)
+                setRoleId(student.roleId)
 
-            setRoleId(student.roleId)
+                const query = new URLSearchParams({
+                    pageSize: '17',
+                    page: page.toString(),
+                    search: searchTerm,
+                    sortOrder: selectedSorting.toString(),
+                })
 
-            const query = new URLSearchParams({
-                pageSize: '17',
-                page: page.toString(),
-                search: searchTerm,
-                sortOrder: selectedSorting.toString(),
-            })
+                if (pendingFaculties.length > 0) {
+                    query.append('faculties', pendingFaculties.join(','))
+                }
 
-            if (pendingFaculties.length > 0) {
-                query.append('faculties', pendingFaculties.join(','))
-            }
+                const degreeIds = eduDegrees
+                    .filter((d) =>
+                        pendingDegrees.includes(d.nameEducationalDegreec)
+                    )
+                    .map((d) => d.idEducationalDegree)
 
-            const degreeIds = eduDegrees
-                .filter((d) =>
-                    pendingDegrees.includes(d.nameEducationalDegreec)
+                if (degreeIds.length > 0) {
+                    query.append('degreeLevelIds', degreeIds.join(','))
+                }
+
+                if (pendingCourses.length > 0) {
+                    query.append('courses', pendingCourses.join(','))
+                }
+
+                if (showOnlyAvailable.includes('Тільки доступні')) {
+                    query.append('onlyAvailable', 'true')
+                }
+
+                if (isEvenSemester !== null) {
+                    query.append('isEvenSemester', isEvenSemester.toString())
+                }
+
+                const data = await apiService.get<any>(
+                    `DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
                 )
-                .map((d) => d.idEducationalDegree)
 
-            if (degreeIds.length > 0) {
-                query.append('degreeLevelIds', degreeIds.join(','))
+                const formatted = (data.items || []).map((d: Discipline) => ({
+                    ...d,
+                    studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
+                }))
+                setDisciplines(formatted)
+                setTotalPages(data.totalPages || 1)
+            } catch (e) {
+                console.error('Failed to fetch filtered data', e)
             }
-
-            if (pendingCourses.length > 0) {
-                query.append('courses', pendingCourses.join(','))
-            }
-
-            if (showOnlyAvailable.includes('Тільки доступні')) {
-                query.append('onlyAvailable', 'true')
-            }
-
-            if (isEvenSemester !== null) {
-                query.append('isEvenSemester', isEvenSemester.toString())
-            }
-
-            const data = await apiService.get<any>(
-                `DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
-            )
-
-            const formatted = (data.items || []).map((d: Discipline) => ({
-                ...d,
-                studentCount: `${d.countOfPeople} / ${d.maxCountPeople}`,
-            }))
-            setDisciplines(formatted)
-            setTotalPages(data.totalPages || 1)
         },
         [
             currentPage,
@@ -227,20 +231,24 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             eduDegrees,
         ]
     )
-  const router = useRouter()
+
     useEffect(() => {
         fetchFilteredData(1)
     }, [selectedSorting])
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const facData = await apiService.get<any[]>('Faculty')
-            const eduData = await apiService.get<any[]>('EducationalDegree')
+            try {
+                const [facData, eduData] = await Promise.all([
+                    apiService.get<any[]>('Faculty'),
+                    apiService.get<any[]>('EducationalDegree')
+                ])
 
-            setFaculties(facData)
-            setEduDegrees(eduData)
-
-            fetchFilteredData(1)
+                setFaculties(facData)
+                setEduDegrees(eduData)
+            } catch (error) {
+                console.error('Error fetching initial data', error)
+            }
         }
 
         fetchInitialData()
