@@ -271,8 +271,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     }
     const columns: Column[] = [
         { header: 'Факультет', accessor: 'facultyAbbreviation' },
-        { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
-        { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
+        { header: 'Код дисципліни', accessor: 'codeSelectiveDisciplines' },
+        { header: 'Назва дисципліни', accessor: 'nameSelectiveDisciplines' },
         { header: 'Кількість студентів', accessor: 'studentCount' },
         { header: 'Рівень освіти', accessor: 'degreeLevelName' },
     ]
