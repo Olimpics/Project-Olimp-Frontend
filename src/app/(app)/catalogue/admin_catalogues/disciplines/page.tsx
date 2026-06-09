@@ -392,7 +392,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     <DataTable
                         onClick={(el)=>{
                           console.log(el)
-                          window.open("/discipline/"+el.idAddDisciplines) // НЕ ЧІПАТИ
+                          window.open("/discipline/"+el.idSelectiveDisciplines) // НЕ ЧІПАТИ
 
                         }}
                         onEdit={handleEdit}
