@@ -13,9 +13,9 @@ import { USER_PROFLE } from '@/constants/cookies';
 import { apiService } from '@/services/axiosService';
 
 interface DisciplineDetails {
-  idAddDisciplines: number;
-  nameAddDisciplines: string;
-  codeAddDisciplines: string;
+  idSelectiveDisciplines: number;
+  nameSelectiveDisciplines: string;
+  codeSelectiveDisciplines: string;
   facultyAbbreviation: string;
   facultyId: number;
   minCountPeople: number | null;
@@ -116,7 +116,7 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
       
       await apiService.post('DisciplineTabStudent/SelectiveDisciplineBind', {
         studentId: profile.id.toString(),
-        disciplineId: discipline?.idAddDisciplines.toString(),
+        disciplineId: discipline?.idSelectiveDisciplines.toString(),
         semestr: finalSemester,
         loans: 5
       });
@@ -156,8 +156,8 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
       <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
 
         <DisciplineHeader
-          code={discipline.codeAddDisciplines}
-          name={discipline.nameAddDisciplines}
+          code={discipline.codeSelectiveDisciplines}
+          name={discipline.nameSelectiveDisciplines}
           details={[
             { label: "Рівень", value: discipline.degreeLevelName },
             { label: "Курс", value: `${discipline.minCourse} курс` },

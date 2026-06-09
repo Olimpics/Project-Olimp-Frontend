@@ -46,9 +46,9 @@ const BRANCH_NAMES: Record<string, string> = {
 };
 
 interface DisciplineDetails {
-  idAddDisciplines: number;
-  nameAddDisciplines: string;
-  codeAddDisciplines: string;
+  idSelectiveDisciplines: number;
+  nameSelectiveDisciplines: string;
+  codeSelectiveDisciplines: string;
   facultyAbbreviation: string;
   facultyId: number;
   minCountPeople: number | null;
@@ -85,7 +85,7 @@ interface Student {
   educationLevel: string;
   isShort: number;
   faculty: string;
-  idBindAddDisciplines: number;
+  idBindSelectiveDisciplines: number;
 }
 
 interface AvailableStudent {
@@ -227,8 +227,8 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
       setSelectedSpecialties(data.recomendationSpeciality || []);
       setSelectedEduPrograms(data.recomendationEducationalProgram || []);
       setEditForm({
-        nameAddDisciplines: data.nameAddDisciplines,
-        codeAddDisciplines: data.codeAddDisciplines,
+        nameSelectiveDisciplines: data.nameSelectiveDisciplines,
+        codeSelectiveDisciplines: data.codeSelectiveDisciplines,
         facultyId: data.facultyId,
         minCountPeople: data.minCountPeople,
         maxCountPeople: data.maxCountPeople,
@@ -254,7 +254,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         },
         recomendationSpeciality: data.recomendationSpeciality || [],
         recomendationEducationalProgram: data.recomendationEducationalProgram || [],
-        idAddDisciplines: data.idAddDisciplines
+        idSelectiveDisciplines: data.idSelectiveDisciplines
       });
     } catch (err: any) {
       setError(err.message);
@@ -355,7 +355,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     try {
       await apiService.post('DisciplineTabStudent/AddDisciplineBind', {
         studentId,
-        disciplineId: discipline?.idAddDisciplines,
+        disciplineId: discipline?.idSelectiveDisciplines,
         semestr: discipline?.isEven === 2 ? 1 : 0,
         loans: 0
       });
@@ -413,7 +413,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             <div className="flex-1 space-y-4">
               <div className="flex gap-2">
                 <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-                  {discipline.codeAddDisciplines}
+                  {discipline.codeSelectiveDisciplines}
                 </span>
                 <span className="bg-[#10b981] px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   Набір відкрито
@@ -421,7 +421,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               </div>
 
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
-                {discipline.nameAddDisciplines}
+                {discipline.nameSelectiveDisciplines}
               </h1>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-blue-100">
@@ -646,10 +646,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
           <div className="px-6 py-6 space-y-6 max-h-[72vh] overflow-y-auto bg-white">
             <div className="space-y-5">
-              <ModalField label="Назва дисципліни" value={editForm?.nameAddDisciplines} onChange={v => updateForm('nameAddDisciplines', v)} />
+              <ModalField label="Назва дисципліни" value={editForm?.nameSelectiveDisciplines} onChange={v => updateForm('nameSelectiveDisciplines', v)} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ModalField label="Код" value={editForm?.codeAddDisciplines} onChange={v => updateForm('codeAddDisciplines', v)} />
+                <ModalField label="Код" value={editForm?.codeSelectiveDisciplines} onChange={v => updateForm('codeSelectiveDisciplines', v)} />
                 <ModalField label="Кредити" value="4 бали" onChange={() => { }} placeholder="4 бали" />
               </div>
 
@@ -827,7 +827,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                 setRejectError(null);
                 try {
                   await apiService.put('DisciplineTabAdmin/UpdateChoice', [{
-                    bindId: studentToReject.idBindAddDisciplines,
+                    bindId: studentToReject.idBindSelectiveDisciplines,
                     isConfirm: 0 // 0 means reject
                   }]);
                   setStudentToReject(null);
