@@ -256,6 +256,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         },
         recomendationSpeciality: data.recomendationSpeciality || [],
         recomendationEducationalProgram: data.recomendationEducationalProgram || [],
+        disciplineTopics: Array.isArray(data.disciplineTopics) ? data.disciplineTopics.join('\n') : data.disciplineTopics || '',
         idSelectiveDisciplines: data.idSelectiveDisciplines
       });
     } catch (err: any) {
@@ -681,6 +682,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                   <ModalField label="Передумови" type="textarea" value={editForm?.details?.content?.prerequisites} onChange={v => updateForm('details.content.prerequisites', v)} />
                   <ModalField label="Результати навчання" type="textarea" value={editForm?.details?.content?.resultEducation} onChange={v => updateForm('details.content.resultEducation', v)} />
                   <ModalField label="Практичне застосування" type="textarea" value={editForm?.details?.content?.usingIrl} onChange={v => updateForm('details.content.usingIrl', v)} />
+                  <ModalField label="Перелік тем з дисципліни" type="textarea" value={editForm?.disciplineTopics} onChange={v => updateForm('disciplineTopics', v)} />
                   <ModalField label="Вимоги" type="textarea" value={`Мінімальна кількість студентів: ${editForm?.minCountPeople || 0}. Рекомендована попередня підготовка.`} onChange={() => {}} />
                 </div>
               </div>
