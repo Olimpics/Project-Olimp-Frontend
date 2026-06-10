@@ -408,6 +408,139 @@ export function SearchableSelect({
   );
 }
 
+// ─── InteractiveTopicsInput (for Edit Modal) ───
+export function InteractiveTopicsInput({
+  label, topics, onChange, required = false
+}: {
+  label: string;
+  topics: string[];
+  onChange: (topics: string[]) => void;
+  required?: boolean;
+}) {
+  const [inputValue, setInputValue] = React.useState('');
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [editValue, setEditValue] = React.useState('');
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ';' || e.key === '.') {
+      e.preventDefault();
+      addTopic(inputValue);
+    }
+  };
+
+  const addTopic = (value: string) => {
+    const trimmed = value.trim().replace(/[.;]$/, '');
+    if (trimmed) {
+      // Allow duplicates if they are actually different (e.g. topic numbers)
+      onChange([...topics, trimmed]);
+      setInputValue('');
+    }
+  };
+
+  const removeTopic = (index: number) => {
+    onChange(topics.filter((_, i) => i !== index));
+    if (editingIndex === index) setEditingIndex(null);
+  };
+
+  const startEditing = (index: number) => {
+    setEditingIndex(index);
+    setEditValue(topics[index]);
+  };
+
+  const saveEdit = () => {
+    if (editingIndex !== null) {
+      const newTopics = [...topics];
+      const trimmed = editValue.trim().replace(/[.;]$/, '');
+      if (trimmed) {
+        newTopics[editingIndex] = trimmed;
+        onChange(newTopics);
+      } else {
+        // If cleared, remove it
+        newTopics.splice(editingIndex, 1);
+        onChange(newTopics);
+      }
+      setEditingIndex(null);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit();
+    }
+    if (e.key === 'Escape') {
+      setEditingIndex(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      <div className="flex flex-wrap gap-2 p-3 bg-[#f1f3f7] rounded-xl border border-transparent focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white focus-within:border-blue-100 transition-all min-h-[120px] align-top">
+        {topics.map((topic, idx) => (
+          <div key={idx} className="flex items-center gap-2 bg-white border border-blue-100 pl-3 pr-2 py-1.5 rounded-xl shadow-sm animate-fade-in group">
+            <span className="text-[10px] font-bold text-[#1e50f0]/50 whitespace-nowrap uppercase tracking-tighter">Тема {idx + 1}</span>
+            {editingIndex === idx ? (
+              <input
+                autoFocus
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={saveEdit}
+                className="text-sm font-semibold text-gray-900 bg-blue-50/50 rounded px-1 outline-none min-w-[100px]"
+              />
+            ) : (
+              <span
+                onClick={() => startEditing(idx)}
+                className="text-sm font-semibold text-gray-900 leading-tight cursor-text hover:text-[#1e50f0] transition-colors"
+              >
+                {topic}
+              </span>
+            )}
+            <div className="flex items-center gap-1 ml-1">
+              {editingIndex !== idx && (
+                <button
+                  onClick={() => startEditing(idx)}
+                  className="text-gray-300 hover:text-blue-500 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={() => removeTopic(idx)}
+                className="text-gray-300 hover:text-red-500 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ))}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => addTopic(inputValue)}
+          placeholder={topics.length === 0 ? "Введіть тему та натисніть Enter, крапку або крапку з комою..." : "Додати ще тему..."}
+          className="flex-1 min-w-[250px] bg-transparent outline-none text-sm font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-medium py-1.5 px-1"
+        />
+      </div>
+      <div className="flex justify-between items-center px-1 mt-1">
+        <p className="text-[10px] text-gray-400 font-medium">Використовуйте Enter, крапку (.) або крапку з комою (;), щоб розділити теми. Натисніть на текст, щоб змінити його.</p>
+        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">{topics.length} тем</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Discipline Card/Block ───
 export const DisciplineBlock = ({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) => (
   <div className={`bg-white rounded-[32px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-10 flex flex-col ${className}`}>
