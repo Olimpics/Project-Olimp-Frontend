@@ -281,7 +281,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             prerequisites: '',
             language: 'Українська',
             provision: '',
-            disciplineTopics: '',
+            determination: '',
             whyInterestingDetermination: '',
             resultEducation: '',
             usingIrl: '',
@@ -291,7 +291,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         },
         recomendationSpeciality: [],
         recomendationEducationalProgram: [],
-        disciplineTopics: '',
+        disciplineTopics: [],
         idSelectiveDisciplines: 0
       });
       setIsEditModalOpen(true);
@@ -323,7 +323,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             prerequisites: data.prerequisites,
             language: data.language,
             provision: data.additionaLiterature,
-            disciplineTopics: data.determination,
+            determination: data.determination,
             whyInterestingDetermination: data.whyInterestingDetermination,
             resultEducation: data.resultEducation,
             usingIrl: data.usingIrl,
@@ -333,7 +333,9 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         },
         recomendationSpeciality: data.recomendationSpeciality || [],
         recomendationEducationalProgram: data.recomendationEducationalProgram || [],
-        disciplineTopics: Array.isArray(data.disciplineTopics) ? data.disciplineTopics : [],
+        disciplineTopics: Array.isArray(data.disciplineTopics) 
+          ? data.disciplineTopics 
+          : (data.disciplineTopics ? (data.disciplineTopics as string).split('\n').filter(Boolean) : []),
         idSelectiveDisciplines: data.idSelectiveDisciplines
       });
     } catch (err: any) {
@@ -435,6 +437,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             prerequisites: editForm.details.content.prerequisites,
             language: editForm.details.content.language,
             provision: editForm.details.content.provision,
+            determination: editForm.details.content.determination,
             disciplineTopics: Array.isArray(editForm.disciplineTopics) ? editForm.disciplineTopics : [],
             changedTopicIndices: [],
             whyInterestingDetermination: editForm.details.content.whyInterestingDetermination,
@@ -824,7 +827,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               <div className="pt-5 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Опис дисципліни</h3>
                 <div className="space-y-4">
-                  <ModalField label="Визначення" type="textarea" value={editForm?.details?.content?.disciplineTopics} onChange={v => updateForm('details.content.disciplineTopics', v)} />
+                  <ModalField label="Визначення" type="textarea" value={editForm?.details?.content?.determination} onChange={v => updateForm('details.content.determination', v)} />
                   <ModalField label="Чому цікаво" type="textarea" value={editForm?.details?.content?.whyInterestingDetermination} onChange={v => updateForm('details.content.whyInterestingDetermination', v)} />
                   <ModalField label="Передумови" type="textarea" value={editForm?.details?.content?.prerequisites} onChange={v => updateForm('details.content.prerequisites', v)} />
                   <ModalField label="Результати навчання" type="textarea" value={editForm?.details?.content?.resultEducation} onChange={v => updateForm('details.content.resultEducation', v)} />
