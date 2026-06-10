@@ -139,7 +139,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     const fetchCatalogs = async () => {
         try {
-            const data = await apiService.get<any[]>('Parameters/CatalogYears')
+            const data = await apiService.get<any[]>('Parameters/CatalogYearsSelective')
             setCatalogYears(data)
         } catch (error) {
             console.error('Failed to fetch catalogs', error)

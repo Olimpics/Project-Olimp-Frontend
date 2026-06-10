@@ -366,7 +366,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         apiService.get<any>('Filter/educational-programs').catch(() => ({ items: [] })),
         apiService.get<any>('Department?page=1&pageSize=500&sortOrder=0').catch(() => ({ items: [] })),
         apiService.get<any>('EducationalDegree').catch(() => []),
-        apiService.get<any>('Parameters/CatalogYears').catch(() => [])
+        apiService.get<any>('Parameters/CatalogYearsSelective').catch(() => [])
       ]);
 
       const normalize = (data: any) => {
