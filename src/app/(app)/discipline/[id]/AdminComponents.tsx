@@ -316,9 +316,17 @@ export const DisciplineBlock = ({ title, children, className = "" }: { title: st
 );
 
 // ─── Discipline Topics/Themes Block ───
-export const DisciplineTopicsBlock = ({ topics }: { topics: string }) => {
-  if (!topics) return <p className="text-gray-400 italic font-medium">Не вказано</p>;
-  const lines = topics.split('\n').map(line => line.trim()).filter(Boolean);
+export const DisciplineTopicsBlock = ({ topics }: { topics: string | string[] }) => {
+  if (!topics || (Array.isArray(topics) && topics.length === 0)) {
+    return <p className="text-gray-400 italic font-medium">Не вказано</p>;
+  }
+
+  const lines = Array.isArray(topics) 
+    ? topics.map(line => line.trim()).filter(Boolean)
+    : topics.split('\n').map(line => line.trim()).filter(Boolean);
+
+  if (lines.length === 0) return <p className="text-gray-400 italic font-medium">Не вказано</p>;
+
   return (
     <div className="space-y-3">
       {lines.map((line, index) => {

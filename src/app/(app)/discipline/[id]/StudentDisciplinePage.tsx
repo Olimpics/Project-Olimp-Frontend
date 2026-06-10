@@ -32,6 +32,7 @@ interface DisciplineDetails {
   prerequisites: string;
   language: string;
   determination: string;
+  disciplineTopics: string | string[];
   whyInterestingDetermination: string;
   resultEducation: string;
   usingIrl: string;
@@ -229,7 +230,7 @@ export default function StudentDisciplinePage({ id }: { id: string }) {
         </div>
 
         <DisciplineBlock title="Перелік тем з дисципліни">
-          <DisciplineTopicsBlock topics={discipline.determination} />
+          <DisciplineTopicsBlock topics={discipline.disciplineTopics} />
         </DisciplineBlock>
 
         <DisciplineBlock title="Спеціальності">
