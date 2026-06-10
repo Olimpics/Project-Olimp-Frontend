@@ -798,7 +798,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               <ModalField label="Назва дисципліни" value={editForm?.nameSelectiveDisciplines} onChange={v => updateForm('nameSelectiveDisciplines', v)} required={true} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ModalField label="Код" value={editForm?.codeSelectiveDisciplines} onChange={v => updateForm('codeSelectiveDisciplines', v)} required={true} />
+                <ModalField label="Код" value={editForm?.codeSelectiveDisciplines} onChange={v => updateForm('codeSelectiveDisciplines', v)} required={false} />
                 <ModalField label="Кредити" value="4 бали" onChange={() => { }} placeholder="4 бали" />
               </div>
 
