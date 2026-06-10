@@ -271,11 +271,11 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         maxCourse: 4,
         isEven: 1,
         degreeLevelId: '',
+        departmentId: '', // Moved to top level
         catalogId: '', // Should be filled from selection if possible
         approvalStatusId: '', // Default or selection
         typeOfControlId: '', // Default or selection
         details: {
-          departmentId: '',
           content: {
             nameSelectiveDisciplinesEng: '',
             teacher: '',
@@ -316,8 +316,8 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         maxCourse: data.maxCourse,
         isEven: data.isEven,
         degreeLevelId: data.degreeLevelId,
+        departmentId: data.departmentId, // Moved to top level
         details: {
-          departmentId: data.departmentId,
           content: {
             nameSelectiveDisciplinesEng: '', // Optional
             teacher: data.teacher,
@@ -451,10 +451,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         isEven: editForm.isEven === 2, // true for Even (2), false for Odd (1)
         degreeLevelId: editForm.degreeLevelId,
         catalogId: editForm.catalogId || "00000000-0000-0000-0000-000000000000",
+        departmentId: editForm.departmentId || "00000000-0000-0000-0000-000000000000",
         approvalStatusId: editForm.approvalStatusId || "00000000-0000-0000-0000-000000000000",
         typeOfControlId: editForm.typeOfControlId || "00000000-0000-0000-0000-000000000000",
         details: {
-          departmentId: editForm.details.departmentId,
           content: {
             nameSelectiveDisciplinesEng: editForm.details.content.nameSelectiveDisciplinesEng || '',
             teacher: editForm.details.content.teacher,
@@ -838,7 +838,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                 <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Основна інформація</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
                   <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty || f.id, label: f.abbreviation || f.nameFaculty || f.name }))} onChange={v => updateForm('facultyId', v)} required={true} />
-                  <SearchableSelect label="Кафедра" value={editForm?.details?.departmentId} options={departments.map(d => ({ value: d.idDepartment || d.id, label: d.nameDepartment || d.name }))} onChange={v => updateForm('details.departmentId', v)} isLoading={modalDataLoading} required={true} />
+                  <SearchableSelect label="Кафедра" value={editForm?.departmentId} options={departments.map(d => ({ value: d.idDepartment || d.id, label: d.nameDepartment || d.name }))} onChange={v => updateForm('departmentId', v)} isLoading={modalDataLoading} required={true} />
                   <ModalField label="Рівень освіти" value={editForm?.degreeLevelId} type="select" options={degrees.map(d => ({ value: d.idEducationalDegree || d.id, label: d.nameEducationalDegree || d.name }))} onChange={v => updateForm('degreeLevelId', v)} required={true} />
                   <ModalField label="Каталог (Рік)" value={editForm?.catalogId} type="select" options={catalogYears.map(cat => ({ value: cat.idCatalogYear || cat.id, label: cat.nameCatalog || cat.name || cat.year }))} onChange={v => updateForm('catalogId', v)} required={true} />
                   <ModalField label="Викладач" value={editForm?.details?.content?.teacher} onChange={v => updateForm('details.content.teacher', v)} required={true} />
