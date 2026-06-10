@@ -8,6 +8,7 @@ import {
   DisciplineBlock,
   InfoBlock,
   ModalField,
+  SearchableSelect,
   DisciplineTopicsBlock,
   DisciplineSpecialtiesBlock
 } from './AdminComponents';
@@ -46,19 +47,19 @@ const BRANCH_NAMES: Record<string, string> = {
 };
 
 interface DisciplineDetails {
-  idSelectiveDisciplines: number;
+  idSelectiveDisciplines: any;
   nameSelectiveDisciplines: string;
   codeSelectiveDisciplines: string;
   facultyAbbreviation: string;
-  facultyId: number;
+  facultyId: string | number;
   minCountPeople: number | null;
   maxCountPeople: number | null;
   minCourse: number | null;
   maxCourse: number | null;
   isEven: number;
   degreeLevelName: string;
-  degreeLevelId: number;
-  departmentId: number;
+  degreeLevelId: string | number;
+  departmentId: string | number;
   departmentName: string;
   teacher: string;
   recomend: string;
@@ -73,8 +74,8 @@ interface DisciplineDetails {
   typesOfTraining: string;
   typeOfControll: string;
   recommended: string | null;
-  recomendationSpeciality: number[];
-  recomendationEducationalProgram: number[];
+  recomendationSpeciality: any[];
+  recomendationEducationalProgram: any[];
 }
 
 interface Student {
@@ -132,6 +133,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const [degrees, setDegrees] = useState<any[]>([]);
   const [specialties, setSpecialties] = useState<any[]>([]);
   const [eduPrograms, setEduPrograms] = useState<any[]>([]);
+  const [catalogYears, setCatalogYears] = useState<any[]>([]);
   const [modalDataLoading, setModalDataLoading] = useState(false);
 
   const [selectedSpecialties, setSelectedSpecialties] = useState<number[]>([]);
@@ -222,7 +224,80 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   // Comparison Placeholder Modal State
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
-  const fetchDiscipline = async () => {
+  const fetchDiscipline = useCallback(async () => {
+    if (id === 'new') {
+      const emptyDiscipline: DisciplineDetails = {
+        idSelectiveDisciplines: 0,
+        nameSelectiveDisciplines: '',
+        codeSelectiveDisciplines: '',
+        facultyAbbreviation: '',
+        facultyId: 0,
+        minCountPeople: 0,
+        maxCountPeople: 0,
+        minCourse: 1,
+        maxCourse: 4,
+        isEven: 1,
+        degreeLevelName: '',
+        degreeLevelId: 0,
+        departmentId: 0,
+        departmentName: '',
+        teacher: '',
+        recomend: '',
+        prerequisites: '',
+        language: 'Українська',
+        determination: '',
+        whyInterestingDetermination: '',
+        resultEducation: '',
+        usingIrl: '',
+        additionaLiterature: '',
+        typesOfTraining: 'Лекції, семінарські заняття',
+        typeOfControll: 'Залік',
+        recommended: null,
+        recomendationSpeciality: [],
+        recomendationEducationalProgram: [],
+        disciplineTopics: []
+      };
+      setDiscipline(emptyDiscipline);
+      setEditForm({
+        nameSelectiveDisciplines: '',
+        codeSelectiveDisciplines: '',
+        facultyId: '',
+        minCountPeople: 0,
+        maxCountPeople: 0,
+        minCourse: 1,
+        maxCourse: 4,
+        isEven: 1,
+        degreeLevelId: '',
+        catalogId: '', // Should be filled from selection if possible
+        approvalStatusId: '', // Default or selection
+        typeOfControlId: '', // Default or selection
+        details: {
+          departmentId: '',
+          content: {
+            nameSelectiveDisciplinesEng: '',
+            teacher: '',
+            recomend: '',
+            prerequisites: '',
+            language: 'Українська',
+            provision: '',
+            disciplineTopics: '',
+            whyInterestingDetermination: '',
+            resultEducation: '',
+            usingIrl: '',
+            typesOfTraining: 'Лекції, семінарські заняття',
+            typeOfControll: 'Залік'
+          }
+        },
+        recomendationSpeciality: [],
+        recomendationEducationalProgram: [],
+        disciplineTopics: '',
+        idSelectiveDisciplines: 0
+      });
+      setIsEditModalOpen(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await apiService.get<DisciplineDetails>(`DisciplineTabStudent/GetDisciplineWithDetails/${id}?t=${Date.now()}`);
       setDiscipline(data);
@@ -241,6 +316,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         details: {
           departmentId: data.departmentId,
           content: {
+            nameSelectiveDisciplinesEng: '', // Optional
             teacher: data.teacher,
             recomend: data.recomend,
             prerequisites: data.prerequisites,
@@ -264,9 +340,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const fetchStudents = useCallback(async (page: number) => {
+    if (id === 'new') return;
     setStudentsLoading(true);
     try {
       const data = await apiService.get<StudentResponse>(`DisciplineTabAdmin/GetStudentsBySelectiveDiscipline?DisciplineId=${id}&page=${page}&pageSize=20`);
@@ -280,34 +357,50 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     }
   }, [id]);
 
-  const fetchFilters = async () => {
+  const fetchFilters = useCallback(async () => {
     setModalDataLoading(true);
     try {
-      const [facData, specData, eduData, depData, degData] = await Promise.all([
-        apiService.get<any[]>('Faculty'),
-        apiService.get<any[]>('Filter/specialities'),
-        apiService.get<any>('Filter/educational-programs'),
-        apiService.get<any>('Department?page=1&pageSize=500&sortOrder=0'),
-        apiService.get<any[]>('EducationalDegree')
+      const [facData, specData, eduData, depData, degData, catData] = await Promise.all([
+        apiService.get<any>('Faculty').catch(() => []),
+        apiService.get<any>('Filter/specialities').catch(() => []),
+        apiService.get<any>('Filter/educational-programs').catch(() => ({ items: [] })),
+        apiService.get<any>('Department?page=1&pageSize=500&sortOrder=0').catch(() => ({ items: [] })),
+        apiService.get<any>('EducationalDegree').catch(() => []),
+        apiService.get<any>('Parameters/CatalogYears').catch(() => [])
       ]);
 
-      setFaculties(Array.isArray(facData) ? facData : []);
-      setSpecialties(Array.isArray(specData) ? specData : []);
-      setEduPrograms(Array.isArray(eduData) ? eduData : Array.isArray(eduData?.items) ? eduData.items : []);
-      setDepartments(depData?.items || []);
-      setDegrees(Array.isArray(degData) ? degData : []);
+      const normalize = (data: any) => {
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') {
+          return data.items || data.faculties || data.departments || data.degrees || [];
+        }
+        return [];
+      };
+
+      setFaculties(normalize(facData));
+      setSpecialties(normalize(specData));
+      setEduPrograms(normalize(eduData));
+      setDepartments(normalize(depData));
+      setDegrees(normalize(degData));
+      setCatalogYears(normalize(catData));
+      
+      // If new, try to set some default catalogId if available
+      const cats = normalize(catData);
+      if (id === 'new' && cats.length > 0) {
+        setEditForm((prev: any) => ({ ...prev, catalogId: cats[0].idCatalogYear }));
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error in fetchFilters:', err);
     } finally {
       setModalDataLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchDiscipline();
     fetchFilters();
     fetchStudents(1);
-  }, [id, fetchStudents]);
+  }, [fetchDiscipline, fetchFilters, fetchStudents]);
 
   useEffect(() => {
     if (activeTab === 'students') fetchStudents(currentPage);
@@ -315,16 +408,67 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   const handleUpdate = async () => {
     try {
+      // Prepare payload to match the required structure
       const payload = {
-        ...editForm,
+        nameSelectiveDisciplines: editForm.nameSelectiveDisciplines,
+        codeSelectiveDisciplines: editForm.codeSelectiveDisciplines,
+        facultyId: editForm.facultyId,
+        minCountPeople: editForm.minCountPeople || 0,
+        maxCountPeople: editForm.maxCountPeople || 0,
+        courses: [editForm.minCourse, editForm.maxCourse].filter(Boolean),
+        isEven: editForm.isEven === 2, // true for Even (2), false for Odd (1)
+        degreeLevelId: editForm.degreeLevelId,
+        catalogId: editForm.catalogId || "00000000-0000-0000-0000-000000000000",
+        approvalStatusId: editForm.approvalStatusId || "00000000-0000-0000-0000-000000000000",
+        typeOfControlId: editForm.typeOfControlId || "00000000-0000-0000-0000-000000000000",
+        details: {
+          departmentId: editForm.details.departmentId,
+          content: {
+            nameSelectiveDisciplinesEng: editForm.details.content.nameSelectiveDisciplinesEng || '',
+            teacher: editForm.details.content.teacher,
+            recommended: {
+              branches: [],
+              specialties: [],
+              EducationalPrograms: []
+            },
+            prerequisites: editForm.details.content.prerequisites,
+            language: editForm.details.content.language,
+            provision: editForm.details.content.provision,
+            disciplineTopics: (editForm.disciplineTopics || '').split('\n').filter((t: string) => t.trim() !== ''),
+            changedTopicIndices: [],
+            whyInterestingDetermination: editForm.details.content.whyInterestingDetermination,
+            resultEducation: editForm.details.content.resultEducation,
+            usingIrl: editForm.details.content.usingIrl,
+            typesOfTraining: editForm.details.content.typesOfTraining,
+            typeOfControl: editForm.details.content.typeOfControll
+          }
+        },
+        adminIds: [],
+        recomendationBranches: selectedBranches,
         recomendationSpeciality: selectedSpecialties,
         recomendationEducationalProgram: selectedEduPrograms
       };
-      await apiService.put(`DisciplineTabStudent/UpdateDisciplineWithDetails/${id}`, payload);
-      setIsEditModalOpen(false);
-      fetchDiscipline();
+
+      if (id === 'new') {
+        const response = await apiService.post<any>('DisciplineTabAdmin/CreateDisciplineWithDetails', payload);
+        setIsEditModalOpen(false);
+        // After creation, navigate to the new discipline's page
+        if (response && (response.id || response.idSelectiveDisciplines)) {
+          window.location.href = `/discipline/${response.id || response.idSelectiveDisciplines}`;
+        } else {
+          fetchDiscipline();
+        }
+      } else {
+        await apiService.put(`DisciplineTabAdmin/UpdateDisciplineWithDetails`, {
+          ...payload,
+          idSelectiveDisciplines: id
+        });
+        setIsEditModalOpen(false);
+        fetchDiscipline();
+      }
     } catch (err) {
       console.error(err);
+      alert('Помилка при збереженні дисципліни');
     }
   };
 
@@ -660,8 +804,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
               <div className="pt-5 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Основна інформація</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
-                  <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty, label: f.abbreviation || f.nameFaculty }))} onChange={v => updateForm('facultyId', Number(v))} />
-                  <ModalField label="Кафедра" value={editForm?.details?.departmentId} type="select" options={departments.map(d => ({ value: d.idDepartment, label: d.nameDepartment }))} onChange={v => updateForm('details.departmentId', Number(v))} />
+                  <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty || f.id, label: f.abbreviation || f.nameFaculty || f.name }))} onChange={v => updateForm('facultyId', v)} />
+                  <SearchableSelect label="Кафедра" value={editForm?.details?.departmentId} options={departments.map(d => ({ value: d.idDepartment || d.id, label: d.nameDepartment || d.name }))} onChange={v => updateForm('details.departmentId', v)} isLoading={modalDataLoading} />
+                  <ModalField label="Рівень освіти" value={editForm?.degreeLevelId} type="select" options={degrees.map(d => ({ value: d.idEducationalDegree || d.id, label: d.nameEducationalDegree || d.name }))} onChange={v => updateForm('degreeLevelId', v)} />
+                  <ModalField label="Каталог (Рік)" value={editForm?.catalogId} type="select" options={catalogYears.map(cat => ({ value: cat.idCatalogYear || cat.id, label: cat.nameCatalog || cat.name || cat.year }))} onChange={v => updateForm('catalogId', v)} />
                   <ModalField label="Викладач" value={editForm?.details?.content?.teacher} onChange={v => updateForm('details.content.teacher', v)} />
                   <ModalField label="Мова викладання" value={editForm?.details?.content?.language} type="select"
                     options={[{ value: 'Українська', label: 'Українська' }, { value: 'Англійська', label: 'Англійська' }, { value: 'Німецька', label: 'Німецька' }]}

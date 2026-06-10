@@ -625,8 +625,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                 <div className="p-4 flex flex-col gap-3 text-center">
                     <button 
                         onClick={() => {
-                            console.log("Create a new one clicked")
                             setIsAddMainModalOpen(false)
+                            router.push('/discipline/new')
                         }}
                         className="w-full py-3 bg-blue-600 text-white rounded-md text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
                     >

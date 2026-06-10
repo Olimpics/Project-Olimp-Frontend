@@ -293,6 +293,7 @@ export function ModalField({
       ) : type === 'select' && options ? (
         <div className="relative">
           <select value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`${baseClass} appearance-none cursor-pointer pr-10`}>
+            <option value="">Оберіть...</option>
             {options.map((o, i) => <option key={`${o.value}-${i}`} value={o.value}>{o.label}</option>)}
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -302,6 +303,98 @@ export function ModalField({
       ) : (
         <input type={type === 'number' ? 'number' : 'text'} value={value ?? ''} onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder} className={baseClass} />
+      )}
+    </div>
+  );
+}
+
+// ─── SearchableSelect (for Edit Modal) ───
+export function SearchableSelect({
+  label, value, onChange, options, placeholder, isLoading
+}: {
+  label: string; value: string | number | null;
+  onChange: (val: string) => void;
+  options: { value: string | number; label: string }[];
+  placeholder?: string;
+  isLoading?: boolean;
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => o.value === value);
+  const filteredOptions = options.filter(o =>
+    o.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5 relative" ref={containerRef}>
+      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">{label}</label>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3.5 py-2.5 bg-[#f1f3f7] rounded-xl border border-transparent cursor-pointer flex justify-between items-center transition-all hover:bg-[#e8eaef]"
+      >
+        <span className={`text-sm font-semibold truncate ${selectedOption ? 'text-gray-900' : 'text-gray-400'}`}>
+          {selectedOption ? selectedOption.label : placeholder || 'Оберіть...'}
+        </span>
+        <svg className={`w-4.5 h-4.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden flex flex-col max-h-[300px]">
+          <div className="p-3 bg-gray-50/50 border-b border-gray-100">
+            <div className="relative">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Пошук..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              />
+              <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600" />
+              </div>
+            ) : filteredOptions.length > 0 ? (
+              filteredOptions.map((opt, i) => (
+                <div
+                  key={`${opt.value}-${i}`}
+                  onClick={() => {
+                    onChange(String(opt.value));
+                    setIsOpen(false);
+                    setSearchTerm('');
+                  }}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all ${
+                    value === opt.value ? 'bg-blue-50 text-[#1e50f0] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-400 italic">Нічого не знайдено</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
