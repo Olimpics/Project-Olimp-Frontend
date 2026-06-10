@@ -794,21 +794,21 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
           <div className="px-6 py-6 space-y-6 max-h-[72vh] overflow-y-auto bg-white">
             <div className="space-y-5">
-              <ModalField label="Назва дисципліни" value={editForm?.nameSelectiveDisciplines} onChange={v => updateForm('nameSelectiveDisciplines', v)} />
+              <ModalField label="Назва дисципліни" value={editForm?.nameSelectiveDisciplines} onChange={v => updateForm('nameSelectiveDisciplines', v)} required={true} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ModalField label="Код" value={editForm?.codeSelectiveDisciplines} onChange={v => updateForm('codeSelectiveDisciplines', v)} />
+                <ModalField label="Код" value={editForm?.codeSelectiveDisciplines} onChange={v => updateForm('codeSelectiveDisciplines', v)} required={true} />
                 <ModalField label="Кредити" value="4 бали" onChange={() => { }} placeholder="4 бали" />
               </div>
 
               <div className="pt-5 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-[0.12em]">Основна інформація</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
-                  <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty || f.id, label: f.abbreviation || f.nameFaculty || f.name }))} onChange={v => updateForm('facultyId', v)} />
-                  <SearchableSelect label="Кафедра" value={editForm?.details?.departmentId} options={departments.map(d => ({ value: d.idDepartment || d.id, label: d.nameDepartment || d.name }))} onChange={v => updateForm('details.departmentId', v)} isLoading={modalDataLoading} />
-                  <ModalField label="Рівень освіти" value={editForm?.degreeLevelId} type="select" options={degrees.map(d => ({ value: d.idEducationalDegree || d.id, label: d.nameEducationalDegree || d.name }))} onChange={v => updateForm('degreeLevelId', v)} />
-                  <ModalField label="Каталог (Рік)" value={editForm?.catalogId} type="select" options={catalogYears.map(cat => ({ value: cat.idCatalogYear || cat.id, label: cat.nameCatalog || cat.name || cat.year }))} onChange={v => updateForm('catalogId', v)} />
-                  <ModalField label="Викладач" value={editForm?.details?.content?.teacher} onChange={v => updateForm('details.content.teacher', v)} />
+                  <ModalField label="Факультет" value={editForm?.facultyId} type="select" options={faculties.map(f => ({ value: f.idFaculty || f.id, label: f.abbreviation || f.nameFaculty || f.name }))} onChange={v => updateForm('facultyId', v)} required={true} />
+                  <SearchableSelect label="Кафедра" value={editForm?.details?.departmentId} options={departments.map(d => ({ value: d.idDepartment || d.id, label: d.nameDepartment || d.name }))} onChange={v => updateForm('details.departmentId', v)} isLoading={modalDataLoading} required={true} />
+                  <ModalField label="Рівень освіти" value={editForm?.degreeLevelId} type="select" options={degrees.map(d => ({ value: d.idEducationalDegree || d.id, label: d.nameEducationalDegree || d.name }))} onChange={v => updateForm('degreeLevelId', v)} required={true} />
+                  <ModalField label="Каталог (Рік)" value={editForm?.catalogId} type="select" options={catalogYears.map(cat => ({ value: cat.idCatalogYear || cat.id, label: cat.nameCatalog || cat.name || cat.year }))} onChange={v => updateForm('catalogId', v)} required={true} />
+                  <ModalField label="Викладач" value={editForm?.details?.content?.teacher} onChange={v => updateForm('details.content.teacher', v)} required={true} />
                   <ModalField label="Мова викладання" value={editForm?.details?.content?.language} type="select"
                     options={[{ value: 'Українська', label: 'Українська' }, { value: 'Англійська', label: 'Англійська' }, { value: 'Німецька', label: 'Німецька' }]}
                     onChange={v => updateForm('details.content.language', v)} />

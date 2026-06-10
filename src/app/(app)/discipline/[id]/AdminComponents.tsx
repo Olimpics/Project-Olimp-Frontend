@@ -273,7 +273,7 @@ export function EditableField({
 
 // ─── ModalField (for Edit Modal) ───
 export function ModalField({
-  label, value, onChange, type = 'input', options, placeholder, className = ""
+  label, value, onChange, type = 'input', options, placeholder, className = "", required = false
 }: {
   label: string; value: string | number | null;
   onChange: (val: string) => void;
@@ -281,12 +281,16 @@ export function ModalField({
   options?: { value: string | number; label: string }[];
   placeholder?: string;
   className?: string;
+  required?: boolean;
 }) {
   const baseClass = "w-full min-w-0 px-3.5 py-2.5 bg-[#f1f3f7] rounded-xl border border-transparent focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:border-blue-100 outline-none transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-medium";
 
   return (
     <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
-      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">{label}</label>
+      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
       {type === 'textarea' ? (
         <textarea value={value ?? ''} onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder} className={`${baseClass} h-24 resize-y leading-relaxed`} />
@@ -310,13 +314,14 @@ export function ModalField({
 
 // ─── SearchableSelect (for Edit Modal) ───
 export function SearchableSelect({
-  label, value, onChange, options, placeholder, isLoading
+  label, value, onChange, options, placeholder, isLoading, required = false
 }: {
   label: string; value: string | number | null;
   onChange: (val: string) => void;
   options: { value: string | number; label: string }[];
   placeholder?: string;
   isLoading?: boolean;
+  required?: boolean;
 }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -339,7 +344,10 @@ export function SearchableSelect({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5 relative" ref={containerRef}>
-      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">{label}</label>
+      <label className="text-[11px] font-bold text-gray-500 px-1 uppercase tracking-[0.12em]">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
       <div
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-3.5 py-2.5 bg-[#f1f3f7] rounded-xl border border-transparent cursor-pointer flex justify-between items-center transition-all hover:bg-[#e8eaef]"
