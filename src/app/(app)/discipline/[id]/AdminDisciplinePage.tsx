@@ -135,6 +135,8 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const [specialties, setSpecialties] = useState<any[]>([]);
   const [eduPrograms, setEduPrograms] = useState<any[]>([]);
   const [catalogYears, setCatalogYears] = useState<any[]>([]);
+  const [controlTypes, setControlTypes] = useState<any[]>([]);
+  const [approvalStatuses, setApprovalStatuses] = useState<any[]>([]);
   const [modalDataLoading, setModalDataLoading] = useState(false);
 
   const [selectedSpecialties, setSelectedSpecialties] = useState<number[]>([]);
@@ -252,7 +254,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         usingIrl: '',
         additionaLiterature: '',
         typesOfTraining: 'Лекції, семінарські заняття',
-        typeOfControll: 'Залік',
+        typeOfControll: 'Диференційований залік',
         recommended: null,
         recomendationSpeciality: [],
         recomendationEducationalProgram: [],
@@ -286,7 +288,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             resultEducation: '',
             usingIrl: '',
             typesOfTraining: 'Лекції, семінарські заняття',
-            typeOfControll: 'Залік'
+            typeOfControll: 'Диференційований залік'
           }
         },
         recomendationSpeciality: [],
@@ -363,13 +365,15 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   const fetchFilters = useCallback(async () => {
     setModalDataLoading(true);
     try {
-      const [facData, specData, eduData, depData, degData, catData] = await Promise.all([
+      const [facData, specData, eduData, depData, degData, catData, controlData, approvalData] = await Promise.all([
         apiService.get<any>('Faculty').catch(() => []),
         apiService.get<any>('Filter/specialities').catch(() => []),
         apiService.get<any>('Filter/educational-programs').catch(() => ({ items: [] })),
         apiService.get<any>('Department?page=1&pageSize=500&sortOrder=0').catch(() => ({ items: [] })),
         apiService.get<any>('EducationalDegree').catch(() => []),
-        apiService.get<any>('Parameters/CatalogYearsSelective').catch(() => [])
+        apiService.get<any>('Parameters/CatalogYearsSelective').catch(() => []),
+        apiService.get<any>('Filter/TypeOfControl').catch(() => []),
+        apiService.get<any>('Parameters/Approvals').catch(() => [])
       ]);
 
       const normalize = (data: any) => {
@@ -380,17 +384,42 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         return [];
       };
 
-      setFaculties(normalize(facData));
-      setSpecialties(normalize(specData));
-      setEduPrograms(normalize(eduData));
-      setDepartments(normalize(depData));
-      setDegrees(normalize(degData));
-      setCatalogYears(normalize(catData));
+      const normFacs = normalize(facData);
+      const normSpecs = normalize(specData);
+      const normEdu = normalize(eduData);
+      const normDeps = normalize(depData);
+      const normDegs = normalize(degData);
+      const normCats = normalize(catData);
+      const normControls = normalize(controlData);
+      const normApprovals = normalize(approvalData);
+
+      setFaculties(normFacs);
+      setSpecialties(normSpecs);
+      setEduPrograms(normEdu);
+      setDepartments(normDeps);
+      setDegrees(normDegs);
+      setCatalogYears(normCats);
+      setControlTypes(normControls);
+      setApprovalStatuses(normApprovals);
       
-      // If new, try to set some default catalogId if available
-      const cats = normalize(catData);
-      if (id === 'new' && cats.length > 0) {
-        setEditForm((prev: any) => ({ ...prev, catalogId: cats[0].idCatalogYear }));
+      // If new, try to set some defaults
+      if (id === 'new') {
+        const defaultCatalogId = normCats.length > 0 ? normCats[0].idCatalogYear || normCats[0].id : '';
+        
+        // Find default Type of Control
+        const defaultControl = normControls.find((c: any) => (c.type || c.nameTypeOfControl || c.name) === 'Диференційований залік');
+        const defaultControlId = defaultControl ? (defaultControl.idTypeOfControl || defaultControl.id) : '';
+        
+        // Find default Approval Status (approvalLevel === 1)
+        const defaultApproval = normApprovals.find((a: any) => a.approbalLevel === 1);
+        const defaultApprovalId = defaultApproval ? (defaultApproval.idApproval || defaultApproval.id) : '';
+
+        setEditForm((prev: any) => ({ 
+          ...prev, 
+          catalogId: defaultCatalogId,
+          typeOfControlId: defaultControlId,
+          approvalStatusId: defaultApprovalId
+        }));
       }
     } catch (err) {
       console.error('Error in fetchFilters:', err);
@@ -817,8 +846,14 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                     options={[{ value: 'Українська', label: 'Українська' }, { value: 'Англійська', label: 'Англійська' }, { value: 'Німецька', label: 'Німецька' }]}
                     onChange={v => updateForm('details.content.language', v)} />
                   <ModalField label="Тип контролю" value={editForm?.details?.content?.typeOfControll} type="select"
-                    options={[{ value: 'Залік', label: 'Залік' }, { value: 'Екзамен', label: 'Екзамен' }]}
-                    onChange={v => updateForm('details.content.typeOfControll', v)} />
+                    options={controlTypes.map(c => ({ value: c.type || c.nameTypeOfControl || c.name, label: c.type || c.nameTypeOfControl || c.name }))}
+                    onChange={v => {
+                      updateForm('details.content.typeOfControll', v);
+                      const selected = controlTypes.find(c => (c.type || c.nameTypeOfControl || c.name) === v);
+                      if (selected) {
+                        updateForm('typeOfControlId', selected.idTypeOfControl || selected.id);
+                      }
+                    }} />
                   <ModalField label="Семестр" value={editForm?.isEven} type="number"
                     onChange={v => updateForm('isEven', Number(v))} />
                 </div>
