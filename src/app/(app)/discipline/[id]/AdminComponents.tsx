@@ -385,14 +385,28 @@ export const DisciplineSpecialtiesBlock = ({
   specialtyIds, 
   eduProgramIds, 
   specialtiesList, 
-  eduProgramsList 
+  eduProgramsList,
+  recommended
 }: { 
   specialtyIds: number[]; 
   eduProgramIds: number[]; 
   specialtiesList: any[]; 
   eduProgramsList: any[]; 
+  recommended?: string | null;
 }) => {
-  // Extract and group unique branches based on selected specialties
+  const parsedRecommended = React.useMemo(() => {
+    if (!recommended) return null;
+    try {
+      // Handle both string and object just in case
+      if (typeof recommended === 'object') return recommended;
+      return JSON.parse(recommended);
+    } catch (e) {
+      console.error("Failed to parse recommended JSON", e);
+      return null;
+    }
+  }, [recommended]);
+
+  // Extract and group unique branches based on selected specialties (fallback logic)
   const selectedSpecs = specialtyIds
     .map(id => specialtiesList.find(s => s.id === id))
     .filter(Boolean);
@@ -413,16 +427,26 @@ export const DisciplineSpecialtiesBlock = ({
       .sort((a, b) => a.code.localeCompare(b.code));
   }, [selectedSpecs]);
 
+  const branchesToDisplay = parsedRecommended?.branches || selectedBranches.map(b => `${b.code} - ${b.name}`);
+  const specialtiesToDisplay = parsedRecommended?.specialties || specialtyIds.map(id => {
+    const spec = specialtiesList.find(s => s.id === id);
+    return spec ? `${spec.code} - ${spec.name}` : id.toString();
+  });
+  const eduProgramsToDisplay = parsedRecommended?.EducationalPrograms || eduProgramIds.map(id => {
+    const edu = eduProgramsList.find(e => e.id === id);
+    return edu ? edu.name : id.toString();
+  });
+
   return (
     <div className="space-y-8">
       {/* 1. Галузі знань */}
       <div className="space-y-3">
         <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Галузі знань</h4>
-        {selectedBranches.length > 0 ? (
+        {branchesToDisplay.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {selectedBranches.map(branch => (
-              <span key={branch.code} className="bg-purple-50 text-purple-600 px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-purple-100 shadow-sm animate-fade-in">
-                {branch.code} - {branch.name}
+            {branchesToDisplay.map((branch: string, index: number) => (
+              <span key={index} className="bg-purple-50 text-purple-600 px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-purple-100 shadow-sm animate-fade-in">
+                {branch}
               </span>
             ))}
           </div>
@@ -434,16 +458,13 @@ export const DisciplineSpecialtiesBlock = ({
       {/* 2. Спеціальності */}
       <div className="space-y-3">
         <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Спеціальності</h4>
-        {specialtyIds && specialtyIds.length > 0 ? (
+        {specialtiesToDisplay.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {specialtyIds.map(id => {
-              const spec = specialtiesList.find(s => s.id === id);
-              return (
-                <span key={id} className="bg-blue-50 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-blue-100 shadow-sm">
-                  {spec ? `${spec.code} - ${spec.name}` : id}
-                </span>
-              );
-            })}
+            {specialtiesToDisplay.map((spec: string, index: number) => (
+              <span key={index} className="bg-blue-50 text-[#1e50f0] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-blue-100 shadow-sm">
+                {spec}
+              </span>
+            ))}
           </div>
         ) : (
           <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх спеціальностей</p>
@@ -453,16 +474,13 @@ export const DisciplineSpecialtiesBlock = ({
       {/* 3. Освітні програми */}
       <div className="space-y-3">
         <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-tight">Освітні програми</h4>
-        {eduProgramIds && eduProgramIds.length > 0 ? (
+        {eduProgramsToDisplay.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {eduProgramIds.map(id => {
-              const edu = eduProgramsList.find(e => e.id === id);
-              return (
-                <span key={id} className="bg-[#10b981]/10 text-[#10b981] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-[#10b981]/20 shadow-sm">
-                  {edu ? edu.name : id}
-                </span>
-              );
-            })}
+            {eduProgramsToDisplay.map((edu: string, index: number) => (
+              <span key={index} className="bg-[#10b981]/10 text-[#10b981] px-3.5 py-1.5 rounded-xl text-[13px] font-bold border border-[#10b981]/20 shadow-sm">
+                {edu}
+              </span>
+            ))}
           </div>
         ) : (
           <p className="text-[14px] text-gray-500 font-medium bg-gray-50/70 px-4 py-2.5 rounded-xl border border-gray-100/80">Для всіх освітніх програм</p>

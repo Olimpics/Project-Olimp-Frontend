@@ -71,6 +71,7 @@ interface DisciplineDetails {
   additionaLiterature: string;
   typesOfTraining: string;
   typeOfControll: string;
+  recommended: string | null;
   recomendationSpeciality: number[];
   recomendationEducationalProgram: number[];
 }
@@ -511,6 +512,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                 eduProgramIds={discipline.recomendationEducationalProgram || []}
                 specialtiesList={specialties}
                 eduProgramsList={eduPrograms}
+                recommended={discipline.recommended}
               />
             </DisciplineBlock>
 
