@@ -131,11 +131,11 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     const [isAddMainModalOpen, setIsAddMainModalOpen] = useState(false)
     const [isCopyPastModalOpen, setIsCopyPastModalOpen] = useState(false)
-    const [catalogYears, setCatalogYears] = useState<{ idCatalogYear: number; nameCatalog: string }[]>([])
-    const [selectedCatalogId, setSelectedCatalogId] = useState<number | ''>('')
-    const [pastDisciplines, setPastDisciplines] = useState<{ id: number; code: string; name: string }[]>([])
+    const [catalogYears, setCatalogYears] = useState<any[]>([])
+    const [selectedCatalogId, setSelectedCatalogId] = useState<string | number | ''>('')
+    const [pastDisciplines, setPastDisciplines] = useState<{ id: string | number; code: string; name: string }[]>([])
     const [pastSearchTerm, setPastSearchTerm] = useState('')
-    const [selectedPastDisciplineId, setSelectedPastDisciplineId] = useState<number | ''>('')
+    const [selectedPastDisciplineId, setSelectedPastDisciplineId] = useState<string | number | ''>('')
 
     const fetchCatalogs = async () => {
         try {
@@ -146,10 +146,15 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
         }
     }
 
-    const fetchPastDisciplines = useCallback(async (catalogId: number, search: string = '') => {
+    const fetchPastDisciplines = useCallback(async (catalogId: string | number, search: string = '') => {
         try {
             const data = await apiService.get<any>(`Filter/add-disciplines-paged?CatalogYearId=${catalogId}&search=${encodeURIComponent(search)}`)
-            setPastDisciplines(data.items || [])
+            const items = (data.items || []).map((item: any) => ({
+                id: item.idAddDisciplines || item.id,
+                name: item.nameAddDisciplines || item.name,
+                code: item.codeAddDisciplines || item.code
+            }))
+            setPastDisciplines(items)
         } catch (error) {
             console.error('Failed to fetch past disciplines', error)
         }
@@ -157,7 +162,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
 
     useEffect(() => {
         if (selectedCatalogId !== '') {
-            fetchPastDisciplines(Number(selectedCatalogId), pastSearchTerm)
+            fetchPastDisciplines(selectedCatalogId, pastSearchTerm)
         } else {
             setPastDisciplines([])
         }
@@ -657,15 +662,15 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                             <select 
                                 value={selectedCatalogId}
                                 onChange={(e) => {
-                                    setSelectedCatalogId(e.target.value ? Number(e.target.value) : '')
+                                    setSelectedCatalogId(e.target.value)
                                     setSelectedPastDisciplineId('')
                                 }}
                                 className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 transition-all"
                             >
                                 <option value="">Оберіть рік...</option>
                                 {catalogYears.map(cat => (
-                                    <option key={cat.idCatalogYear} value={cat.idCatalogYear}>
-                                        {cat.nameCatalog}
+                                    <option key={cat.idCatalogYear || cat.id} value={cat.idCatalogYear || cat.id}>
+                                        {cat.nameCatalog || cat.name || cat.year}
                                     </option>
                                 ))}
                             </select>

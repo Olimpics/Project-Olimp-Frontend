@@ -50,11 +50,9 @@ export default function LoginPage() {
 
       setToken(result_auth.token)
 
-      /*const final = await apiService.get<StudentProfile>('/Auth/AuthChecker')
+      const userPermissions = await apiService.get<Permission[]>(`Auth/permissions/${result_auth.roleId}`)
 
-      const userPermissions = await apiService.get<Permission[]>(`Auth/permissions/${final.roleId}`)
-
-      localStorage.setItem(`${final.userId}_permissions`, JSON.stringify(userPermissions))*/
+      localStorage.setItem(`${result_auth.userId}_permissions`, JSON.stringify(userPermissions))
 
       setCookie(USER_PROFLE, JSON.stringify(result_auth))
       setCookie(AUTH_TOKEN, result_auth.token)
