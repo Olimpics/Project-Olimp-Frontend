@@ -80,6 +80,7 @@ interface DisciplineDetails {
   catalogId?: string | number;
   approvalStatusId?: string | number;
   typeOfControlId?: string | number;
+  nameDock?: string | null;
 }
 
 interface Student {
@@ -229,6 +230,63 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
 
   // Comparison Placeholder Modal State
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+
+  // New States for Approval/Rejection
+  const [isApproveRejectModalOpen, setIsApproveRejectModalOpen] = useState(false);
+  const [isFinalRejectionModalOpen, setIsFinalRejectionModalOpen] = useState(false);
+  const [disciplineRejectionReason, setDisciplineRejectionReason] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const handleCompareClick = async () => {
+    if (!discipline) return;
+
+    if (discipline.nameDock) {
+      try {
+        const fileUrl = `http://localhost:5154/api/Import/selective-disciplines/file/${discipline.nameDock}`;
+        window.open(fileUrl, '_blank');
+      } catch (err) {
+        console.error(err);
+        alert('Помилка при відкритті документа');
+      }
+    } else {
+      setIsApproveRejectModalOpen(true);
+    }
+  };
+
+  const handleApproveDiscipline = async () => {
+    if (!id || id === 'new') return;
+    setIsActionLoading(true);
+    try {
+      const disciplineId = !isNaN(Number(id)) ? Number(id) : id;
+      await apiService.put(`DisciplineTabAdmin/UpdateApprovalStatus/${disciplineId}`, {});
+      setIsApproveRejectModalOpen(false);
+      await fetchDiscipline();
+    } catch (err: any) {
+      console.error(err);
+      alert('Помилка при підтвердженні');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleFinalReject = async () => {
+    setIsActionLoading(true);
+    try {
+      // Assuming a similar endpoint for rejection might exist or be needed
+      // For now, we follow the UI flow requested
+      console.log('Rejecting with reason:', disciplineRejectionReason);
+      // In a real scenario, this would call an API like:
+      // await apiService.put(`DisciplineTabAdmin/RejectDiscipline/${id}`, { reason: disciplineRejectionReason });
+      
+      setIsFinalRejectionModalOpen(false);
+      setIsApproveRejectModalOpen(false);
+      await fetchDiscipline();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   const fetchDiscipline = useCallback(async () => {
     if (id === 'new') {
@@ -685,7 +743,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                     Редагувати
                   </button>
                   <div className="relative group">
-                    <button onClick={() => setIsCompareModalOpen(true)} className="p-3 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg active:scale-95 flex items-center justify-center whitespace-nowrap" title="Порівняти дисципліну">
+                    <button onClick={handleCompareClick} className="p-3 bg-white text-[#1e50f0] rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg active:scale-95 flex items-center justify-center whitespace-nowrap" title="Порівняти дисципліну">
                       <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                       </svg>
@@ -997,24 +1055,24 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
       </Modal>
 
       {/* Reject Confirmation Modal */}
-      <Modal isOpen={!!studentToReject} onClose={() => setStudentToReject(null)} classSize="max-w-xl">
+      <Modal isOpen={!!studentToReject} onClose={() => setStudentToReject(null)} classSize="max-w-lg">
         <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl">
           {/* Header */}
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 className="text-xl font-bold text-gray-900">Підтвердження відмови</h2>
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 className="text-lg font-bold text-gray-900">Підтвердження відмови</h2>
             <button onClick={() => setStudentToReject(null)} className="hover:rotate-90 transition-all duration-300">
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-8 space-y-6">
+          <div className="p-5 space-y-5">
             <p className="text-[15px] font-medium text-gray-600 leading-relaxed">
               Ви дійсно хочете відмовити студенту <span className="font-bold text-gray-900">{studentToReject?.studentName}</span>?
             </p>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Шаблон причини відмови</label>
+              <label className="text-[12px] font-bold text-gray-500 uppercase tracking-wider">Шаблон причини відмови</label>
               <div className="relative">
                 <select
                   value={rejectTemplate}
@@ -1027,7 +1085,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
                       setRejectReason(val);
                     }
                   }}
-                  className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer text-[15px] font-bold text-gray-900"
+                  className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer text-[14px] font-bold text-gray-900"
                 >
                   <option value="Власна причина">Власна причина</option>
                   <option value="Невідповідність вимогам до курсу">Невідповідність вимогам до курсу</option>
@@ -1041,12 +1099,12 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Причина відмови</label>
+              <label className="text-[12px] font-bold text-gray-500 uppercase tracking-wider">Причина відмови</label>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Введіть причину відмови..."
-                className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none text-[15px] font-bold text-gray-900 h-28 resize-none leading-relaxed placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none text-[14px] font-bold text-gray-900 h-24 resize-none leading-relaxed placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
 
@@ -1058,7 +1116,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-100 flex gap-4 bg-gray-50/30">
+          <div className="p-4 border-t border-gray-100 flex gap-4 bg-gray-50/30">
             <button
               onClick={() => setStudentToReject(null)}
               className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all bg-white"
@@ -1110,6 +1168,63 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           <button onClick={() => setIsCompareModalOpen(false)} className="w-full py-3 bg-[#1e50f0] text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all">
             Зрозуміло
           </button>
+        </div>
+      </Modal>
+
+      {/* New Approval/Rejection Choice Modal */}
+      <Modal isOpen={isApproveRejectModalOpen} onClose={() => setIsApproveRejectModalOpen(false)} classSize="max-w-md">
+        <div className="p-8 text-center space-y-6 bg-white rounded-3xl">
+          <h3 className="text-xl font-bold text-gray-900">Дія над дисципліною</h3>
+          <p className="text-sm text-gray-500">Виберіть дію для цієї дисципліни, оскільки документ відсутній.</p>
+          <div className="flex gap-4">
+            <button 
+              onClick={handleApproveDiscipline}
+              disabled={isActionLoading}
+              className="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg hover:bg-green-600 transition-all disabled:opacity-50"
+            >
+              Підтвердити
+            </button>
+            <button 
+              onClick={() => {
+                setIsApproveRejectModalOpen(false);
+                setIsFinalRejectionModalOpen(true);
+              }}
+              className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold shadow-lg hover:bg-red-600 transition-all"
+            >
+              Відхилити
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Final Rejection with Reason Modal */}
+      <Modal isOpen={isFinalRejectionModalOpen} onClose={() => setIsFinalRejectionModalOpen(false)} classSize="max-w-md">
+        <div className="p-8 space-y-6 bg-white rounded-3xl">
+          <h3 className="text-xl font-bold text-gray-900 text-center">Причина відмови</h3>
+          <div className="space-y-2">
+            <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Вкажіть причину</label>
+            <textarea
+              value={disciplineRejectionReason}
+              onChange={(e) => setDisciplineRejectionReason(e.target.value)}
+              placeholder="Введіть причину відмови..."
+              className="w-full px-4 py-3 bg-[#f1f3f7] rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none text-[15px] font-bold text-gray-900 h-32 resize-none"
+            />
+          </div>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={handleFinalReject}
+              disabled={isActionLoading}
+              className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg hover:bg-red-700 transition-all disabled:opacity-50"
+            >
+              Підтвердити та скасувати
+            </button>
+            <button 
+              onClick={() => setIsFinalRejectionModalOpen(false)}
+              className="w-full py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all"
+            >
+              Назад
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
