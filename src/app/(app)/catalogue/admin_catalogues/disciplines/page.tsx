@@ -748,8 +748,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                         <button 
                             disabled={!selectedPastDisciplineId}
                             onClick={() => {
-                                console.log("Copying discipline ID:", selectedPastDisciplineId)
                                 setIsCopyPastModalOpen(false)
+                                router.push(`/discipline/new?copyFrom=${selectedPastDisciplineId}`)
                             }}
                             className={clsx(
                                 "px-4 py-2 rounded-md text-sm font-medium transition-all",

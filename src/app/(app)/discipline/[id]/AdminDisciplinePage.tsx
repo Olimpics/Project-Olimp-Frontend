@@ -499,6 +499,82 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
   }, [fetchDiscipline, fetchFilters, fetchStudents]);
 
   useEffect(() => {
+    const checkCopy = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const copyFrom = searchParams.get('copyFrom');
+      if (id === 'new' && copyFrom) {
+        setLoading(true);
+        try {
+          const data = await apiService.get<DisciplineDetails>(`DisciplineTabStudent/GetDisciplineWithDetails/${copyFrom}?t=${Date.now()}`);
+          
+          // Append (1) or increment copy number
+          let newName = data.nameSelectiveDisciplines;
+          const match = newName.match(/\((\d+)\)$/);
+          if (match) {
+            const nextNum = parseInt(match[1]) + 1;
+            newName = newName.replace(/\(\d+\)$/, `(${nextNum})`);
+          } else {
+            newName = `${newName} (1)`;
+          }
+
+          setDiscipline({
+            ...data,
+            nameSelectiveDisciplines: newName,
+            idSelectiveDisciplines: 0 // Mark as new
+          });
+
+          setSelectedSpecialties(data.recomendationSpeciality || []);
+          setSelectedEduPrograms(data.recomendationEducationalProgram || []);
+          
+          setEditForm({
+            nameSelectiveDisciplines: newName,
+            codeSelectiveDisciplines: data.codeSelectiveDisciplines,
+            facultyId: data.facultyId,
+            minCountPeople: data.minCountPeople,
+            maxCountPeople: data.maxCountPeople,
+            minCourse: data.minCourse,
+            maxCourse: data.maxCourse,
+            isEven: data.isEven,
+            degreeLevelId: data.degreeLevelId,
+            departmentId: data.departmentId,
+            catalogId: data.catalogId,
+            approvalStatusId: data.approvalStatusId,
+            typeOfControlId: data.typeOfControlId,
+            details: {
+              content: {
+                nameSelectiveDisciplinesEng: '',
+                teacher: data.teacher,
+                recomend: data.recomend,
+                prerequisites: data.prerequisites,
+                language: data.language,
+                provision: data.additionaLiterature,
+                determination: data.determination,
+                whyInterestingDetermination: data.whyInterestingDetermination,
+                resultEducation: data.resultEducation,
+                usingIrl: data.usingIrl,
+                typesOfTraining: data.typesOfTraining,
+                typeOfControll: data.typeOfControll
+              }
+            },
+            recomendationSpeciality: data.recomendationSpeciality || [],
+            recomendationEducationalProgram: data.recomendationEducationalProgram || [],
+            disciplineTopics: Array.isArray(data.disciplineTopics) 
+              ? data.disciplineTopics 
+              : (data.disciplineTopics ? (data.disciplineTopics as string).split('\n').filter(Boolean) : []),
+            idSelectiveDisciplines: 0
+          });
+          setIsEditModalOpen(true);
+        } catch (err: any) {
+          console.error('Failed to copy discipline:', err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    checkCopy();
+  }, [id]);
+
+  useEffect(() => {
     if (activeTab === 'students') fetchStudents(currentPage);
   }, [activeTab, currentPage, fetchStudents]);
 
