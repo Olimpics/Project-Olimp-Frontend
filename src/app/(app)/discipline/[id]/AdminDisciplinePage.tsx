@@ -77,6 +77,9 @@ interface DisciplineDetails {
   recommended: string | null;
   recomendationSpeciality: any[];
   recomendationEducationalProgram: any[];
+  catalogId?: string | number;
+  approvalStatusId?: string | number;
+  typeOfControlId?: string | number;
 }
 
 interface Student {
@@ -317,6 +320,9 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         isEven: data.isEven,
         degreeLevelId: data.degreeLevelId,
         departmentId: data.departmentId, // Moved to top level
+        catalogId: data.catalogId,
+        approvalStatusId: data.approvalStatusId,
+        typeOfControlId: data.typeOfControlId,
         details: {
           content: {
             nameSelectiveDisciplinesEng: '', // Optional
@@ -438,6 +444,55 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
     if (activeTab === 'students') fetchStudents(currentPage);
   }, [activeTab, currentPage, fetchStudents]);
 
+  // Auto-fill missing IDs from names when filters are loaded
+  useEffect(() => {
+    if (id !== 'new' && discipline && !modalDataLoading && editForm) {
+      setEditForm((prev: any) => {
+        if (!prev) return prev;
+        let updated = false;
+        const next = { ...prev };
+
+        // Fix Faculty
+        if (!next.facultyId && discipline.facultyAbbreviation && faculties.length > 0) {
+          const found = faculties.find(f => f.abbreviation === discipline.facultyAbbreviation || f.nameFaculty === discipline.facultyAbbreviation || f.name === discipline.facultyAbbreviation);
+          if (found) {
+            next.facultyId = found.idFaculty || found.id;
+            updated = true;
+          }
+        }
+
+        // Fix Department
+        if (!next.departmentId && discipline.departmentName && departments.length > 0) {
+          const found = departments.find(d => d.nameDepartment === discipline.departmentName || d.name === discipline.departmentName);
+          if (found) {
+            next.departmentId = found.idDepartment || found.id;
+            updated = true;
+          }
+        }
+
+        // Fix Degree Level
+        if (!next.degreeLevelId && discipline.degreeLevelName && degrees.length > 0) {
+          const found = degrees.find(d => d.nameEducationalDegree === discipline.degreeLevelName || d.name === discipline.degreeLevelName);
+          if (found) {
+            next.degreeLevelId = found.idEducationalDegree || found.id;
+            updated = true;
+          }
+        }
+        
+        // Fix Type of Control ID if missing
+        if (!next.typeOfControlId && discipline.typeOfControll && controlTypes.length > 0) {
+           const found = controlTypes.find(c => (c.type || c.nameTypeOfControl || c.name) === discipline.typeOfControll);
+           if (found) {
+             next.typeOfControlId = found.idTypeOfControl || found.id;
+             updated = true;
+           }
+        }
+
+        return updated ? next : prev;
+      });
+    }
+  }, [id, discipline, modalDataLoading, faculties, departments, degrees, controlTypes, editForm]);
+
   const handleUpdate = async () => {
     try {
       // Prepare payload to match the required structure
@@ -450,10 +505,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         courses: [editForm.minCourse, editForm.maxCourse].filter(Boolean),
         isEven: editForm.isEven === 2, // true for Even (2), false for Odd (1)
         degreeLevelId: editForm.degreeLevelId,
-        catalogId: editForm.catalogId || "00000000-0000-0000-0000-000000000000",
-        departmentId: editForm.departmentId || "00000000-0000-0000-0000-000000000000",
-        approvalStatusId: editForm.approvalStatusId || "00000000-0000-0000-0000-000000000000",
-        typeOfControlId: editForm.typeOfControlId || "00000000-0000-0000-0000-000000000000",
+        catalogId: (editForm.catalogId !== undefined && editForm.catalogId !== null && editForm.catalogId !== '') ? editForm.catalogId : "00000000-0000-0000-0000-000000000000",
+        departmentId: (editForm.departmentId !== undefined && editForm.departmentId !== null && editForm.departmentId !== '') ? editForm.departmentId : "00000000-0000-0000-0000-000000000000",
+        approvalStatusId: (editForm.approvalStatusId !== undefined && editForm.approvalStatusId !== null && editForm.approvalStatusId !== '') ? editForm.approvalStatusId : "00000000-0000-0000-0000-000000000000",
+        typeOfControlId: (editForm.typeOfControlId !== undefined && editForm.typeOfControlId !== null && editForm.typeOfControlId !== '') ? editForm.typeOfControlId : "00000000-0000-0000-0000-000000000000",
         details: {
           content: {
             nameSelectiveDisciplinesEng: editForm.details.content.nameSelectiveDisciplinesEng || '',
@@ -492,9 +547,10 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
           fetchDiscipline();
         }
       } else {
+        const disciplineId = !isNaN(Number(id)) ? Number(id) : id;
         await apiService.put(`DisciplineTabAdmin/UpdateDisciplineWithDetails`, {
           ...payload,
-          idSelectiveDisciplines: id
+          idSelectiveDisciplines: disciplineId
         });
         setIsEditModalOpen(false);
         fetchDiscipline();
