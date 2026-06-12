@@ -682,7 +682,7 @@ export default function AdminDisciplinePage({ id }: { id: string }) {
         }
       } else {
         const disciplineId = !isNaN(Number(id)) ? Number(id) : id;
-        await apiService.put(`DisciplineTabAdmin/UpdateDisciplineWithDetails`, {
+        await apiService.put(`DisciplineTabAdmin/UpdateDisciplineWithDetails/${disciplineId}`, {
           ...payload,
           idSelectiveDisciplines: disciplineId
         });
