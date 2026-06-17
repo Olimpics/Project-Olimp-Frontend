@@ -533,6 +533,12 @@ const CourseCataloguePage = () => {
               >
                 Дисципліни
               </Link>
+              <Link
+                href="/course-catalogue/campaign"
+                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
+              >
+                Поточний вибір
+              </Link>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

@@ -1,9 +1,14 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { apiService } from '@/services/axiosService'
+import {
+    cabinetService,
+    StudentSelectedByYear,
+    FavoriteDiscipline,
+} from '@/services/cabinetService'
 
 // DTOs for student
 interface DisciplineDto {
@@ -32,12 +37,6 @@ interface PlanResponse {
     mainDisciplines: DisciplineDto[]
     additionalDisciplines: AdditionalDto[]
 }
-interface EventItem {
-    id: number
-    name: string
-    date: string
-    points: number
-}
 
 // Admin DTOs
 interface StudentGrade {
@@ -65,14 +64,19 @@ const ExportIcon = () => (
     </svg>
 )
 
-// Static events for student
-const staticEvents: EventItem[] = [
-    { id: 1, name: 'Hackathon 2025', date: '2025-05-12', points: 5 },
-    { id: 2, name: 'Workshop AI', date: '2025-06-01', points: 3 },
-    { id: 3, name: 'Open Lecture', date: '2025-06-20', points: 2 },
-]
+const StarIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>
+)
 
-// Mock data for admin
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+    InProcess: { label: 'В процесі', cls: 'bg-amber-100 text-amber-700' },
+    Confirmed: { label: 'Підтверджено', cls: 'bg-green-100 text-green-700' },
+    Rejected: { label: 'Відхилено', cls: 'bg-red-100 text-red-700' },
+}
+
+// Mock data for admin (unchanged)
 const initialStudentGrades: StudentGrade[] = [
     { id: 1, fullName: 'Іванов Іван Іванович', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 95 },
     { id: 2, fullName: 'Петров Петро Петрович', facultyAbbr: 'ФІТ', department: 'Кафедра ПЗ', group: 'ПЗ-21', semesterGrade: 88 },
@@ -90,9 +94,9 @@ const mockDepartments = ['Кафедра ПЗ', 'Кафедра КН', 'Кафе
 const mockGroups = ['ПЗ-21', 'ПЗ-22', 'КН-21']
 
 export default function Page() {
-    const [roleId, setRoleId] = useState<number | null>(null)
     const [isAdmin, setIsAdmin] = useState(false)
     const [activeTab, setActiveTab] = useState<string>('')
+    const [studentId, setStudentId] = useState<string>('')
 
     // Common Profile State
     const [userName, setUserName] = useState('')
@@ -103,9 +107,12 @@ export default function Page() {
     const [educationalProgram, setEducationalProgram] = useState('')
 
     // Student Specific State
-    const [selectedDay, setSelectedDay] = useState<string>('Понеділок')
     const [mainBySem, setMainBySem] = useState<Record<number, DisciplineDto[]>>({})
     const [addBySem, setAddBySem] = useState<Record<number, AdditionalDto[]>>({})
+    const [selected, setSelected] = useState<StudentSelectedByYear | null>(null)
+    const [favorites, setFavorites] = useState<FavoriteDiscipline[]>([])
+    const [loading, setLoading] = useState(false)
+    const [notice, setNotice] = useState<string>('')
 
     // Admin Specific State
     const [selectedSubject, setSelectedSubject] = useState(mockSubjects[0])
@@ -123,7 +130,6 @@ export default function Page() {
         if (!raw) return
         try {
             const prof = JSON.parse(raw)
-            setRoleId(prof.roleId || 1)
             setIsAdmin(!!prof.isAdmin)
             setUserName(prof.name)
             setDegreeName(prof.nameFaculty)
@@ -134,19 +140,17 @@ export default function Page() {
             if (prof.isAdmin) {
                 setActiveTab('student_grades')
             } else {
-                setActiveTab('schedule')
-                fetchStudentPlan(prof.id)
+                setStudentId(String(prof.id))
+                setActiveTab('selected')
             }
         } catch (e) {
             console.error('Error parsing profile cookie', e)
         }
     }, [])
 
-    const fetchStudentPlan = async (studentId: number) => {
+    const fetchStudentPlan = useCallback(async (id: string) => {
         try {
-            const data = await apiService.get<PlanResponse>(
-                `StudentPage/educational-program/${studentId}`
-            )
+            const data = await apiService.get<PlanResponse>(`StudentPage/educational-program/${id}`)
             if (data.mainDisciplines && data.mainDisciplines.length > 0) {
                 setEducationalProgram(data.mainDisciplines[0].educationalProgramName)
             }
@@ -163,21 +167,63 @@ export default function Page() {
             setMainBySem(mainGrouped)
             setAddBySem(addGrouped)
         } catch (err: any) {
-            console.error('Error fetching plan:', err.message)
+            console.error('Error fetching plan:', err?.message)
         }
+    }, [])
+
+    const fetchSelected = useCallback(async (id: string) => {
+        setLoading(true)
+        try {
+            setSelected(await cabinetService.getSelectedByYear(id))
+        } catch (err: any) {
+            console.error('Error fetching selected disciplines:', err?.message)
+            setSelected({ studentId: id, years: [] })
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    const fetchFavorites = useCallback(async (id: string) => {
+        setLoading(true)
+        try {
+            setFavorites(await cabinetService.getFavorites(id))
+        } catch (err: any) {
+            console.error('Error fetching favorites:', err?.message)
+            setFavorites([])
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (isAdmin || !studentId) return
+        if (activeTab === 'selected') fetchSelected(studentId)
+        else if (activeTab === 'favorites') fetchFavorites(studentId)
+        else if (activeTab === 'plan') fetchStudentPlan(studentId)
+    }, [activeTab, studentId, isAdmin, fetchSelected, fetchFavorites, fetchStudentPlan])
+
+    const handleCancel = async (bindId: string) => {
+        if (!studentId) return
+        try {
+            await cabinetService.cancelChoice(studentId, bindId)
+            setNotice('Вибір дисципліни скасовано')
+            await fetchSelected(studentId)
+        } catch (err: any) {
+            setNotice(err?.response?.data?.error || 'Не вдалося скасувати вибір')
+        }
+        setTimeout(() => setNotice(''), 4000)
     }
 
-    const defaultSchedule: Record<string, { time: string; subject: string }[]> = {
-        Понеділок: [
-            { time: '08:30 - 10:00', subject: 'Лінійна алгебра' },
-            { time: '10:15 - 11:45', subject: 'Програмування на C#' },
-        ],
-        Вівторок: [{ time: '12:00 - 13:30', subject: 'Бази даних' }],
-        Середа: [{ time: '14:00 - 15:30', subject: 'Операційні системи' }],
-        Четвер: [{ time: '16:00 - 17:30', subject: 'Англійська мова' }],
-        'П’ятниця': [],
+    const handleRemoveFavorite = async (disciplineId: string) => {
+        if (!studentId) return
+        try {
+            await cabinetService.removeFavorite(studentId, disciplineId)
+            setFavorites((prev) => prev.filter((f) => f.disciplineId !== disciplineId))
+        } catch (err: any) {
+            setNotice(err?.response?.data?.error || 'Не вдалося видалити з обраного')
+            setTimeout(() => setNotice(''), 4000)
+        }
     }
-    const days = Object.keys(defaultSchedule)
 
     const handleGradeChange = (id: number, value: string) => {
         setStudentGrades(prev => prev.map(sg => sg.id === id ? { ...sg, semesterGrade: value } : sg))
@@ -194,157 +240,196 @@ export default function Page() {
     const totalPages = Math.ceil(filteredGrades.length / itemsPerPage)
     const paginatedGrades = filteredGrades.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
+    const studentTabs: { key: string; label: string }[] = [
+        { key: 'selected', label: 'Вибрані дисципліни' },
+        { key: 'favorites', label: 'Обране' },
+        { key: 'plan', label: 'Початковий план' },
+    ]
+
+    const renderSelected = () => {
+        if (loading) return <p className="text-gray-500 italic py-8 text-center">Завантаження…</p>
+        const years = selected?.years ?? []
+        if (!years.length) return <p className="text-gray-500 italic py-8 text-center">Ви ще не обрали жодної дисципліни</p>
+        return (
+            <div className="space-y-8">
+                {years.map((yg) => (
+                    <section key={yg.yearLabel}>
+                        <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                            <span className="inline-block w-1.5 h-5 bg-blue-600 rounded" />
+                            {yg.yearLabel}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {yg.disciplines.map((d) => {
+                                const meta = STATUS_META[d.status] ?? STATUS_META.InProcess
+                                return (
+                                    <div key={d.bindId} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition bg-white">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div>
+                                                <p className="font-medium text-gray-800">{d.name}</p>
+                                                {d.code && <p className="text-xs text-gray-400">{d.code}</p>}
+                                            </div>
+                                            <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${meta.cls}`}>{meta.label}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
+                                            <span>Кредити: <b className="text-gray-700">{d.loans ?? '—'}</b> · Семестр: {d.semestr}</span>
+                                            {d.canCancel && (
+                                                <button
+                                                    onClick={() => handleCancel(d.bindId)}
+                                                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                                >
+                                                    Скасувати
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </section>
+                ))}
+            </div>
+        )
+    }
+
+    const renderFavorites = () => {
+        if (loading) return <p className="text-gray-500 italic py-8 text-center">Завантаження…</p>
+        if (!favorites.length) return <p className="text-gray-500 italic py-8 text-center">Список обраного порожній</p>
+        return (
+            <div className="space-y-4">
+                {favorites.map((f) => (
+                    <div key={f.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="flex justify-between items-start gap-2">
+                            <div>
+                                <p className="font-medium text-gray-800 flex items-center gap-2">
+                                    <span className="text-amber-400"><StarIcon /></span>
+                                    {f.name}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    {f.code ? `${f.code} · ` : ''}{f.departmentName || ''}
+                                    {f.catalogYearStart ? ` · ${f.catalogYearStart}–${f.catalogYearEnd}` : ''}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => handleRemoveFavorite(f.disciplineId)}
+                                className="text-gray-400 hover:text-red-600 text-sm font-medium"
+                            >
+                                Прибрати
+                            </button>
+                        </div>
+                        {f.similar.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-dashed">
+                                <p className="text-xs uppercase font-bold text-gray-400 mb-2">Схожі дисципліни в новіших каталогах</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {f.similar.map((s) => (
+                                        <span key={s.id} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">
+                                            {s.name} <span className="text-blue-400">({s.yearStart}–{s.yearEnd})</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    const renderPlan = () => {
+        const sems = Object.keys(mainBySem)
+        if (!sems.length) return <p className="text-gray-500 italic py-8 text-center">Дані плану відсутні</p>
+        return (
+            <div className="space-y-8">
+                {sems.map((s) => {
+                    const sem = Number(s)
+                    const main = mainBySem[sem] || []
+                    const add = addBySem[sem] || []
+                    return (
+                        <section key={sem}>
+                            <h3 className="text-lg sm:text-xl font-semibold mb-2">{sem} семестр</h3>
+                            <div className="overflow-x-auto mb-4">
+                                <table className="w-full min-w-[400px] border border-gray-200">
+                                    <thead className="bg-blue-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left">Дисципліна</th>
+                                            <th className="px-4 py-2 text-left">Форма контролю</th>
+                                            <th className="px-4 py-2 text-left">Кредити</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {main.length ? main.map((d) => (
+                                            <tr key={d.idBindMainDisciplines} className="hover:bg-blue-50">
+                                                <td className="px-4 py-2">{d.nameBindMainDisciplines}</td>
+                                                <td className="px-4 py-2">{d.formControll || '-'}</td>
+                                                <td className="px-4 py-2">{d.loans}</td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={3} className="px-4 py-4 text-center italic text-gray-500">Немає дисциплін</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="overflow-x-auto bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <h4 className="text-md sm:text-lg font-medium mb-2 text-blue-800">Додаткові дисципліни</h4>
+                                <table className="w-full min-w-[400px] border border-gray-300">
+                                    <thead className="bg-blue-100">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left">Дисципліна</th>
+                                            <th className="px-4 py-2 text-left">Статус</th>
+                                            <th className="px-4 py-2 text-left">Кредити</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {add.length ? add.map((d) => (
+                                            <tr key={d.idBindAddDisciplines} className="hover:bg-blue-50">
+                                                <td className="px-4 py-2">{d.addDisciplineName}</td>
+                                                <td className="px-4 py-2">{d.inProcess ? 'В процесі' : 'Завершено'}</td>
+                                                <td className="px-4 py-2">{d.loans}</td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={3} className="px-4 py-4 text-center italic text-gray-500">Немає дисциплін</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    )
+                })}
+            </div>
+        )
+    }
+
     const renderStudentView = () => (
         <>
             <nav className="flex space-x-4 border-b pb-2 mb-6 overflow-x-auto">
-                {['schedule', 'plan', 'events'].map((tab) => (
+                {studentTabs.map((tab) => (
                     <button
-                        key={tab}
+                        key={tab.key}
                         className={`whitespace-nowrap pb-1 font-medium transition-colors ${
-                            activeTab === tab
+                            activeTab === tab.key
                                 ? 'border-b-2 border-blue-600 text-blue-600'
                                 : 'border-b-2 border-transparent hover:text-gray-700'
                         }`}
-                        onClick={() => setActiveTab(tab)}
+                        onClick={() => setActiveTab(tab.key)}
                     >
-                        {tab === 'schedule' ? 'Розклад' : tab === 'plan' ? 'Навчальний план' : 'Події'}
+                        {tab.label}
                     </button>
                 ))}
             </nav>
 
-            {activeTab === 'schedule' && (
-                <>
-                    <div className="flex space-x-2 overflow-x-auto mb-4">
-                        {days.map((day) => (
-                            <button
-                                key={day}
-                                className={`whitespace-nowrap px-3 py-1 rounded-md transition-colors ${
-                                    selectedDay === day ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                                onClick={() => setSelectedDay(day)}
-                            >
-                                {day}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[400px] border-collapse">
-                            <thead className="bg-blue-50">
-                                <tr>
-                                    <th className="px-4 py-2 text-left">Час</th>
-                                    <th className="px-4 py-2 text-left">Предмет</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {defaultSchedule[selectedDay]?.length ? (
-                                    defaultSchedule[selectedDay].map((itm, i) => (
-                                        <tr key={i} className="hover:bg-blue-50">
-                                            <td className="px-4 py-2">{itm.time}</td>
-                                            <td className="px-4 py-2">{itm.subject}</td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={2} className="px-4 py-4 text-center italic text-gray-500">Немає занять</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
+            {notice && (
+                <div className="mb-4 px-4 py-2 rounded bg-blue-50 text-blue-700 text-sm border border-blue-200">{notice}</div>
             )}
 
-            {activeTab === 'plan' && (
-                <div className="space-y-8">
-                    {Object.keys(mainBySem).map((s) => {
-                        const sem = Number(s)
-                        const main = mainBySem[sem] || []
-                        const add = addBySem[sem] || []
-                        return (
-                            <section key={sem}>
-                                <h3 className="text-lg sm:text-xl font-semibold mb-2">{sem} семестр</h3>
-                                <div className="overflow-x-auto mb-4">
-                                    <table className="w-full min-w-[400px] border border-gray-200">
-                                        <thead className="bg-blue-50">
-                                            <tr>
-                                                <th className="px-4 py-2 text-left">Дисципліна</th>
-                                                <th className="px-4 py-2 text-left">Форма контролю</th>
-                                                <th className="px-4 py-2 text-left">Бали</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {main.length ? main.map((d) => (
-                                                <tr key={d.idBindMainDisciplines} className="hover:bg-blue-50">
-                                                    <td className="px-4 py-2">{d.nameBindMainDisciplines}</td>
-                                                    <td className="px-4 py-2">{d.formControll || '-'}</td>
-                                                    <td className="px-4 py-2">{d.loans}</td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan={3} className="px-4 py-4 text-center italic text-gray-500">Немає дисциплін</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="overflow-x-auto bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <h4 className="text-md sm:text-lg font-medium mb-2 text-blue-800">Додаткові дисципліни</h4>
-                                    <table className="w-full min-w-[400px] border border-gray-300">
-                                        <thead className="bg-blue-100">
-                                            <tr>
-                                                <th className="px-4 py-2 text-left">Дисципліна</th>
-                                                <th className="px-4 py-2 text-left">Статус</th>
-                                                <th className="px-4 py-2 text-left">Бали</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {add.length ? add.map((d) => (
-                                                <tr key={d.idBindAddDisciplines} className="hover:bg-blue-50">
-                                                    <td className="px-4 py-2">{d.addDisciplineName}</td>
-                                                    <td className="px-4 py-2">{d.inProcess ? 'В процесі' : 'Завершено'}</td>
-                                                    <td className="px-4 py-2">{d.loans}</td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan={3} className="px-4 py-4 text-center italic text-gray-500">Немає дисциплін</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </section>
-                        )
-                    })}
-                </div>
-            )}
-
-            {activeTab === 'events' && (
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[400px] border border-gray-200">
-                        <thead className="bg-blue-50">
-                            <tr>
-                                <th className="px-4 py-2 text-left">Назва події</th>
-                                <th className="px-4 py-2 text-left">Дата</th>
-                                <th className="px-4 py-2 text-left">Бали</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {staticEvents.map((ev) => (
-                                <tr key={ev.id} className="hover:bg-blue-50">
-                                    <td className="px-4 py-2">{ev.name}</td>
-                                    <td className="px-4 py-2">{ev.date}</td>
-                                    <td className="px-4 py-2">{ev.points}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            {activeTab === 'selected' && renderSelected()}
+            {activeTab === 'favorites' && renderFavorites()}
+            {activeTab === 'plan' && renderPlan()}
         </>
     )
 
     const renderAdminView = () => (
         <>
             <nav className="flex space-x-4 border-b pb-2 mb-6 overflow-x-auto">
-                <button
-                    className={`whitespace-nowrap pb-1 font-medium border-b-2 border-blue-600 text-blue-600 transition-colors`}
-                >
+                <button className="whitespace-nowrap pb-1 font-medium border-b-2 border-blue-600 text-blue-600 transition-colors">
                     Оцінки студентів
                 </button>
             </nav>
@@ -357,8 +442,8 @@ export default function Page() {
                         </button>
                         <div className="flex items-center gap-2">
                             <label className="text-gray-700 font-medium">Предмет:</label>
-                            <select 
-                                value={selectedSubject} 
+                            <select
+                                value={selectedSubject}
                                 onChange={(e) => setSelectedSubject(e.target.value)}
                                 className="border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                             >
@@ -368,46 +453,22 @@ export default function Page() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <input 
-                            type="text" 
-                            placeholder="Пошук (ПІБ)..." 
+                        <input
+                            type="text"
+                            placeholder="Пошук (ПІБ)..."
                             value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value)
-                                setCurrentPage(1)
-                            }}
+                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }}
                             className="border border-gray-300 rounded px-3 py-2"
                         />
-                        <select 
-                            value={facultyFilter} 
-                            onChange={(e) => {
-                                setFacultyFilter(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            className="border border-gray-300 rounded px-3 py-2"
-                        >
+                        <select value={facultyFilter} onChange={(e) => { setFacultyFilter(e.target.value); setCurrentPage(1) }} className="border border-gray-300 rounded px-3 py-2">
                             <option value="">Усі факультети</option>
                             {mockFaculties.map(f => <option key={f} value={f}>{f}</option>)}
                         </select>
-                        <select 
-                            value={departmentFilter} 
-                            onChange={(e) => {
-                                setDepartmentFilter(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            className="border border-gray-300 rounded px-3 py-2"
-                        >
+                        <select value={departmentFilter} onChange={(e) => { setDepartmentFilter(e.target.value); setCurrentPage(1) }} className="border border-gray-300 rounded px-3 py-2">
                             <option value="">Усі кафедри</option>
                             {mockDepartments.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
-                        <select 
-                            value={groupFilter} 
-                            onChange={(e) => {
-                                setGroupFilter(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            className="border border-gray-300 rounded px-3 py-2"
-                        >
+                        <select value={groupFilter} onChange={(e) => { setGroupFilter(e.target.value); setCurrentPage(1) }} className="border border-gray-300 rounded px-3 py-2">
                             <option value="">Усі групи</option>
                             {mockGroups.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
@@ -445,9 +506,9 @@ export default function Page() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2 group/grade">
                                                     {editingGradeId === sg.id ? (
-                                                        <input 
+                                                        <input
                                                             autoFocus
-                                                            type="text" 
+                                                            type="text"
                                                             value={sg.semesterGrade}
                                                             onChange={(e) => handleGradeChange(sg.id, e.target.value)}
                                                             onBlur={() => setEditingGradeId(null)}
@@ -456,16 +517,13 @@ export default function Page() {
                                                         />
                                                     ) : (
                                                         <>
-                                                            <button 
+                                                            <button
                                                                 onClick={() => setEditingGradeId(sg.id)}
                                                                 className="opacity-0 group-hover/grade:opacity-100 text-gray-400 hover:text-blue-600 transition order-first"
                                                             >
                                                                 <EditIcon />
                                                             </button>
-                                                            <span 
-                                                                className="min-w-[40px] cursor-pointer"
-                                                                onDoubleClick={() => setEditingGradeId(sg.id)}
-                                                            >
+                                                            <span className="min-w-[40px] cursor-pointer" onDoubleClick={() => setEditingGradeId(sg.id)}>
                                                                 {sg.semesterGrade}
                                                             </span>
                                                         </>
@@ -486,7 +544,7 @@ export default function Page() {
 
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-1 mt-4">
-                            <button 
+                            <button
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
                                 className="p-1.5 rounded border border-gray-300 disabled:opacity-50 hover:bg-gray-100 transition"
@@ -498,15 +556,13 @@ export default function Page() {
                                     key={i}
                                     onClick={() => setCurrentPage(i + 1)}
                                     className={`w-8 h-8 rounded text-sm font-medium transition ${
-                                        currentPage === i + 1 
-                                            ? 'bg-blue-600 text-white' 
-                                            : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                        currentPage === i + 1 ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
                                     }`}
                                 >
                                     {i + 1}
                                 </button>
                             ))}
-                            <button 
+                            <button
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
                                 className="p-1.5 rounded border border-gray-300 disabled:opacity-50 hover:bg-gray-100 transition"
@@ -528,12 +584,8 @@ export default function Page() {
                         {userName ? userName.charAt(0) : '?'}
                     </span>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    {userName || '---'}
-                </h2>
-                <p className="text-sm text-blue-600 mb-4 font-medium">
-                    {isAdmin ? 'Адміністратор' : 'Студент'}
-                </p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">{userName || '---'}</h2>
+                <p className="text-sm text-blue-600 mb-4 font-medium">{isAdmin ? 'Адміністратор' : 'Студент'}</p>
                 <div className="space-y-3 text-left border-t pt-4">
                     <div className="flex flex-col">
                         <span className="text-xs text-gray-400 uppercase font-bold">Факультет</span>

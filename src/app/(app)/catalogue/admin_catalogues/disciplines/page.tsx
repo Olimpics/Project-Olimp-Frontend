@@ -9,6 +9,7 @@ import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { Modal } from '@/components/ui/Modal'
 import { apiService } from '@/services/axiosService'
+import { adminCatalogService } from '@/services/adminCatalogService'
 import FileUploadModal from '@/app/(app)/catalogue/admin_catalogues/import_button';
 
 type Discipline = {
@@ -119,6 +120,9 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     const [pendingCourses, setPendingCourses] = useState<string[]>([])
     const [isEvenSemester, setIsEvenSemester] = useState<boolean | null>(null)
     const [showOnlyAvailable, setShowOnlyAvailable] = useState<string[]>([])
+    const [archivedFilter, setArchivedFilter] = useState<'all' | 'active' | 'archived'>('all')
+    const [deleting, setDeleting] = useState(false)
+    const [actionError, setActionError] = useState<string | null>(null)
     const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
     const [totalPages, setTotalPages] = useState(0)
@@ -210,6 +214,9 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                     query.append('isEvenSemester', isEvenSemester.toString())
                 }
 
+                if (archivedFilter === 'active') query.append('isArchived', 'false')
+                else if (archivedFilter === 'archived') query.append('isArchived', 'true')
+
                 const data = await apiService.get<any>(
                     `DisciplineTabAdmin/GetAllDisciplines?${query.toString()}`
                 )
@@ -232,6 +239,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
             pendingCourses,
             isEvenSemester,
             showOnlyAvailable,
+            archivedFilter,
             selectedSorting,
             eduDegrees,
         ]
@@ -272,6 +280,7 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
     const handleDelete = (discipline: Discipline) => {
         setSelectedDiscipline(discipline)
         setModalType('delete')
+        setActionError(null)
         setIsModalOpen(true)
     }
     const columns: Column[] = [
@@ -286,6 +295,21 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
         <div className="p-4 sm:p-6 bg-gray-100 min-h-screen flex flex-col sm:flex-row gap-4">
             <aside className="sm:w-1/5 w-full">
                 <div className="bg-white p-4 rounded-md shadow-md border border-gray-300 mb-4">
+                    <div className="mb-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Стан каталогу</label>
+                        <select
+                            value={archivedFilter}
+                            onChange={(e) => {
+                                setArchivedFilter(e.target.value as 'all' | 'active' | 'archived')
+                                setCurrentPage(1)
+                            }}
+                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="all">Усі</option>
+                            <option value="active">Активні</option>
+                            <option value="archived">Архівні</option>
+                        </select>
+                    </div>
                     <FilterBox
                         name="Тільки доступні дисципліни"
                         options={[{ name: 'Тільки доступні' }]}
@@ -605,21 +629,40 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                         </h2>
                         <p className="mb-4">
                             Ви дійсно хочете видалити дисципліну "
-                            {selectedDiscipline.nameAddDisciplines}" (код:{' '}
-                            {selectedDiscipline.codeAddDisciplines})?
+                            {(selectedDiscipline as any).nameSelectiveDisciplines || selectedDiscipline.nameAddDisciplines}" (код:{' '}
+                            {(selectedDiscipline as any).codeSelectiveDisciplines || selectedDiscipline.codeAddDisciplines})?
                         </p>
+                        {actionError && (
+                            <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{actionError}</div>
+                        )}
                         <div className="flex justify-end space-x-2">
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                disabled={deleting}
                             >
                                 Скасувати
                             </button>
                             <button
-                                onClick={async () => {}}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                onClick={async () => {
+                                    const id = (selectedDiscipline as any).idSelectiveDisciplines
+                                    if (!id) { setIsModalOpen(false); return }
+                                    setDeleting(true)
+                                    setActionError(null)
+                                    try {
+                                        await adminCatalogService.deleteDiscipline(id)
+                                        setIsModalOpen(false)
+                                        fetchFilteredData(currentPage)
+                                    } catch (e: any) {
+                                        setActionError(e?.response?.data?.error || 'Не вдалося видалити дисципліну')
+                                    } finally {
+                                        setDeleting(false)
+                                    }
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-300"
+                                disabled={deleting}
                             >
-                                Видалити
+                                {deleting ? 'Видалення…' : 'Видалити'}
                             </button>
                         </div>
                     </div>
