@@ -62,7 +62,7 @@ const getFacultyIdFromCookie = (): number => {
   }
 }
 
-export const Pagination: React.FC<{
+const Pagination: React.FC<{
   totalPages: number
   currentPage: number
   onPageChange: (page: number) => void

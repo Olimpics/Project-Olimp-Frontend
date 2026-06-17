@@ -19,6 +19,8 @@ type Discipline = {
   fullCount: string
   courseNumber: number
   addSemestr: any
+  studentCount?: string
+  isEvenSemesterParsed?: string
 }
 
 type Faculty = {
@@ -38,7 +40,7 @@ type Courses = {
 
 interface Column {
   header: string
-  accessor: keyof Discipline | 'studentCount'
+  accessor: keyof Discipline
 }
 
 const sortingOptions = [

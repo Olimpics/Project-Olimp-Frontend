@@ -14,15 +14,20 @@ import FileUploadModal from '@/app/(app)/catalogue/admin_catalogues/import_butto
 
 type Discipline = {
     idAddDisciplines: number
+    idSelectiveDisciplines?: number
     nameAddDisciplines: string
     codeAddDisciplines: string
+    nameSelectiveDisciplines?: string
+    codeSelectiveDisciplines?: string
     faculty: string
+    facultyAbbreviation?: string
     degreeLevelName: string
     countOfPeople: number
     maxCountPeople: number
     fullCount: string
     courseNumber: number
     evenSemester: boolean
+    studentCount?: string
 }
 
 type Faculty = {
@@ -101,7 +106,7 @@ const Pagination: React.FC<{
     )
 }
 
-export const AdminDisciplinesCatalogue = React.memo(() => {
+const AdminDisciplinesCatalogue = React.memo(() => {
     const router = useRouter()
     const [disciplines, setDisciplines] = useState<Discipline[]>([])
     const [faculties, setFaculties] = useState<Faculty[]>([])
@@ -629,8 +634,8 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                         </h2>
                         <p className="mb-4">
                             Ви дійсно хочете видалити дисципліну "
-                            {(selectedDiscipline as any).nameSelectiveDisciplines || selectedDiscipline.nameAddDisciplines}" (код:{' '}
-                            {(selectedDiscipline as any).codeSelectiveDisciplines || selectedDiscipline.codeAddDisciplines})?
+                            {selectedDiscipline.nameSelectiveDisciplines || selectedDiscipline.nameAddDisciplines}" (код:{' '}
+                            {selectedDiscipline.codeSelectiveDisciplines || selectedDiscipline.codeAddDisciplines})?
                         </p>
                         {actionError && (
                             <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{actionError}</div>
@@ -645,12 +650,12 @@ export const AdminDisciplinesCatalogue = React.memo(() => {
                             </button>
                             <button
                                 onClick={async () => {
-                                    const id = (selectedDiscipline as any).idSelectiveDisciplines
+                                    const id = selectedDiscipline.idSelectiveDisciplines
                                     if (!id) { setIsModalOpen(false); return }
                                     setDeleting(true)
                                     setActionError(null)
                                     try {
-                                        await adminCatalogService.deleteDiscipline(id)
+                                        await adminCatalogService.deleteDiscipline(id.toString())
                                         setIsModalOpen(false)
                                         fetchFilteredData(currentPage)
                                     } catch (e: any) {

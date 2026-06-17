@@ -90,7 +90,7 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminBindLoansPage = () => {
+const AdminBindLoansPage = () => {
   const [bindLoans, setBindLoans] = useState<BindLoan[]>([])
   const [addDisciplines, setAddDisciplines] = useState<AddDiscipline[]>([])
   const [specialities, setSpecialities] = useState<Speciality[]>([])
@@ -98,8 +98,8 @@ export const AdminBindLoansPage = () => {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedDisciplines, setSelectedDisciplines] = useState<number[]>([])
-  const [selectedSpecialities, setSelectedSpecialities] = useState<number[]>([])
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([])
+  const [selectedSpecialities, setSelectedSpecialities] = useState<string[]>([])
   const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
   // Pagination

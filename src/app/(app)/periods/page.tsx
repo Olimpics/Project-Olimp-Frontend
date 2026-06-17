@@ -240,7 +240,7 @@ function PeriodModal({
   onClose: () => void
   onChangeDraft: (next: PeriodModalDraft) => void
   onSave: () => void
-  error?: string
+  error?: string | null
 }) {
   const title = mode === 'create' ? 'Створення періоду' : 'Редагування періоду'
   const isEdit = mode === 'edit'

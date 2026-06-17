@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { StudentDisciplinesCatalogue } from '@/app/(app)/catalogue/stud_catalogue/stud_disciplines_catalogue'
-import { AdminDisciplinesCatalogue } from '@/app/(app)/catalogue/admin_catalogues/disciplines/page'
+import AdminDisciplinesCatalogue from '@/app/(app)/catalogue/admin_catalogues/disciplines/page'
 import { apiService } from '@/services/axiosService'
 
-const Page = () => {
+const CatalogueContent = () => {
   const searchParams = useSearchParams()
   const activeTabParam = parseInt(searchParams.get('activeTab') || '1', 10)
 
@@ -52,6 +52,14 @@ const Page = () => {
     <div>
       {renderContent()}
     </div>
+  )
+}
+
+const Page = () => {
+  return (
+    <Suspense fallback={<div className="text-center py-10">Завантаження...</div>}>
+      <CatalogueContent />
+    </Suspense>
   )
 }
 

@@ -78,7 +78,7 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminDepartmentCatalogue = () => {
+const AdminDepartmentCatalogue = () => {
   const [departments, setDepartments] = useState<Department[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [searchTerm, setSearchTerm] = useState('')

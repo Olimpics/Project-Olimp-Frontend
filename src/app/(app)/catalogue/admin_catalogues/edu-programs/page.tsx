@@ -89,7 +89,7 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminEducationalProgramCatalogue = () => {
+const AdminEducationalProgramCatalogue = () => {
   const [programs, setPrograms] = useState<EducationalProgram[]>([])
   const [degrees, setDegrees] = useState<EducationalDegree[]>([])
   const [searchTerm, setSearchTerm] = useState('')

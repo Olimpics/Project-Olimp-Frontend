@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import React from 'react'
 import { useSearchParams } from 'next/navigation'
 import DataTable from '@/components/ui/DataTable'
@@ -39,6 +39,7 @@ type Specialities = {
   id: number
   name: string
   code: string
+  label?: string
 }
 
 type Groupes = {
@@ -108,7 +109,7 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminStudentCatalogue = () => {
+const AdminStudentCatalogueContent = () => {
   const searchParams = useSearchParams()
   const groupGive = searchParams.get('groupId') || ''
 
@@ -120,7 +121,7 @@ export const AdminStudentCatalogue = () => {
   const [studyForms, setStudyForms] = useState<StudyForm[]>([])
 
   const [pendingStudyForms, setPendingStudyForms] = useState<string[]>([]) 
-  const [pendingSpecialities, setPendingSpecialities] = useState<number[]>([])
+  const [pendingSpecialities, setPendingSpecialities] = useState<string[]>([])
   const [pendingFaculties, setPendingFaculties] = useState<string[]>([])
   const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
   const [pendingCourses, setPendingCourses] = useState<string[]>([])
@@ -517,6 +518,14 @@ export const AdminStudentCatalogue = () => {
         )}
       </Modal>
     </div>
+  )
+}
+
+const AdminStudentCatalogue = () => {
+  return (
+    <Suspense fallback={<div className="text-center py-10">Завантаження...</div>}>
+      <AdminStudentCatalogueContent />
+    </Suspense>
   )
 }
 

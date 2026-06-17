@@ -243,7 +243,7 @@ const ParametersPage = () => {
               ...u,
               fullName: u.fullName || ['Іванов', 'Петров', 'Сидоров', 'Коваленко'][idx % 4] + ' ' + ['Іван', 'Петро', 'Олексій', 'Василь'][idx % 4] + ' ' + ['Іванович', 'Петрович', 'Сергійович', 'Борисович'][idx % 4],
               lastLogin: u.lastLogin || '2025-05-12 14:30',
-              roleName: idx === 0 ? ['Admin', 'Manager'] : [u.roleName]
+              roleName: idx === 0 ? ['Admin', 'Manager'] : u.roleName
           }))
           setUsers(mockUsers)
       } catch (error) { console.error(error) } finally { setLoading(false) }

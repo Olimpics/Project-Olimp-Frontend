@@ -5,7 +5,7 @@ import { apiService, setToken } from "@/services/axiosService"
 import { setCookie, getCookie } from "@/services/cookie-servies"
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState, Suspense } from "react"
 interface Permission {
     idPermissions: number
     typePermission: string
@@ -23,7 +23,7 @@ interface Permission {
     course: number | null
     permissions: Permission[]
   }
-const ChangePasswordPage = ()=>{
+const ChangePasswordContent = ()=>{
     const router = useRouter()
     const [password, setPassword] = useState('default_password')
     const [oldPassword, setOldPassword] = useState('default_password')
@@ -36,7 +36,7 @@ const ChangePasswordPage = ()=>{
     const emailParams = searchParams.get("email")
     
     const [error, setError] = useState<string | null>(decodeURIComponent(errMsg||""))
-    const [email, setEmail] = useState(emailParams)
+    const [email, setEmail] = useState(emailParams || "")
 
     const [loading, setLoading] = useState(false)
     const handleLogIn = async () => {
@@ -170,5 +170,13 @@ const ChangePasswordPage = ()=>{
         </form>
       </div>
     )
+}
+
+const ChangePasswordPage = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">Завантаження...</div>}>
+      <ChangePasswordContent />
+    </Suspense>
+  )
 }
 export default ChangePasswordPage

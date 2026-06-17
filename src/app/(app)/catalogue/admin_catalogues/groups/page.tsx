@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { apiService } from '@/services/axiosService'
+import { ROUTES } from '@/constants/routes'
 
 type Group = {
   id: number
@@ -100,7 +102,7 @@ const Pagination: React.FC<{
   )
 }
 
-export const AdminGroupsCatalogue = () => {
+const AdminGroupsCatalogue = () => {
   const [groups, setGroups] = useState<Group[]>([])
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -109,10 +111,10 @@ export const AdminGroupsCatalogue = () => {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedFaculties, setSelectedFaculties] = useState<number[]>([])
-  const [selectedDepartments, setSelectedDepartments] = useState<number[]>([])
-  const [selectedDegrees, setSelectedDegrees] = useState<number[]>([])
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [selectedFaculties, setSelectedFaculties] = useState<string[]>([])
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
+  const [selectedDegrees, setSelectedDegrees] = useState<string[]>([])
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const [selectedSorting, setSelectedSorting] = useState<number>(0)
 
   const [totalPages, setTotalPages] = useState(0)
