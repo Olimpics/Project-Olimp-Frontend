@@ -64,16 +64,47 @@ export const clearToken = () => {
   authToken = null
 }
 
+interface CacheEntry {
+  data: any
+  timestamp: number
+}
+
+const getCache = new Map<string, CacheEntry>()
+const CACHE_TTL = 30000 // 30 seconds Cache TTL
+
+export const clearApiCache = () => {
+  getCache.clear()
+}
+
 export const apiService = {
-  get: <T>(url: string, config?: AxiosRequestConfig) =>
-    axiosInstance.get<T>(url, config).then((res) => res.data),
+  get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    // Generate a cache key including request params
+    const key = JSON.stringify({ url, params: config?.params })
+    const cached = getCache.get(key)
+    const now = Date.now()
 
-  post: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
-    axiosInstance.post<T>(url, data, config).then((res) => res.data),
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      return Promise.resolve(cached.data as T)
+    }
 
-  put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
-    axiosInstance.put<T>(url, data, config).then((res) => res.data),
+    return axiosInstance.get<T>(url, config).then((res) => {
+      getCache.set(key, { data: res.data, timestamp: Date.now() })
+      return res.data
+    })
+  },
 
-  delete: <T>(url: string, config?: AxiosRequestConfig) =>
-    axiosInstance.delete<T>(url, config).then((res) => res.data),
+  post: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    getCache.clear()
+    return axiosInstance.post<T>(url, data, config).then((res) => res.data)
+  },
+
+  put: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    getCache.clear()
+    return axiosInstance.put<T>(url, data, config).then((res) => res.data)
+  },
+
+  delete: <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    getCache.clear()
+    return axiosInstance.delete<T>(url, config).then((res) => res.data)
+  },
 }
