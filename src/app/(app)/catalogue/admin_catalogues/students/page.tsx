@@ -244,23 +244,38 @@ const AdminStudentCatalogueContent = () => {
     const fetchInitialData = async () => {
       try {
         const [facData, eduData, specData, groupData, studyFormData] = await Promise.all([
-          apiService.get<any[]>('Faculty'),
-          apiService.get<any[]>('EducationalDegree'),
-          apiService.get<any[]>('Filter/specialities'),
-          apiService.get<any[]>('Filter/groups'),
-          apiService.get<any[]>('StudyForm')
+          apiService.get<any[]>('Faculty').catch(err => {
+            console.error("Failed to fetch Faculty:", err);
+            return [];
+          }),
+          apiService.get<any[]>('EducationalDegree').catch(err => {
+            console.error("Failed to fetch EducationalDegree:", err);
+            return [];
+          }),
+          apiService.get<any[]>('Filter/specialities').catch(err => {
+            console.error("Failed to fetch Filter/specialities:", err);
+            return [];
+          }),
+          apiService.get<any[]>('Filter/groups').catch(err => {
+            console.error("Failed to fetch Filter/groups:", err);
+            return [];
+          }),
+          apiService.get<any[]>('StudyForm').catch(err => {
+            console.error("Failed to fetch StudyForm:", err);
+            return [];
+          })
         ])
 
-        const formattedSpecs = specData.map((s: Specialities) => ({
+        const formattedSpecs = (specData || []).map((s: Specialities) => ({
           ...s,
           label: `${s.code} - ${s.name}`,
         }))
 
-        setFaculties(facData)
-        setEduDegrees(eduData)
-        setSpecialities(formattedSpecs)
-        setGroupes(groupData)
-        setStudyForms(studyFormData)
+        setFaculties(facData || [])
+        setEduDegrees(eduData || [])
+        setSpecialities(formattedSpecs || [])
+        setGroupes(groupData || [])
+        setStudyForms(studyFormData || [])
         
         fetchFilteredData(1)
       } catch (error) {

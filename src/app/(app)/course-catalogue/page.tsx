@@ -10,25 +10,25 @@ import { USER_PROFLE } from '@/constants/cookies'
 import { apiService } from '@/services/axiosService'
 
 type StudentSelectedDiscipline = {
-  idBindAddDisciplines: number
-  idAddDisciplines: number
-  nameAddDisciplines: string
-  codeAddDisciplines: string
+  idBindSelectiveDisciplines: string
+  idSelectiveDisciplines: string
+  nameSelectiveDisciplines: string
+  codeSelectiveDisciplines: string
   semestr: number
-  inProcess: number
+  inProcess: boolean
 }
 
 type StudentWithChoices = {
-  studentId: number
+  studentId: string
   fullName: string
   faculty: string
   group: string
   year: number
-  degreeLevelId: number
+  degreeLevelId: string
   degreeLevelName: string
   selectedDisciplines: StudentSelectedDiscipline[]
-  selectionStatus: number
-  confirmationStatus: number
+  selectionStatus: boolean
+  confirmationStatus: boolean
 }
 
 type Faculty = {
@@ -52,7 +52,7 @@ type Course = {
 }
 
 type StudentRow = {
-  id: number
+  id: string
   fullName: string
   faculty: string
   degreeLevelName: string
@@ -61,8 +61,8 @@ type StudentRow = {
   disciplinesShort: string
   disciplinesAll: string[]
   rawChoices: StudentSelectedDiscipline[]
-  selectionStatus: number
-  confirmationStatus: number
+  selectionStatus: boolean | number
+  confirmationStatus: boolean | number
   selectionLabel: string
   confirmationLabel: string
 }
@@ -70,6 +70,8 @@ type StudentRow = {
 interface Column<T> {
   header: string
   accessor: keyof T
+  sortable?: boolean
+  render?: (row: T) => React.ReactNode
 }
 
 const sortingOptions = [
@@ -176,7 +178,7 @@ const CourseCataloguePage = () => {
   const [declineConfirmLockUntil, setDeclineConfirmLockUntil] = useState(0)
 
   type LocalChoice = {
-    bindId: number
+    bindId: string
     label: string
     isConfirm: 0 | 1
   }
@@ -185,7 +187,7 @@ const CourseCataloguePage = () => {
   const [modalChoices, setModalChoices] = useState<LocalChoice[]>([])
 
   const fetchStudents = useCallback(
-    async (page: number = currentPage) => {
+    async (page: number = currentPage, sortOrderOverride?: number) => {
       setLoading(true)
       setError(null)
 
@@ -219,8 +221,9 @@ const CourseCataloguePage = () => {
           params.set('confirmationStatus', confirmationFilter)
         }
 
-        params.set('sortOrder', String(sortOrder))
-        params.set('isNew', isNewFilter)
+        const activeSort = sortOrderOverride !== undefined ? sortOrderOverride : sortOrder
+        params.set('sortOrder', String(activeSort))
+        params.set('isNew', isNewFilter === '1' ? 'true' : 'false')
 
         if (isNewFilter === '1') {
           const facultyId = getFacultyIdFromCookie()
@@ -239,16 +242,16 @@ const CourseCataloguePage = () => {
             s.selectedDisciplines.length === 0
               ? []
               : s.selectedDisciplines.map(
-                (d) => `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`
+                (d) => `${d.codeSelectiveDisciplines} – ${d.nameSelectiveDisciplines}`
               )
 
           const disciplinesShort =
             allDisciplines.length === 0 ? 'Немає вибраних дисциплін' : allDisciplines[0]
 
           const selectionLabel =
-            s.selectionStatus === 1 ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'
+            (s.selectionStatus === true || s.selectionStatus === 1) ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'
           const confirmationLabel =
-            s.confirmationStatus === 1 ? 'Усі підтверджено' : 'Не всі підтверджено'
+            (s.confirmationStatus === true || s.confirmationStatus === 1) ? 'Усі підтверджено' : 'Не всі підтверджено'
 
           return {
             id: s.studentId,
@@ -321,11 +324,11 @@ const CourseCataloguePage = () => {
 
   const columns: Column<StudentRow>[] = useMemo(
     () => [
-      { header: 'ПІБ студента', accessor: 'fullName' },
-      { header: 'Факультет', accessor: 'faculty' },
+      { header: 'ПІБ студента', accessor: 'fullName', sortable: true },
+      { header: 'Факультет', accessor: 'faculty', sortable: true },
       { header: 'Рівень освіти', accessor: 'degreeLevelName' },
-      { header: 'Курс', accessor: 'year' },
-      { header: 'Група', accessor: 'group' },
+      { header: 'Курс', accessor: 'year', sortable: true },
+      { header: 'Група', accessor: 'group', sortable: true },
       {
         header: 'Обрані дисципліни',
         accessor: 'disciplinesShort',
@@ -353,13 +356,31 @@ const CourseCataloguePage = () => {
     []
   )
 
+  const handleSort = (field: keyof StudentRow) => {
+    let newSortOrder = 0
+    if (field === 'fullName') {
+      newSortOrder = sortOrder === 0 ? 1 : 0
+    } else if (field === 'faculty') {
+      newSortOrder = sortOrder === 2 ? 3 : 2
+    } else if (field === 'group') {
+      newSortOrder = sortOrder === 4 ? 5 : 4
+    } else if (field === 'year') {
+      newSortOrder = sortOrder === 6 ? 7 : 6
+    } else {
+      return
+    }
+    setSortOrder(newSortOrder)
+    setCurrentPage(1)
+    fetchStudents(1, newSortOrder)
+  }
+
   const handleEdit = (row: StudentRow) => {
     const localChoices: LocalChoice[] =
       row.rawChoices.length === 0
         ? []
         : row.rawChoices.map((d) => ({
-          bindId: d.idBindAddDisciplines,
-          label: `${d.codeAddDisciplines} – ${d.nameAddDisciplines}`,
+          bindId: d.idBindSelectiveDisciplines,
+          label: `${d.codeSelectiveDisciplines} – ${d.nameSelectiveDisciplines}`,
           isConfirm: 1,
         }))
 
@@ -522,22 +543,10 @@ const CourseCataloguePage = () => {
                 Студенти
               </Link>
               <Link
-                href="/table"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
-                Таблиця
-              </Link>
-              <Link
                 href="/course-catalogue/disciplines"
                 className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
               >
                 Дисципліни
-              </Link>
-              <Link
-                href="/course-catalogue/campaign"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
-                Поточний вибір
               </Link>
             </div>
 
@@ -557,23 +566,6 @@ const CourseCataloguePage = () => {
                   Пошук
                 </button>
               </div>
-
-              <select
-                value={sortOrder}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setSortOrder(val)
-                  setCurrentPage(1)
-                  fetchStudents(1)
-                }}
-                className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              >
-                {sortingOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </div>
@@ -594,6 +586,16 @@ const CourseCataloguePage = () => {
                   isActionEnabled
                   onEdit={handleEdit}
                   showDeleteAction={false}
+                  sortField={
+                    sortOrder === 0 || sortOrder === 1 ? 'fullName' :
+                    sortOrder === 2 || sortOrder === 3 ? 'faculty' :
+                    sortOrder === 4 || sortOrder === 5 ? 'group' :
+                    sortOrder === 6 || sortOrder === 7 ? 'year' : null
+                  }
+                  sortDirection={
+                    [0, 2, 4, 6].includes(sortOrder) ? 'asc' : 'desc'
+                  }
+                  onSort={handleSort}
                 />
               <div className="border-t border-slate-100 bg-slate-50/60 px-3 sm:px-4 lg:px-5 py-3">
                 <Pagination

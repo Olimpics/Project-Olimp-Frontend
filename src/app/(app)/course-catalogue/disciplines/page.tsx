@@ -1,12 +1,20 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import DataTable from '@/components/ui/DataTable'
 import { FilterBox } from '@/components/ui/FilterBox'
 import { Modal } from '@/components/ui/Modal'
 import { getCookie } from '@/services/cookie-servies'
 import { USER_PROFLE } from '@/constants/cookies'
 import { apiService } from '@/services/axiosService'
+
+interface Column<T> {
+  header: string
+  accessor: keyof T
+  sortable?: boolean
+  render?: (row: T) => React.ReactNode
+}
 
 type AdminDiscipline = {
   idAddDisciplines: number
@@ -175,8 +183,7 @@ const getStatusConfig = (code: StatusCode | string | null) => {
 
 const DisciplineCataloguePage = () => {
   const [disciplines, setDisciplines] = useState<AdminDiscipline[]>([])
-  const [studentRefreshTrigger, setStudentRefreshTrigger] = useState(0)
-  const [viewMode, setViewMode] = useState<'disciplines' | 'students'>('disciplines')
+  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>('grid')
 
   const [faculties, setFaculties] = useState<Faculty[]>([])
   const [degrees, setDegrees] = useState<EduDegree[]>([])
@@ -202,7 +209,7 @@ const DisciplineCataloguePage = () => {
   const [selectedStatus, setSelectedStatus] = useState<StatusCode | null>(null)
 
   const fetchDisciplines = useCallback(
-    async (page: number) => {
+    async (page: number, sortOrderOverride?: number) => {
       setLoading(true)
       setError(null)
 
@@ -210,15 +217,13 @@ const DisciplineCataloguePage = () => {
         const params = new URLSearchParams()
         params.set('page', String(page))
         params.set('pageSize', '15')
-        params.set('sortOrder', String(sortOrder)) 
+        const activeSort = sortOrderOverride !== undefined ? sortOrderOverride : sortOrder
+        params.set('sortOrder', String(activeSort)) 
 
         if (searchTerm.trim()) params.set('search', searchTerm.trim())
         
         if (pendingFaculties.length > 0) {
           params.set('faculties', pendingFaculties.join(','))
-        } else {
-          /*const facultyId = getFacultyIdFromCookie()
-          if (facultyId > 0) params.set('faculties', String(facultyId))*/
         }
 
         if (pendingDegrees.length > 0) params.set('degreeLevelIds', pendingDegrees.join(','))
@@ -251,16 +256,59 @@ const DisciplineCataloguePage = () => {
       
       fetchDisciplines(1)
     }
-    console.log("USE EFFECT ", disciplines)
     init()
   }, []) 
 
-  useEffect(() => {
-    if (disciplines.length > 0) {
-        fetchDisciplines(1)
+  const columns: Column<AdminDiscipline>[] = useMemo(
+    () => [
+      { header: 'Назва дисципліни', accessor: 'nameAddDisciplines', sortable: true },
+      { header: 'Викладач', accessor: 'teachers' },
+      { header: 'Кафедра', accessor: 'departmentName' },
+      { header: 'Факультет', accessor: 'facultyAbbreviation' },
+      {
+        header: 'Набір',
+        accessor: 'currentCount',
+        sortable: true,
+        render: (row: AdminDiscipline) => {
+          const { rangeLabel, mode } = getProgressInfo(row)
+          return (
+            <span>
+              {rangeLabel} {mode ? `(${mode})` : ''}
+            </span>
+          )
+        }
+      },
+      {
+        header: 'Статус',
+        accessor: 'status',
+        render: (row: AdminDiscipline) => {
+          const statusCode = statusToCode(row.status)
+          const config = getStatusConfig(statusCode)
+          const statusLabel = statusCode != null ? codeToStatusLabel(statusCode) : row.status || 'Без статусу'
+          return (
+            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}>
+              {statusLabel}
+            </span>
+          )
+        }
+      }
+    ],
+    []
+  )
+
+  const handleSort = (field: keyof AdminDiscipline) => {
+    let newSortOrder = 0
+    if (field === 'nameAddDisciplines') {
+      newSortOrder = sortOrder === 0 ? 1 : 0
+    } else if (field === 'currentCount') {
+      newSortOrder = sortOrder === 2 ? 3 : 2
+    } else {
+      return
     }
-    console.log("USE EFFECT WITH SORT ORDER ", disciplines)
-  }, [sortOrder])
+    setSortOrder(newSortOrder)
+    setCurrentPage(1)
+    fetchDisciplines(1, newSortOrder)
+  }
 
   const handleApplyFilters = () => {
     fetchDisciplines(1)
@@ -421,22 +469,47 @@ const DisciplineCataloguePage = () => {
               <span className="px-4 py-2 text-sm font-semibold border-b-4 border-blue-600 text-blue-700">
                 Дисципліни
               </span>
-              <Link
-                href="/table"
-                className="px-4 py-2 text-sm font-semibold border-b-4 border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors duration-200"
-              >
-                Таблиця
-              </Link>
-          </div>
+            </div>
 
-            <div className="flex flex-row-reverse sm:flex-row gap-2 w-1/2">
-              <div className="flex-1 flex gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode('grid')}
+                  className={`p-2 rounded-xl border transition-all ${
+                    displayMode === 'grid'
+                      ? 'bg-blue-50 border-blue-200 text-blue-600'
+                      : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Режим карток"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode('table')}
+                  className={`p-2 rounded-xl border transition-all ${
+                    displayMode === 'table'
+                      ? 'bg-blue-50 border-blue-200 text-blue-600'
+                      : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Режим таблиці"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="flex gap-2 flex-1 w-full">
                 <input
                   type="text"
                   placeholder="Пошук за назвою, викладачем або кафедрою..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full sm:w-80 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 />
                 <button
                   onClick={handleApplyFilters}
@@ -445,23 +518,7 @@ const DisciplineCataloguePage = () => {
                   Оновити
                 </button>
               </div>
-
-            <select
-              value={sortOrder}
-              onChange={(e) => {
-                const val = Number(e.target.value)
-                setSortOrder(val)
-                setCurrentPage(1)
-              }}
-              className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-            >
-                {sortingOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-            </select>
-              </div>
+            </div>
           </div>
         </div>
 
@@ -476,6 +533,34 @@ const DisciplineCataloguePage = () => {
             <div className="p-4 text-gray-600">Завантаження...</div>
           ) : disciplines.length === 0 ? (
             <div className="p-4 text-gray-600">За вибраними фільтрами дисциплін не знайдено.</div>
+          ) : displayMode === 'table' ? (
+            <>
+              <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden mb-4">
+                <DataTable
+                  columns={columns}
+                  data={disciplines}
+                  isActionEnabled
+                  onEdit={openEditModal}
+                  showDeleteAction={false}
+                  sortField={
+                    sortOrder === 0 || sortOrder === 1 ? 'nameAddDisciplines' :
+                    sortOrder === 2 || sortOrder === 3 ? 'currentCount' : null
+                  }
+                  sortDirection={
+                    [0, 2].includes(sortOrder) ? 'asc' : 'desc'
+                  }
+                  onSort={handleSort}
+                />
+              </div>
+              <Pagination
+                totalPages={totalPages}
+                currentPage={currentPage}
+                onPageChange={(page) => {
+                  setCurrentPage(page)
+                  fetchDisciplines(page)
+                }}
+              />
+            </>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
@@ -489,57 +574,55 @@ const DisciplineCataloguePage = () => {
                   return (
                     <div
                       key={d.idAddDisciplines}
-                      className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white/95 shadow-sm hover:shadow-lg p-4 sm:p-5 transition-all duration-200 hover:-translate-y-0.5"
+                      className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white/95 shadow-sm hover:shadow-lg p-5 transition-all duration-200 hover:-translate-y-0.5 min-h-[300px]"
                     >
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-3 h-40">
-                          <div>
-                            <div className="text-xs uppercase tracking-wide text-gray-500">
-                              {d.facultyAbbreviation || 'Без факультету'}
-                              <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                              {d.teachers && (
-                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5">
-                                  {d.teachers}
-                                </span>
-                              )}
-                              {d.isFaculty != null && (
-                                <span className="inline-flex items-center rounded-full py-0.5">
-                                  {d.isFaculty ? "Факультетська" : "Університетська"}
-                                </span>
-                              )}
-                            </div>
-                            </div>
-                            <h2 className="mt-6 text-base w-80 sm:text-lg font-semibold text-gray-900">
-                              {d.nameAddDisciplines}
-                            </h2>
-                            {d.departmentName && (
-                              <div className="mt-1 text-xs text-gray-500">
-                                Кафедра: {d.departmentName}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-1 w-1/4">
-                            <span
-                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
-                            >
-                              {statusLabel}
+                      {/* Top Row: Meta & Status Badge */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">
+                            {d.facultyAbbreviation || 'Без факультету'}
+                          </span>
+                          {d.isFaculty != null && (
+                            <span className="inline-flex items-center text-[10px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-md w-fit">
+                              {d.isFaculty ? "Факультетська" : "Університетська"}
                             </span>
-                            {d.isForceChange === 1 && (
-                              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
-                                Адмін. зміна
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                          >
+                            {statusLabel}
+                          </span>
+                          {d.isForceChange === 1 && (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-medium whitespace-nowrap">
+                              Адмін. зміна
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
+                      {/* Center: Discipline Name & Department */}
+                      <div className="flex-1 flex flex-col justify-center items-center text-center py-6 px-2 min-h-[100px]">
+                        <h2 className="text-base sm:text-lg font-bold text-slate-800 break-words line-clamp-3 leading-snug">
+                          {d.nameAddDisciplines}
+                        </h2>
+                        {d.departmentName && (
+                          <p className="mt-2 text-xs text-slate-400 font-medium italic truncate max-w-full">
+                            Кафедра: {d.departmentName}
+                          </p>
+                        )}
+                      </div>
 
-                        <div className="mt-6">
-                          <div className="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>Набір студентів</span>
-                            <span className="font-medium">
+                      {/* Bottom Row: Progress and Action */}
+                      <div className="border-t border-slate-100 pt-4 space-y-4">
+                        <div>
+                          <div className="flex justify-between text-xs text-gray-600 mb-1.5">
+                            <span className="font-medium text-slate-500">Набір студентів</span>
+                            <span className="font-semibold text-slate-700">
                               {rangeLabel}
                               {mode && (
-                                <span className="ml-1 text-[10px] uppercase text-gray-500">
+                                <span className="ml-1 text-[9px] uppercase text-slate-400 font-bold">
                                   ({mode})
                                 </span>
                               )}
@@ -552,21 +635,21 @@ const DisciplineCataloguePage = () => {
                             />
                           </div>
 
-                          <div className="mt-1 flex justify-between text-[11px] text-gray-500">
+                          <div className="mt-1.5 flex justify-between text-[10px] text-slate-400 font-medium">
                             <span>Норматив: {d.normative ?? '—'}</span>
                             <span>Максимум: {d.maxCountPeople ?? '—'}</span>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(d)}
-                          className="inline-flex items-center rounded-xl border border-blue-600 px-3.5 py-1.5 text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
-                        >
-                          Редагувати статус
-                        </button>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(d)}
+                            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 bg-white hover:bg-blue-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200"
+                          >
+                            Редагувати статус
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
