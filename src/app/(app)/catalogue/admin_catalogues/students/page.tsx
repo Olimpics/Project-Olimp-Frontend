@@ -8,16 +8,22 @@ import { Modal } from '@/components/ui/Modal'
 import { apiService } from '@/services/axiosService'
 
 type Student = {
-  idStudents: number
+  idStudent: string
+  firstName: string
+  secondName: string
+  thirdName: string
   nameStudent: string
   facultyAbbreviation: string
+  specialityCode: string
   speciality: string
   degreeName: string
   groupName: string
-  groupId: string
+  groupId?: string
   course: number
+  isShort: boolean
   isShortLabel: string
-  nameStudyForm: string
+  nameStudyForm?: string
+  id?: string
 }
 
 type Faculty = {
@@ -157,9 +163,7 @@ const AdminStudentCatalogueContent = () => {
       .map((sf) => sf.idStudyForm);
 
     if (studyFormIds.length > 0) {
-      studyFormIds.forEach(id => {
-        query.append('StudyFormIds', id.toString());
-      });
+      query.append('studyFormIds', studyFormIds.join(','));
     }
 
     if (pendingFaculties.length > 0) {
@@ -179,7 +183,7 @@ const AdminStudentCatalogueContent = () => {
     }
 
     if (pendingSpecialities.length > 0) {
-      query.append('speciality', pendingSpecialities.join(','));
+      query.append('specialities', pendingSpecialities.join(','));
     }
 
     if (groupGive) {
@@ -187,7 +191,7 @@ const AdminStudentCatalogueContent = () => {
         const groupList = await apiService.get<any[]>('Filter/groups');
         const matchingGroup = groupList.find((g) => g.code === groupGive);
         if (matchingGroup) {
-          query.append('group', matchingGroup.id.toString());
+          query.append('groupIds', matchingGroup.id.toString());
           setPendingGroupes((prev) => 
             prev.includes(matchingGroup.code) ? prev : [...prev, matchingGroup.code]
           );
@@ -200,12 +204,12 @@ const AdminStudentCatalogueContent = () => {
         .filter((g) => pendingGroupes.includes(g.code))
         .map((g) => g.id);
       if (selectedGroupIds.length > 0) {
-        query.append('group', selectedGroupIds.join(','));
+        query.append('groupIds', selectedGroupIds.join(','));
       }
     }
 
     if (pendingIsShort !== null) {
-      query.append('isShort', pendingIsShort.toString());
+      query.append('isShort', (pendingIsShort === 1).toString());
     }
 
     try {
@@ -213,11 +217,14 @@ const AdminStudentCatalogueContent = () => {
 
       const displayStudents = data.items.map((student: any) => {
         const matchingForm = studyForms.find(sf => sf.idStudyForm === student.idStudyForm);
+        const nameStudent = `${student.secondName || ''} ${student.firstName || ''} ${student.thirdName || ''}`.trim() || 'Не вказано';
 
         return {
           ...student,
+          id: student.idStudent,
+          nameStudent,
           nameStudyForm: matchingForm ? matchingForm.nameStudyForm : "Не вказано",
-          isShortLabel: student.isShort === 1 ? "Так" : "Ні",
+          isShortLabel: (student.isShort === true || student.isShort === 1) ? "Так" : "Ні",
         };
       });
 
@@ -286,7 +293,7 @@ const AdminStudentCatalogueContent = () => {
   const confirmDelete = async () => {
     if (!selectedStudent) return
     try {
-      await apiService.delete(`Student/${selectedStudent.idStudents}`)
+      await apiService.delete(`Student/${selectedStudent.idStudent}`)
       fetchFilteredData(currentPage)
       setIsModalOpen(false)
     } catch (error) {
@@ -297,7 +304,7 @@ const AdminStudentCatalogueContent = () => {
   const saveChanges = async () => {
     if (!selectedStudent) return
     try {
-      await apiService.put(`Student/${selectedStudent.idStudents}`, selectedStudent)
+      await apiService.put(`Student/${selectedStudent.idStudent}`, selectedStudent)
       fetchFilteredData(currentPage)
       setIsModalOpen(false)
     } catch (error) {
@@ -461,11 +468,50 @@ const AdminStudentCatalogueContent = () => {
             <h2 className="text-xl font-bold mb-4">Редагування студента</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">ПІБ студента</label>
+                <label className="block text-sm font-medium text-gray-700">Прізвище</label>
                 <input
                   type="text"
-                  value={selectedStudent.nameStudent}
-                  onChange={(e) => setSelectedStudent({ ...selectedStudent, nameStudent: e.target.value })}
+                  value={selectedStudent.secondName || ''}
+                  onChange={(e) => {
+                    const newSec = e.target.value;
+                    setSelectedStudent({
+                      ...selectedStudent,
+                      secondName: newSec,
+                      nameStudent: `${newSec} ${selectedStudent.firstName || ''} ${selectedStudent.thirdName || ''}`.trim()
+                    });
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ім'я</label>
+                <input
+                  type="text"
+                  value={selectedStudent.firstName || ''}
+                  onChange={(e) => {
+                    const newFirst = e.target.value;
+                    setSelectedStudent({
+                      ...selectedStudent,
+                      firstName: newFirst,
+                      nameStudent: `${selectedStudent.secondName || ''} ${newFirst} ${selectedStudent.thirdName || ''}`.trim()
+                    });
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">По батькові</label>
+                <input
+                  type="text"
+                  value={selectedStudent.thirdName || ''}
+                  onChange={(e) => {
+                    const newThird = e.target.value;
+                    setSelectedStudent({
+                      ...selectedStudent,
+                      thirdName: newThird,
+                      nameStudent: `${selectedStudent.secondName || ''} ${selectedStudent.firstName || ''} ${newThird}`.trim()
+                    });
+                  }}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>

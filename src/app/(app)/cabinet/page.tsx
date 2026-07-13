@@ -449,6 +449,9 @@ export default function Page() {
                             >
                                 {mockSubjects.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
+                            <button title="Експорт" className="text-gray-600 hover:text-blue-600 transition p-1">
+                                <ExportIcon />
+                            </button>
                         </div>
                     </div>
 
@@ -475,14 +478,6 @@ export default function Page() {
                     </div>
 
                     <div className="relative">
-                        <div className="flex justify-end mb-2 gap-2 items-center">
-                            <button className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition">
-                                Прийняти зміни
-                            </button>
-                            <button title="Експорт" className="text-gray-600 hover:text-blue-600 transition p-1">
-                                <ExportIcon />
-                            </button>
-                        </div>
                         <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
                             <table className="w-full min-w-[800px] border-collapse bg-white">
                                 <thead className="bg-blue-600 text-white">

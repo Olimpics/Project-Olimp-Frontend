@@ -8,6 +8,7 @@ interface Column<T> {
   accessor: keyof T
   href?: (row: T) => string
   render?: (row: T) => React.ReactNode
+  sortable?: boolean
 }
 
 interface DataTableProps<T> {
@@ -20,6 +21,9 @@ interface DataTableProps<T> {
   onEdit?: (el: T) => void
   onManagePermissions?: (el: T) => void
   onClick?: (el: T) => void
+  sortField?: keyof T | string | null
+  sortDirection?: 'asc' | 'desc'
+  onSort?: (field: any) => void
 }
 
 const DataTable = <T extends { id?: string | number } & Record<string, any>>({
@@ -32,6 +36,9 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
   onEdit,
   onManagePermissions,
   onClick,
+  sortField,
+  sortDirection,
+  onSort,
 }: DataTableProps<T>) => {
   const router = useRouter()
 
@@ -40,14 +47,25 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
       <table className="min-w-full bg-white border border-gray-300">
         <thead>
           <tr className="bg-gray-200 text-gray-700">
-            {columns.map((col) => (
-              <th
-                key={`${col.header}-${String(col.accessor)}`}
-                className="py-2 px-4 border-b text-left"
-              >
-                {col.header}
-              </th>
-            ))}
+            {columns.map((col) => {
+              const isSorted = sortField === col.accessor
+              return (
+                <th
+                  key={`${col.header}-${String(col.accessor)}`}
+                  className={`py-2 px-4 border-b text-left ${col.sortable && onSort ? 'cursor-pointer select-none hover:bg-gray-300' : ''}`}
+                  onClick={col.sortable && onSort ? () => onSort(col.accessor) : undefined}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{col.header}</span>
+                    {col.sortable && onSort && (
+                      <span className="text-gray-400 text-xs">
+                        {isSorted ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              )
+            })}
             {isActionEnabled && (
               <th className="py-2 px-4 border-b text-center">Дії</th>
             )}

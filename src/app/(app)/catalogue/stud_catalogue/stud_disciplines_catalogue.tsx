@@ -43,12 +43,7 @@ interface Column {
   accessor: keyof Discipline
 }
 
-const sortingOptions = [
-  { label: 'Алфавіт (А-Я)', value: 1 },
-  { label: 'Алфавіт (Я-А)', value: 0 },
-  { label: 'Учасники (↑)', value: 3 },
-  { label: 'Учасники (↓)', value: 2 },
-]
+
 
 const Pagination: React.FC<{
   totalPages: number
@@ -129,7 +124,13 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
   const [pendingCourses, setPendingCourses] = useState<string[]>([])
   const [isEvenSemester, setIsEvenSemester] = useState<boolean | null>(null)
   const [showOnlyAvailable, setShowOnlyAvailable] = useState<string[]>([])
-  const [selectedSorting, setSelectedSorting] = useState<number>(0)
+  const [selectedSorting, setSelectedSorting] = useState<number>(1) // Default to 1 (Alphabet A-Z)
+
+  const [catalogYears, setCatalogYears] = useState<any[]>([])
+  const [selectedYear, setSelectedYear] = useState<string>('')
+  const [sortField, setSortField] = useState<string | null>('nameAddDisciplines')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [isInitialMount, setIsInitialMount] = useState(true)
 
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -149,6 +150,11 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
           search: searchTerm,
           sortOrder: selectedSorting.toString(),
         })
+
+        if (selectedYear) {
+          query.append('catalogYearId', selectedYear)
+          query.append('CatalogYearId', selectedYear)
+        }
 
         if (pendingFaculties.length > 0) {
           query.append('faculties', pendingFaculties.join(','))
@@ -206,25 +212,23 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
       showOnlyAvailable,
       selectedSorting,
       eduDegrees,
+      selectedYear,
     ]
   )
-
-  /*useEffect(() => {
-    fetchFilteredData(1)
-  }, [selectedSorting])*/
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [facData, eduData] = await Promise.all([
+        const [facData, eduData, yearData] = await Promise.all([
           apiService.get<any[]>('Faculty'),
-          apiService.get<any[]>('EducationalDegree')
+          apiService.get<any[]>('EducationalDegree'),
+          apiService.get<any[]>('Parameters/CatalogYearsSelective').catch(() => [])
         ])
 
         setFaculties(facData)
         setEduDegrees(eduData)
-
-        fetchFilteredData(1)
+        setCatalogYears(yearData)
+        setIsInitialMount(false)
       } catch (error) {
         console.error('Error fetching initial data:', error)
       }
@@ -233,18 +237,61 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
     fetchInitialData()
   }, [])
 
+  useEffect(() => {
+    if (!isInitialMount) {
+      fetchFilteredData(1)
+    }
+  }, [selectedSorting, selectedYear, isInitialMount, fetchFilteredData])
+
   const handleSearch = () => {
     setCurrentPage(1)
     fetchFilteredData(1)
   }
 
+  const handleSort = (field: string) => {
+    let nextDirection: 'asc' | 'desc' = 'asc'
+    if (sortField === field) {
+      nextDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+    }
+    setSortField(field)
+    setSortDirection(nextDirection)
+
+    if (field === 'nameAddDisciplines' || field === 'studentCount') {
+      let apiSortOrder = 1
+      if (field === 'nameAddDisciplines') {
+        apiSortOrder = nextDirection === 'asc' ? 1 : 0
+      } else if (field === 'studentCount') {
+        apiSortOrder = nextDirection === 'asc' ? 3 : 2
+      }
+      setSelectedSorting(apiSortOrder)
+      setCurrentPage(1)
+    } else {
+      setDisciplines((prev) => {
+        const sorted = [...prev].sort((a, b) => {
+          const aVal = a[field as keyof Discipline]
+          const bVal = b[field as keyof Discipline]
+          if (typeof aVal === 'string') {
+            return nextDirection === 'asc'
+              ? aVal.localeCompare(bVal as string)
+              : (bVal as string).localeCompare(aVal)
+          } else {
+            return nextDirection === 'asc'
+              ? Number(aVal) - Number(bVal)
+              : Number(bVal) - Number(aVal)
+          }
+        })
+        return sorted
+      })
+    }
+  }
+
   const columns: Column[] = [
-    { header: 'Факультет', accessor: 'facultyAbbreviation' },
-    { header: 'Код дисципліни', accessor: 'codeAddDisciplines' },
-    { header: 'Назва дисципліни', accessor: 'nameAddDisciplines' },
-    { header: 'Кількість студентів', accessor: 'studentCount' },
-    { header: 'Рівень освіти', accessor: 'degreeLevelName' },
-    { header: 'Cеместр', accessor: 'isEvenSemesterParsed'}
+    { header: 'Факультет', accessor: 'facultyAbbreviation', sortable: true },
+    { header: 'Код дисципліни', accessor: 'codeAddDisciplines', sortable: true },
+    { header: 'Назва дисципліни', accessor: 'nameAddDisciplines', sortable: true },
+    { header: 'Кількість студентів', accessor: 'studentCount', sortable: true },
+    { header: 'Рівень освіти', accessor: 'degreeLevelName', sortable: true },
+    { header: 'Cеместр', accessor: 'isEvenSemesterParsed', sortable: true }
   ]
 
   return (
@@ -335,19 +382,17 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
           </div>
           <GoToPageButton/>
           <select
-            value={selectedSorting}
+            value={selectedYear}
             onChange={(e) => {
-              const newSort = Number(e.target.value)
-              setSelectedSorting(newSort)
+              setSelectedYear(e.target.value)
               setCurrentPage(1)
-              fetchFilteredData(1)
             }}
-            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
-
-            {sortingOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            <option value="">Усі навчальні роки</option>
+            {catalogYears.map((year) => (
+              <option key={year.idCatalogYear || year.id} value={year.idCatalogYear || year.id}>
+                {year.nameCatalog || year.name || year.year}
               </option>
             ))}
           </select>
@@ -362,6 +407,9 @@ export const StudentDisciplinesCatalogue = React.memo(() => {
               }}
               columns={columns}
               data={disciplines}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
           />
           <Pagination
             totalPages={totalPages}

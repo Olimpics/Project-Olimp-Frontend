@@ -38,7 +38,7 @@ type Faculty = {
 
 type EduDegree = {
     idEducationalDegree: number
-    nameEducationalDegreec: string
+    nameEducationalDegree: string
 }
 
 type Courses = {
@@ -50,13 +50,7 @@ interface Column {
     accessor: keyof Discipline | 'studentCount'
 }
 
-const sortingOptions = [
-    { label: 'Назва програми (А-Я)', value: 1 },
-    { label: 'Назва програми (Я-А)', value: 2 },
-    { label: 'Код спеціальності (↓)', value: 3 }, 
-    { label: 'Кількість студентів (↑)', value: 4 },
-    { label: 'Кількість студентів (↓)', value: 5 },
-]
+
 
 const Pagination: React.FC<{
     totalPages: number
@@ -124,11 +118,16 @@ const AdminDisciplinesCatalogue = React.memo(() => {
     const [pendingDegrees, setPendingDegrees] = useState<string[]>([])
     const [pendingCourses, setPendingCourses] = useState<string[]>([])
     const [isEvenSemester, setIsEvenSemester] = useState<boolean | null>(null)
-    const [showOnlyAvailable, setShowOnlyAvailable] = useState<string[]>([])
+    const [showOnlyMine, setShowOnlyMine] = useState<string[]>([])
     const [archivedFilter, setArchivedFilter] = useState<'all' | 'active' | 'archived'>('all')
     const [deleting, setDeleting] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
-    const [selectedSorting, setSelectedSorting] = useState<number>(0)
+    const [selectedSorting, setSelectedSorting] = useState<number>(1) // Default to 1 (Alphabet A-Z)
+
+    const [selectedYear, setSelectedYear] = useState<string>('')
+    const [sortField, setSortField] = useState<string | null>('nameSelectiveDisciplines')
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+    const [isInitialMount, setIsInitialMount] = useState(true)
 
     const [totalPages, setTotalPages] = useState(0)
     const [currentPage, setCurrentPage] = useState(1)
@@ -193,13 +192,18 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                     sortOrder: selectedSorting.toString(),
                 })
 
+                if (selectedYear) {
+                    query.append('catalogYearId', selectedYear)
+                    query.append('CatalogYearId', selectedYear)
+                }
+
                 if (pendingFaculties.length > 0) {
                     query.append('faculties', pendingFaculties.join(','))
                 }
 
                 const degreeIds = eduDegrees
                     .filter((d) =>
-                        pendingDegrees.includes(d.nameEducationalDegreec)
+                        pendingDegrees.includes(d.nameEducationalDegree)
                     )
                     .map((d) => d.idEducationalDegree)
 
@@ -211,8 +215,10 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                     query.append('courses', pendingCourses.join(','))
                 }
 
-                if (showOnlyAvailable.includes('Тільки доступні')) {
-                    query.append('onlyAvailable', 'true')
+                if (showOnlyMine.includes('Мої')) {
+                    query.append('onlyMine', 'true')
+                    query.append('onlyMy', 'true')
+                    query.append('my', 'true')
                 }
 
                 if (isEvenSemester !== null) {
@@ -243,27 +249,33 @@ const AdminDisciplinesCatalogue = React.memo(() => {
             pendingDegrees,
             pendingCourses,
             isEvenSemester,
-            showOnlyAvailable,
+            showOnlyMine,
             archivedFilter,
             selectedSorting,
             eduDegrees,
+            selectedYear,
         ]
     )
 
     useEffect(() => {
-        fetchFilteredData(1)
-    }, [selectedSorting])
+        if (!isInitialMount) {
+            fetchFilteredData(1)
+        }
+    }, [selectedSorting, selectedYear, isInitialMount, fetchFilteredData])
 
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const [facData, eduData] = await Promise.all([
+                const [facData, eduData, yearData] = await Promise.all([
                     apiService.get<any[]>('Faculty'),
-                    apiService.get<any[]>('EducationalDegree')
+                    apiService.get<any[]>('EducationalDegree'),
+                    apiService.get<any[]>('Parameters/CatalogYearsSelective').catch(() => [])
                 ])
 
                 setFaculties(facData)
                 setEduDegrees(eduData)
+                setCatalogYears(yearData)
+                setIsInitialMount(false)
             } catch (error) {
                 console.error('Error fetching initial data', error)
             }
@@ -288,12 +300,52 @@ const AdminDisciplinesCatalogue = React.memo(() => {
         setActionError(null)
         setIsModalOpen(true)
     }
+
+    const handleSort = (field: string) => {
+        let nextDirection: 'asc' | 'desc' = 'asc'
+        if (sortField === field) {
+            nextDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+        }
+        setSortField(field)
+        setSortDirection(nextDirection)
+
+        if (field === 'nameSelectiveDisciplines' || field === 'studentCount' || field === 'codeSelectiveDisciplines') {
+            let apiSortOrder = 1
+            if (field === 'nameSelectiveDisciplines') {
+                apiSortOrder = nextDirection === 'asc' ? 1 : 2
+            } else if (field === 'studentCount') {
+                apiSortOrder = nextDirection === 'asc' ? 4 : 5
+            } else if (field === 'codeSelectiveDisciplines') {
+                apiSortOrder = nextDirection === 'asc' ? 1 : 3
+            }
+            setSelectedSorting(apiSortOrder)
+            setCurrentPage(1)
+        } else {
+            setDisciplines((prev) => {
+                const sorted = [...prev].sort((a, b) => {
+                    const aVal = a[field as keyof Discipline]
+                    const bVal = b[field as keyof Discipline]
+                    if (typeof aVal === 'string') {
+                        return nextDirection === 'asc'
+                            ? aVal.localeCompare(bVal as string)
+                            : (bVal as string).localeCompare(aVal)
+                    } else {
+                        return nextDirection === 'asc'
+                            ? Number(aVal) - Number(bVal)
+                            : Number(bVal) - Number(aVal)
+                    }
+                })
+                return sorted
+            })
+        }
+    }
+
     const columns: Column[] = [
-        { header: 'Факультет', accessor: 'facultyAbbreviation' },
-        { header: 'Код дисципліни', accessor: 'codeSelectiveDisciplines' },
-        { header: 'Назва дисципліни', accessor: 'nameSelectiveDisciplines' },
-        { header: 'Кількість студентів', accessor: 'studentCount' },
-        { header: 'Рівень освіти', accessor: 'degreeLevelName' },
+        { header: 'Факультет', accessor: 'facultyAbbreviation', sortable: true },
+        { header: 'Код дисципліни', accessor: 'codeSelectiveDisciplines', sortable: true },
+        { header: 'Назва дисципліни', accessor: 'nameSelectiveDisciplines', sortable: true },
+        { header: 'Кількість студентів', accessor: 'studentCount', sortable: true },
+        { header: 'Рівень освіти', accessor: 'degreeLevelName', sortable: true },
     ]
 
     return (
@@ -316,11 +368,11 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                         </select>
                     </div>
                     <FilterBox
-                        name="Тільки доступні дисципліни"
-                        options={[{ name: 'Тільки доступні' }]}
+                        name="Мої дисципліни"
+                        options={[{ name: 'Мої' }]}
                         accessor="name"
-                        selectedValues={showOnlyAvailable}
-                        onChange={setShowOnlyAvailable}
+                        selectedValues={showOnlyMine}
+                        onChange={setShowOnlyMine}
                     />
                     <FilterBox
                         name="Факультет"
@@ -333,7 +385,7 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                     <FilterBox
                         name="Рівень освіти"
                         options={eduDegrees}
-                        accessor="nameEducationalDegreec"
+                        accessor="nameEducationalDegree"
                         selectedValues={pendingDegrees}
                         onChange={setPendingDegrees}
                     />
@@ -405,17 +457,17 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                             <FileUploadModal/>
                         </div>
                         <select
-                            value={selectedSorting}
+                            value={selectedYear}
                             onChange={(e) => {
-                                const newSort = Number(e.target.value)
-                                setSelectedSorting(newSort)
+                                setSelectedYear(e.target.value)
                                 setCurrentPage(1)
                             }}
-                            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                         >
-                            {sortingOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
+                            <option value="">Усі навчальні роки</option>
+                            {catalogYears.map((year) => (
+                                <option key={year.idCatalogYear || year.id} value={year.idCatalogYear || year.id}>
+                                    {year.nameCatalog || year.name || year.year}
                                 </option>
                             ))}
                         </select>
@@ -429,11 +481,11 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                           window.open("/discipline/"+el.idSelectiveDisciplines) // НЕ ЧІПАТИ
 
                         }}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        isActionEnabled={true}
                         columns={columns}
                         data={disciplines}
+                        sortField={sortField}
+                        sortDirection={sortDirection}
+                        onSort={handleSort}
                     />
                     <Pagination
                         totalPages={totalPages}
@@ -533,10 +585,10 @@ const AdminDisciplinesCatalogue = React.memo(() => {
                                         <option
                                             key={degree.idEducationalDegree}
                                             value={
-                                                degree.nameEducationalDegreec
+                                                degree.nameEducationalDegree
                                             }
                                         >
-                                            {degree.nameEducationalDegreec}
+                                            {degree.nameEducationalDegree}
                                         </option>
                                     ))}
                                 </select>
