@@ -336,7 +336,7 @@ const AdminStudentCatalogueContent = () => {
     {
       header: 'Група',
       accessor: 'groupName',
-      href: (row) => `/catalogue?activeTab=2&groupId=${encodeURIComponent(row.groupName || row.groupId)}`,
+      href: (row) => `/catalogue?activeTab=2&groupId=${encodeURIComponent(row.groupName || row.groupId || '')}`,
     },
     { header: 'Прискорений', accessor: 'isShortLabel'},
     { header: 'Форма навчання', accessor: 'nameStudyForm'}

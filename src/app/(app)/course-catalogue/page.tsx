@@ -249,9 +249,9 @@ const CourseCataloguePage = () => {
             allDisciplines.length === 0 ? 'Немає вибраних дисциплін' : allDisciplines[0]
 
           const selectionLabel =
-            (s.selectionStatus === true || s.selectionStatus === 1) ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'
+            s.selectionStatus ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'
           const confirmationLabel =
-            (s.confirmationStatus === true || s.confirmationStatus === 1) ? 'Усі підтверджено' : 'Не всі підтверджено'
+            s.confirmationStatus ? 'Усі підтверджено' : 'Не всі підтверджено'
 
           return {
             id: s.studentId,
@@ -350,8 +350,30 @@ const CourseCataloguePage = () => {
 );
         },
       },
-      { header: 'Статус набору', accessor: 'selectionLabel' },
-      { header: 'Підтвердження', accessor: 'confirmationLabel' },
+      {
+        header: 'Статус набору',
+        accessor: 'selectionLabel',
+        render: (row: StudentRow) => {
+          const isEnrolled = !!row.selectionStatus
+          return (
+            <div className="flex justify-center" title={isEnrolled ? 'Набрано всі дисципліни' : 'Не набрано всі дисципліни'}>
+              {isEnrolled ? (
+                <div className="inline-flex p-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 hover:scale-110 transition-transform duration-150 shadow-sm">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="inline-flex p-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:scale-110 transition-transform duration-150 shadow-sm">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          )
+        }
+      },
     ],
     []
   )
@@ -441,6 +463,65 @@ const CourseCataloguePage = () => {
       return 0
     }
   }, [])
+
+  const renderExpandedDisciplines = (row: StudentRow) => {
+    if (!row.rawChoices || row.rawChoices.length === 0) {
+      return (
+        <div className="py-4 text-center text-slate-500 text-sm">
+          У цього студента немає вибраних дисциплін.
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </span>
+            <div>
+              <h4 className="font-semibold text-slate-900 text-base">Обрані навчальні дисципліни</h4>
+              <p className="text-xs text-slate-500">Повний перелік вибіркових дисциплін, які вказав студент</p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+            Всього: {row.rawChoices.length}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {row.rawChoices.map((choice) => (
+            <div
+              key={choice.idBindSelectiveDisciplines}
+              className="group flex flex-col justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md hover:border-blue-200 transition-all duration-200"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    {choice.codeSelectiveDisciplines || 'Код відсутній'}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    Семестр {choice.semestr}
+                  </span>
+                  {choice.inProcess && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+                      В процесі
+                    </span>
+                  )}
+                </div>
+                <h5 className="font-medium text-slate-800 text-sm group-hover:text-blue-700 transition-colors duration-150">
+                  {choice.nameSelectiveDisciplines}
+                </h5>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row gap-5">
       <aside className="sm:w-1/5 w-full">
@@ -596,6 +677,7 @@ const CourseCataloguePage = () => {
                     [0, 2, 4, 6].includes(sortOrder) ? 'asc' : 'desc'
                   }
                   onSort={handleSort}
+                  expandableRowRender={renderExpandedDisciplines}
                 />
               <div className="border-t border-slate-100 bg-slate-50/60 px-3 sm:px-4 lg:px-5 py-3">
                 <Pagination
@@ -860,7 +942,10 @@ function MoreModalBadge({
     <>
       {/* Кнопка +N */}
       <span
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(true)
+        }}
         className="
           px-3 py-1
           rounded-full

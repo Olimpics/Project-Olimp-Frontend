@@ -24,6 +24,7 @@ interface DataTableProps<T> {
   sortField?: keyof T | string | null
   sortDirection?: 'asc' | 'desc'
   onSort?: (field: any) => void
+  expandableRowRender?: (row: T) => React.ReactNode
 }
 
 const DataTable = <T extends { id?: string | number } & Record<string, any>>({
@@ -39,8 +40,10 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
   sortField,
   sortDirection,
   onSort,
+  expandableRowRender,
 }: DataTableProps<T>) => {
   const router = useRouter()
+  const [expandedRowIds, setExpandedRowIds] = React.useState<Set<string | number>>(new Set())
 
   return (
     <div className="overflow-x-auto">
@@ -73,117 +76,145 @@ const DataTable = <T extends { id?: string | number } & Record<string, any>>({
         </thead>
         <tbody>
           {data.length > 0 ? (
-            data.map((row, rowIndex) => (
-              <tr
-                key={row.id ?? `row-${rowIndex}`}
-                className={`${
-                  onClick ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'
-                }`}
-                onClick={onClick ? () => onClick(row) : undefined}
-              >
-                {columns.map((col) => {
-                  const content = col.render ? col.render(row) : String(row[col.accessor])
-                  const href = col.href?.(row)
+            data.map((row, rowIndex) => {
+              const rowId = row.id ?? rowIndex
+              const isExpanded = expandableRowRender && expandedRowIds.has(rowId)
+              return (
+                <React.Fragment key={row.id ?? `row-${rowIndex}`}>
+                  <tr
+                    className={`${
+                      onClick || expandableRowRender ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'
+                    }`}
+                    onClick={(e) => {
+                      if (expandableRowRender) {
+                        setExpandedRowIds((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(rowId)) {
+                            next.delete(rowId)
+                          } else {
+                            next.add(rowId)
+                          }
+                          return next
+                        })
+                      }
+                      if (onClick) onClick(row)
+                    }}
+                  >
+                    {columns.map((col) => {
+                      const content = col.render ? col.render(row) : String(row[col.accessor])
+                      const href = col.href?.(row)
 
-                  return (
-                    <td
-                      key={`${row.id ?? rowIndex}-${String(col.accessor)}`}
-                      className="py-2 px-4 border-b"
-                    >
-                      {href ? (
-                        <span
-                          className="text-blue-600 hover:underline cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.open(href)
-                          }}
+                      return (
+                        <td
+                          key={`${row.id ?? rowIndex}-${String(col.accessor)}`}
+                          className="py-2 px-4 border-b"
                         >
-                          {content}
-                        </span>
-                      ) : (
-                        content
-                      )}
-                    </td>
-                  )
-                })}
+                          {href ? (
+                            <span
+                              className="text-blue-600 hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                window.open(href)
+                              }}
+                            >
+                              {content}
+                            </span>
+                          ) : (
+                            content
+                          )}
+                        </td>
+                      )
+                    })}
 
-                {isActionEnabled && (
-                  <td className="py-2 px-4 border-b text-center">
-                    <div className="flex justify-center gap-2">
-                      {onManagePermissions && (
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Керувати дозволами"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onManagePermissions(row)
-                          }}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-5 h-5"
-                          >
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                          </svg>
-                        </button>
-                      )}
-                      {onEdit && (
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-blue-600 transition-colors"
-                          title="Редагувати"
-                          onClick={(e) => {
-                            e.stopPropagation() // Prevent row onClick from firing
-                            onEdit(row)
-                          }}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-5 h-5"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                          </svg>
-                        </button>
-                      )}
-                      
-                      {showDeleteAction && onDelete && (
-                        <button
-                          className="p-1 hover:bg-gray-100 rounded text-red-600 transition-colors"
-                          title="Видалити"
-                          onClick={(e) => {
-                            e.stopPropagation() // Prevent row onClick from firing
-                            onDelete(row)
-                          }}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-5 h-5"
-                          >
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))
+                    {isActionEnabled && (
+                      <td className="py-2 px-4 border-b text-center">
+                        <div className="flex justify-center gap-2">
+                          {onManagePermissions && (
+                            <button
+                              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors"
+                              title="Керувати дозволами"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onManagePermissions(row)
+                              }}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-5 h-5"
+                              >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                              </svg>
+                            </button>
+                          )}
+                          {onEdit && (
+                            <button
+                              className="p-1 hover:bg-gray-100 rounded text-blue-600 transition-colors"
+                              title="Редагувати"
+                              onClick={(e) => {
+                                e.stopPropagation() // Prevent row onClick from firing
+                                onEdit(row)
+                              }}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-5 h-5"
+                              >
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {showDeleteAction && onDelete && (
+                            <button
+                              className="p-1 hover:bg-gray-100 rounded text-red-600 transition-colors"
+                              title="Видалити"
+                              onClick={(e) => {
+                                e.stopPropagation() // Prevent row onClick from firing
+                                onDelete(row)
+                              }}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-5 h-5"
+                              >
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                  {isExpanded && (
+                    <tr className="bg-slate-50/70 border-b">
+                      <td
+                        colSpan={columns.length + (isActionEnabled ? 1 : 0)}
+                        className="p-4"
+                      >
+                        {expandableRowRender(row)}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              )
+            })
           ) : (
             <tr>
               <td

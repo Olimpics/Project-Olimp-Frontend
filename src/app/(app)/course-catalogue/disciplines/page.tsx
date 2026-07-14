@@ -564,7 +564,7 @@ const DisciplineCataloguePage = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
-                {disciplines.map((d) => {
+                {disciplines.map((d, idx) => {
                   const statusCode = statusToCode(d.status)
                   const config = getStatusConfig(statusCode)
                   const statusLabel =
@@ -573,7 +573,7 @@ const DisciplineCataloguePage = () => {
 
                   return (
                     <div
-                      key={d.idAddDisciplines}
+                      key={`${d.idAddDisciplines}-${idx}`}
                       className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white/95 shadow-sm hover:shadow-lg p-5 transition-all duration-200 hover:-translate-y-0.5 min-h-[300px]"
                     >
                       {/* Top Row: Meta & Status Badge */}
@@ -607,8 +607,13 @@ const DisciplineCataloguePage = () => {
                         <h2 className="text-base sm:text-lg font-bold text-slate-800 break-words line-clamp-3 leading-snug">
                           {d.nameAddDisciplines}
                         </h2>
+                        {d.teachers && (
+                          <p className="mt-2 text-xs text-slate-500 font-medium truncate max-w-full">
+                            Викладач: {d.teachers}
+                          </p>
+                        )}
                         {d.departmentName && (
-                          <p className="mt-2 text-xs text-slate-400 font-medium italic truncate max-w-full">
+                          <p className="mt-1 text-xs text-slate-400 font-medium italic truncate max-w-full">
                             Кафедра: {d.departmentName}
                           </p>
                         )}
@@ -696,10 +701,13 @@ const DisciplineCataloguePage = () => {
                     <div className="font-semibold text-gray-900">
                       {editingDiscipline.nameAddDisciplines}
                     </div>
-                    <div className="text-sm text-gray-600">
+                     <div className="text-sm text-gray-600">
                       {editingDiscipline.facultyAbbreviation || 'Без факультету'}
                       {editingDiscipline.departmentName
                         ? ` • ${editingDiscipline.departmentName}`
+                        : ''}
+                      {editingDiscipline.teachers
+                        ? ` • Викладач: ${editingDiscipline.teachers}`
                         : ''}
                     </div>
                   </div>

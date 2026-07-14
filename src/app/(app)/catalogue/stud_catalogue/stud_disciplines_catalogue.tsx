@@ -41,6 +41,7 @@ type Courses = {
 interface Column {
   header: string
   accessor: keyof Discipline
+  sortable?: boolean
 }
 
 
